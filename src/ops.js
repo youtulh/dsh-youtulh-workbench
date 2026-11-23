@@ -183,6 +183,9 @@ const handlers = {
     if (!item.production) throw new Error(tr('这条灵感还没有成稿'))
     if (typeof op.title === 'string') item.production.title = op.title.slice(0, 200)
     if (typeof op.coverText === 'string') item.production.coverText = op.coverText.slice(0, 40)
+    if (typeof op.xhsTitle === 'string') item.production.xhsTitle = op.xhsTitle.slice(0, 60)
+    if (typeof op.caption === 'string') item.production.caption = op.caption.slice(0, 2000)
+    if (Array.isArray(op.tags)) item.production.tags = op.tags.filter(row => typeof row === 'string' && row.trim()).map(row => row.trim().replace(/^#+/, '').slice(0, 20)).slice(0, 8)
     if (typeof op.article === 'string') item.production.article = op.article.slice(0, 200000)
     return { text: tr('修改《{title}》', { title: short(item.production.title) }), target: item.id, kind: 'item' }
   },

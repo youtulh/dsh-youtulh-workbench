@@ -282,6 +282,38 @@ test('normalizePlan 丢弃多余字段并按设置截断', () => {
   assert.equal(normalizePlan(null, { imageCount: 1, shotCount: 1 }, 'F').title, 'F')
 })
 
+test('normalizePlan 收下发布三件套：标签去掉 #、短标题有兜底、说明文案保留换行', () => {
+  const plan = normalizePlan({ title: 'T', tags: ['#高一化学', ' 物质的量 ', '', 42, 'x'.repeat(50)], xhsTitle: '小红书标题', caption: '第一行\n第二行' }, { imageCount: 0, shotCount: 0 }, '兜底')
+  assert.deepEqual(plan.tags, ['高一化学', '物质的量', 'x'.repeat(20)])
+  assert.equal(plan.xhsTitle, '小红书标题')
+  assert.equal(plan.caption, '第一行\n第二行')
+  // 模型没给短标题时用标题兜底，不会留空
+  const bare = normalizePlan({}, { imageCount: 0, shotCount: 0 }, '一个足够长的兜底标题用来截断')
+  assert.equal(bare.xhsTitle.length <= 20, true)
+  assert.deepEqual(bare.tags, [])
+})
+
+test('applyRevision 能改小红书标题、标签和说明文案', () => {
+  const p = { title: 'T', coverText: 'C', article: '正文', tags: ['旧'], xhsTitle: '旧标题', caption: '旧文案' }
+  const { receipts } = applyRevision(p, { xhsTitle: '新标题', tags: ['#新标签'], caption: '新文案\n第二行' })
+  assert.equal(p.xhsTitle, '新标题')
+  assert.deepEqual(p.tags, ['新标签'])
+  assert.equal(p.caption, '新文案\n第二行')
+  assert.equal(receipts.length, 3)
+  // 一样的值不算改动
+  assert.deepEqual(applyRevision(p, { xhsTitle: '新标题', tags: ['新标签'], caption: '新文案\n第二行' }).receipts, [])
+})
+
+test('发布包文本：标题、短标题、标签、说明文案和发布顺序都写在一张纸上', async () => {
+  const { publishPackage } = await import('../src/export.js')
+  const text = publishPackage({ title: '高一化学月考垮', tags: ['高一化学', '物质的量'], xhsTitle: '根子在物质的量', caption: '第一行\n\n想看看孩子卡在哪，私信「诊断」。' })
+  assert.match(text, /^【发布包】高一化学月考垮/)
+  assert.match(text, /#高一化学 #物质的量/)
+  assert.match(text, /私信「诊断」/)
+  assert.match(text, /抖音 → 视频号 → 小红书/)
+  assert.match(publishPackage({ title: '只有标题' }), /（还没生成）/)
+})
+
 async function producerFixture({ callText, generate, ready = true }) {
   const dir = await mkdtemp(join(tmpdir(), 'media-desk-prod-'))
   const store = new Store(dir)
@@ -580,7 +612,7 @@ test('saveProduction 写出文章、脚本和素材，标题里的路径字符�
     const saved = await saveProduction(p, { filesDir, exportDir: join(dir, 'out'), videoCover: Buffer.from([0xff, 0xd8, 0xff]) })
     assert.equal(saved.path, join(dir, 'out', '危险 标题 测试'))
     const names = await readdir(saved.path)
-    assert.deepEqual(names.sort(), ['分镜脚本.md', '封面原图.jpg', '视频封面.jpg', '脚本.md', '配图1.jpg'].sort())
+    assert.deepEqual(names.sort(), ['分镜脚本.md', '发布包.txt', '封面原图.jpg', '视频封面.jpg', '脚本.md', '配图1.jpg'].sort())
     const article = await readFile(join(saved.path, '脚本.md'), 'utf8')
     assert.match(article, /^# \.\.\/危险/)
         assert.match(article, /这里要改。\n\n!\[图\]\(配图1\.jpg\)/)

@@ -142,7 +142,7 @@ test('#16 再次保存不冲掉文件夹里手改的稿子，标题相同的两�
     const again = await saveProduction(first, options)
     assert.equal(again.path, saved.path)
     assert.deepEqual(again.backups, [])
-    assert.deepEqual(await readdir(saved.path), ['脚本.md'])
+    assert.deepEqual((await readdir(saved.path)).sort(), ['发布包.txt', '脚本.md'])
     first.savedHashes = again.hashes
 
     // 在文件夹里手改过：旧文件另存，新稿照常写入

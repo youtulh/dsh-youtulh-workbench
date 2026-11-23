@@ -47,7 +47,56 @@ function cell(text) {
 }
 
 /**
- * @param {object} production - 成稿。
+ * 发布包：一条内容交给助理就能直接发。标题、短标题、标签、说明文案和发布顺序都在一张纸上，
+ * 助理不用回头问任何问题。
+ */
+export function publishPackage(production, en = currentLang() === 'en') {
+  const tags = (production.tags ?? []).filter(Boolean)
+  const hashtags = tags.length ? tags.map(tag => `#${tag}`).join(' ') : en ? '(none yet)' : '（还没生成）'
+  const caption = production.caption?.trim() || (en ? '(not written yet — ask the assistant for a caption)' : '（还没生成，到成稿里让助手写一版说明文案）')
+  const lines = en
+    ? [
+      `[Publish package] ${production.title}`,
+      '',
+      'Video: (put the finished video in this folder)',
+      '',
+      'Title (TikTok / Channels):',
+      production.title,
+      '',
+      'Rednote title (within 20 characters):',
+      production.xhsTitle?.trim() || production.title,
+      '',
+      'Hashtags:',
+      hashtags,
+      '',
+      'Caption (paste as-is on every platform):',
+      caption,
+      '',
+      'Publish order: TikTok → Channels → Rednote (one version, no rewrites)',
+    ]
+    : [
+      `【发布包】${production.title}`,
+      '',
+      '视频：（成片放本文件夹）',
+      '',
+      '标题（抖音/视频号通用）：',
+      production.title,
+      '',
+      '小红书标题备选（20 字内）：',
+      production.xhsTitle?.trim() || production.title,
+      '',
+      '话题标签：',
+      hashtags,
+      '',
+      '说明文案（三个平台正文，直接粘）：',
+      caption,
+      '',
+      '发布顺序：抖音 → 视频号 → 小红书（同一版，不改编）',
+    ]
+  return `${lines.join('\n')}\n`
+}
+
+/**
  * @param {{filesDir: string, exportDir: string, videoCover?: Buffer}} options - 素材目录、保存位置和合成好的视频封面。
  * @returns {Promise<{path: string, files: string[], hashes: Record<string, string>, backups: string[]}>} 文件夹路径、写入的文件名、稿子的指纹，以及这次留下的备份。
  */
@@ -55,8 +104,8 @@ export async function saveProduction(production, { filesDir, exportDir, videoCov
   // 英文界面用纯 ASCII 文件名，方便在别的系统和工具里打开
   const en = currentLang() === 'en'
   const names = en
-    ? { cover: 'cover-original', videoCover: 'video-cover.jpg', figure: i => `figure-${i}`, shot: n => `shot-${n}`, script: 'script.md', board: 'storyboard.md' }
-    : { cover: '封面原图', videoCover: '视频封面.jpg', figure: i => `配图${i}`, shot: n => `分镜${n}`, script: '脚本.md', board: '分镜脚本.md' }
+    ? { cover: 'cover-original', videoCover: 'video-cover.jpg', figure: i => `figure-${i}`, shot: n => `shot-${n}`, script: 'script.md', board: 'storyboard.md', publish: 'publish-package.txt' }
+    : { cover: '封面原图', videoCover: '视频封面.jpg', figure: i => `配图${i}`, shot: n => `分镜${n}`, script: '脚本.md', board: '分镜脚本.md', publish: '发布包.txt' }
   const target = production.savedPath || freeFolder(exportDir, production.title)
   await mkdir(target, { recursive: true })
   const files = []
@@ -119,5 +168,6 @@ export async function saveProduction(production, { filesDir, exportDir, videoCov
     const heading = en ? `# ${production.title}: storyboard\n\n| Shot | Size | Length | Visual | Voice-over | Frame |` : `# ${production.title}：分镜头脚本\n\n| 镜号 | 景别 | 时长 | 画面 | 口播 | 分镜图 |`
     await writeText(names.board, `${heading}\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n`)
   }
+  await writeText(names.publish, publishPackage(production, en))
   return { path: target, files, hashes, backups }
 }

@@ -127,7 +127,7 @@ platform 只能取：公众号、小红书、抖音、B站、视频号、X。`
 
 const REVISE_DOC = () => `
 用户正在看这条灵感已经做好的成稿（<production> 里）。用户要改标题、脚本、封面、配图或分镜时，在 JSON 里加一个 revise 字段，只写要改的部分：
-"revise":{"title":"新标题","coverText":"新的封面大字","edits":[{"find":"脚本里要替换的原文，必须一字不差且足够长、不会重复","replace":"新内容"}],"article":"需要大改整篇时才给完整的 Markdown 脚本（不含一级标题），否则不要这个字段","cover":{"prompt":"新的封面画面描述（英文）"},"images":[{"no":1,"caption":"图注","prompt":"新的画面描述（英文）"}],"shots":[{"no":3,"shot":"${byLang('景别', '景别（英文，如 Close-up）')}","visual":"画面（${byLang('中文', '英文')}）","voice":"口播（${byLang('中文', '英文')}）","seconds":5,"prompt":"新的构图描述（英文）"}]}
+"revise":{"title":"新标题","coverText":"新的封面大字","xhsTitle":"新的小红书标题","caption":"新的说明文案，用 \\n 分段","tags":["新的话题标签"],"edits":[{"find":"脚本里要替换的原文，必须一字不差且足够长、不会重复","replace":"新内容"}],"article":"需要大改整篇时才给完整的 Markdown 脚本（不含一级标题），否则不要这个字段","cover":{"prompt":"新的封面画面描述（英文）"},"images":[{"no":1,"caption":"图注","prompt":"新的画面描述（英文）"}],"shots":[{"no":3,"shot":"${byLang('景别', '景别（英文，如 Close-up）')}","visual":"画面（${byLang('中文', '英文')}）","voice":"口播（${byLang('中文', '英文')}）","seconds":5,"prompt":"新的构图描述（英文）"}]}
 <production> 的 format 是这篇的体裁：script 是口播脚本，一句话一行、按气口断句；article 是文章，一个一个自然段。改稿时保持原来的体裁和排版。
 只改一小段时用 edits，不要重写全文。要换画面就必须给新的 prompt，画面描述只写看得见的东西，不放文字。要改的是成稿时不要用 ops 改 title，也不要用 produce。reply 里说清楚改了什么。`
 
@@ -136,6 +136,9 @@ function productionBrief(production) {
     title: production.title,
     format: draftFormat(production.format),
     coverText: production.coverText,
+    xhsTitle: production.xhsTitle,
+    caption: production.caption,
+    tags: production.tags,
     article: production.article,
     cover: production.cover?.prompt,
     images: (production.images ?? []).map((row, i) => ({ no: i + 1, caption: row.caption, prompt: row.prompt })),
@@ -248,8 +251,10 @@ export function planPrompts(state, item, settings) {
   const { angle } = itemBrief(state, item)
   const system = `你是内容主编、美术指导和分镜师。根据一句灵感，定下这篇内容的策划案。
 只输出一个 JSON 对象，字段按下面的顺序：
-{"title":"视频标题，具体、有钩子，${byLang('不超过 24 字', '不超过 60 个字符')}","coverText":"视频封面上的大字，要有冲击力，${byLang('不超过 12 字', '2 到 4 个英文单词，不超过 24 个字符')}","facts":["这条内容用到的具体事实：数字、人名、案例，脚本和分镜都要照用，3 到 6 条"],"outline":["3 到 5 个小标题${byLang('', '，每个不超过 40 个字符')}"],"cover":"视频封面画面描述（英文），主体突出，下方留出放大字的空间","characters":"反复出现的人物和场景的外观描述（英文），让每张图保持一致；没有就留空","images":[{"anchor":"这张图放在哪个小标题之后，原样抄写小标题","caption":"${byLang('平实的中文图注，只说明画面内容，不超过 16 字', '平实的英文图注，只说明画面内容，不超过 8 个单词')}","prompt":"配图画面描述（英文）"}],"shots":[{"shot":"${byLang('景别，如 特写/近景/中景/全景/俯拍', '景别，只用 Close-up/Close/Medium/Wide/Overhead 之一')}","visual":"这一镜拍什么（${byLang('中文，不超过 40 字', '英文，不超过 25 个单词')}）","voice":"这一镜的口播（${byLang('中文，不超过 40 字', '英文，不超过 25 个单词')}）","seconds":5,"prompt":"这一镜的构图描述（英文）"}]}
+{"title":"视频标题，具体、有钩子，${byLang('不超过 24 字', '不超过 60 个字符')}","coverText":"视频封面上的大字，要有冲击力，${byLang('不超过 12 字', '2 到 4 个英文单词，不超过 24 个字符')}","tags":["话题标签，${byLang('5 到 8 个，不带 # 号，每个 2 到 8 个字', '5 to 8 lowercase hashtag words, no #')}"],"xhsTitle":"${byLang('小红书标题，20 字以内，用家长会说的话，不要用老师的口气', 'Rednote title, within 20 characters, in the parent’s words')}","caption":"${byLang('三个平台通用的说明文案，3 到 5 行：第一行接住痛点，中间说做法，最后一行只留一个引导（比如私信「诊断」）', 'A 3 to 5 line caption for every platform: first line names the pain, middle lines explain, last line leaves one call to action')}","facts":["这条内容用到的具体事实：数字、人名、案例，脚本和分镜都要照用，3 到 6 条"],"outline":["3 到 5 个小标题${byLang('', '，每个不超过 40 个字符')}"],"cover":"视频封面画面描述（英文），主体突出，下方留出放大字的空间","characters":"反复出现的人物和场景的外观描述（英文），让每张图保持一致；没有就留空","images":[{"anchor":"这张图放在哪个小标题之后，原样抄写小标题","caption":"${byLang('平实的中文图注，只说明画面内容，不超过 16 字', '平实的英文图注，只说明画面内容，不超过 8 个单词')}","prompt":"配图画面描述（英文）"}],"shots":[{"shot":"${byLang('景别，如 特写/近景/中景/全景/俯拍', '景别，只用 Close-up/Close/Medium/Wide/Overhead 之一')}","visual":"这一镜拍什么（${byLang('中文，不超过 40 字', '英文，不超过 25 个单词')}）","voice":"这一镜的口播（${byLang('中文，不超过 40 字', '英文，不超过 25 个单词')}）","seconds":5,"prompt":"这一镜的构图描述（英文）"}]}
 images 正好 ${settings.imageCount} 个，shots 正好 ${settings.shotCount} 个。
+文案（title、coverText、xhsTitle、caption、tags）遵守三条红线：不承诺效果（不说一定提分、包过），不报具体价格，不编造没出现过的事实。
+标题说人话：不用「赋能」「打造」这类词，用读者自己会说的话。caption 分段之间用换行，不要写成一大段。
 画面描述只写看得见的东西：主体、动作、环境、构图、光线。不要在画面里放任何文字。分镜要有景别变化，能串成一段完整的短视频，第一镜就要抓人。
 
 ${voiceBlock(state, settings.voice)}
@@ -287,6 +292,9 @@ export function fallbackPlan(item, article, settings) {
   return {
     title: item.title,
     coverText: shortCoverText(item.title),
+    tags: [],
+    xhsTitle: shortCoverText(item.title, 20),
+    caption: '',
     outline: headings,
     cover: `A striking visual metaphor for: ${item.title}`,
     images: Array.from({ length: settings.imageCount }, (_, i) => ({ anchor: headings[i + 1] ?? headings[i] ?? '', caption: '', prompt: `An illustration about: ${item.title}. ${headings[i] ?? ''}` })),

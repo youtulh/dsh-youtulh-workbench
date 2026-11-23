@@ -3,7 +3,7 @@ import React from 'react'
 import { ChatPanel } from './chat.jsx'
 import { downloadCover } from './cover.js'
 import { cancelProduce, closeItem, dispatchOps, regenAsset, revealSaved, runProduce, saveProduced, setDesk, toast, useDesk, watchProduction } from './desk.js'
-import { plural, t } from './i18n.js'
+import { plural, t, lang } from './i18n.js'
 import { Icon, IconButton } from './ui.jsx'
 import { SPRING_SNAP, SPRING_SOFT, STYLE_CATEGORIES, fmtDate, fmtWhen, reducedMotion, renderMarkdown, styleIcon, textLength, toLocalInput } from './util.js'
 
@@ -35,6 +35,63 @@ function AutoText({ value, onCommit, className, label, disabled }) {
 
 function askAbout(label, text = '') {
   setDesk({ chatQuote: { label, text }, studioDock: true })
+}
+
+/**
+ * 发布包文本：和 Host 导出的「发布包.txt」同一套字段。
+ * 助理拿到这一张纸就能直接发，不用回头问标题、标签或文案。
+ */
+export function publishPackText(production) {
+  const en = lang() === 'en'
+  const tags = (production.tags ?? []).filter(Boolean)
+  const hashtags = tags.length ? tags.map(tag => `#${tag}`).join(' ') : en ? '(none yet)' : '（还没生成）'
+  const caption = production.caption?.trim() || (en ? '(not written yet)' : '（还没生成）')
+  const shortTitle = production.xhsTitle?.trim() || production.title
+  const rows = en
+    ? [
+      `[Publish package] ${production.title}`, '', 'Video: (put the finished video in this folder)', '',
+      'Title (TikTok / Channels):', production.title, '',
+      'Rednote title (within 20 characters):', shortTitle, '',
+      'Hashtags:', hashtags, '',
+      'Caption (paste as-is on every platform):', caption, '',
+      'Publish order: TikTok → Channels → Rednote (one version, no rewrites)',
+    ]
+    : [
+      `【发布包】${production.title}`, '', '视频：（成片放本文件夹）', '',
+      '标题（抖音/视频号通用）：', production.title, '',
+      '小红书标题备选（20 字内）：', shortTitle, '',
+      '话题标签：', hashtags, '',
+      '说明文案（三个平台正文，直接粘）：', caption, '',
+      '发布顺序：抖音 → 视频号 → 小红书（同一版，不改编）',
+    ]
+  return `${rows.join('\n')}\n`
+}
+
+/** 成稿头部的发布三件套：小红书短标题可改，标签和说明文案只读，一键复制整张发布包。 */
+function PublishBlock({ item, production }) {
+  const tags = (production.tags ?? []).filter(Boolean)
+  const caption = production.caption?.trim()
+  const copy = async () => {
+    await navigator.clipboard.writeText(publishPackText(production))
+    toast(t('发布包已复制'))
+  }
+  return (
+    <div className="md-publish">
+      <div className="md-publish-row">
+        <span>{t('小红书标题')}</span>
+        <AutoText className="md-publish-line" label={t('小红书标题')} value={production.xhsTitle ?? ''} onCommit={next => dispatchOps([{ op: 'update_production', id: item.id, xhsTitle: next }], { label: t('修改小红书标题'), silent: true })} />
+        <button type="button" className="md-pill md-publish-copy" onClick={copy}><Icon name="copy" size={13} />{t('复制发布包')}</button>
+      </div>
+      <div className="md-publish-row">
+        <span>{t('话题标签')}</span>
+        <div className="md-publish-tags">{tags.length ? tags.map(tag => <b key={tag}>#{tag}</b>) : <em>{t('还没生成')}</em>}</div>
+      </div>
+      <div className="md-publish-row">
+        <span>{t('说明文案')}</span>
+        <div className="md-publish-caption">{caption || <em>{t('还没生成')}</em>}</div>
+      </div>
+    </div>
+  )
 }
 
 /** 一张图。空的时候只有底色和淡淡的记号，不放文字。 */
@@ -225,6 +282,7 @@ function HeroTile({ item, live, onView }) {
           {seconds ? <Stat icon="clock" value={seconds} unit={t('秒')} /> : null}
           {pictures ? <Stat icon="image" value={pictures} unit={t('张图', { s: plural(pictures, '', 's') })} /> : null}
         </div>
+        {done ? <PublishBlock item={item} production={production} /> : null}
         {done ? (
           <div className="md-hero-actions">
             <button type="button" className="md-pill is-primary" onClick={copy}><Icon name="copy" size={14} />{production?.format === 'article' ? t('复制文章') : t('复制脚本')}</button>

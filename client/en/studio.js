@@ -196,4 +196,14 @@ export const STUDIO = {
 
   // 视频封面
   '封面图读取失败': 'Couldn’t load the cover image',
+
+  // 发布包
+  '发布包': 'Publish package',
+  '复制发布包': 'Copy package',
+  '发布包已复制': 'Package copied',
+  '小红书标题': 'Rednote title',
+  '修改小红书标题': 'Edit the Rednote title',
+  '话题标签': 'Hashtags',
+  '说明文案': 'Caption',
+  '还没生成': 'Not written yet',
 }

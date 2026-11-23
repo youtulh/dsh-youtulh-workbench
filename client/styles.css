@@ -865,3 +865,14 @@ body[data-ds-dark-theme] .md-root {
   --bg: color-mix(in srgb, #22453a 30%, var(--dsw-alias-bg-base));
   --card: color-mix(in srgb, #2b3f37 45%, var(--dsw-alias-bg-layer-2));
 }
+
+/* ===== 发布包三件套：标题、标签、说明文案 ===== */
+.md-publish { display: flex; flex-direction: column; gap: 5px; margin-top: 12px; padding-top: 10px; border-top: .5px solid var(--line); font-size: 12.5px; line-height: 19px; animation: md-fade .5s both; }
+.md-publish-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.md-publish-row > span:first-child { flex: none; width: 64px; color: var(--ink3); }
+.md-publish-tags { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.md-publish-tags b { font-weight: 400; padding: 0 6px; border-radius: var(--r-xs); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.md-publish-row em { color: var(--ink3); font-style: normal; }
+.md-publish-caption { min-width: 0; max-height: 76px; overflow: auto; color: var(--ink2); white-space: pre-wrap; }
+.md-root .md-publish-line { flex: 1; min-width: 0; padding: 0; border: 0; outline: 0; background: none; resize: none; overflow: hidden; color: var(--ink); font-size: 12.5px; line-height: 19px; }
+.md-publish-copy { flex: none; height: 24px; padding: 0 8px; font-size: 12px; line-height: 24px; }

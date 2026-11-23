@@ -31,6 +31,10 @@ export function normalizePlan(plan, settings, title) {
   return {
     title: text(plan?.title, 60) || title,
     coverText: text(plan?.coverText, 24) || shortCoverText(title),
+    // 发布三件套：话题标签、小红书标题、平台说明文案
+    tags: (Array.isArray(plan?.tags) ? plan.tags : []).map(row => text(row, 20).replace(/^#+/, '').trim()).filter(Boolean).slice(0, 8),
+    xhsTitle: text(plan?.xhsTitle, 40) || shortCoverText(title, 20),
+    caption: text(plan?.caption, 1200),
     facts: (Array.isArray(plan?.facts) ? plan.facts : []).map(row => text(row, 120)).filter(Boolean).slice(0, 8),
     outline: (Array.isArray(plan?.outline) ? plan.outline : []).map(row => text(row, 40)).filter(Boolean).slice(0, 6),
     cover: text(plan?.cover, 1200) || title,
@@ -82,6 +86,22 @@ export function applyRevision(production, revise, { canDraw = true } = {}) {
   if (coverText && coverText !== production.coverText) {
     production.coverText = coverText
     receipts.push(tr('封面大字改成「{text}」', { text: coverText }))
+  }
+  const xhsTitle = text(revise?.xhsTitle, 40)
+  if (xhsTitle && xhsTitle !== production.xhsTitle) {
+    production.xhsTitle = xhsTitle
+    receipts.push(tr('小红书标题改成「{title}」', { title: xhsTitle }))
+  }
+  if (Array.isArray(revise?.tags)) {
+    const tags = revise.tags.map(row => text(row, 20).replace(/^#+/, '').trim()).filter(Boolean).slice(0, 8)
+    if (tags.length && tags.join(' ') !== (production.tags ?? []).join(' ')) {
+      production.tags = tags
+      receipts.push(tr('换了话题标签'))
+    }
+  }
+  if (typeof revise?.caption === 'string' && revise.caption.trim() && revise.caption.trim() !== production.caption) {
+    production.caption = revise.caption.trim().slice(0, 1200)
+    receipts.push(tr('重写了说明文案'))
   }
   if (typeof revise?.article === 'string' && revise.article.trim()) {
     production.article = revise.article.replace(/^\s*#\s+.*\n?/, '').trim().slice(0, 200000)
@@ -235,6 +255,9 @@ export class Producer {
         production.withImages = draw
         production.title = plan.title
         production.coverText = plan.coverText
+        production.tags = plan.tags
+        production.xhsTitle = plan.xhsTitle
+        production.caption = plan.caption
         production.facts = plan.facts
         production.outline = plan.outline
         production.characters = plan.characters
