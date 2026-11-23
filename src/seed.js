@@ -117,6 +117,8 @@ export function migrateState(state) {
   // 定位卡和卡点清单是后加的，老状态补上空对象
   if (!state.positioning || typeof state.positioning !== 'object') state.positioning = { only: '', notDo: '', voice: '', redline: '' }
   if (!Array.isArray(state.painPoints) || !state.painPoints.length) state.painPoints = [...PAIN_POINTS]
+  // 私信线索表是后加的
+  if (!Array.isArray(state.leads)) state.leads = []
   if (state.sampleLang === 'en') stashChineseLeftovers(state)
   return migratePresets(state)
 }

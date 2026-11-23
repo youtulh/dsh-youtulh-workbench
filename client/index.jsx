@@ -5,6 +5,7 @@ import { ChatDock } from './chat.jsx'
 import { ContentView } from './content.jsx'
 import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { InsightsView } from './insights.jsx'
+import { DmView } from './dm.jsx'
 import { StyleView } from './style.jsx'
 import { ScheduleView } from './schedule.jsx'
 import { ModelButton, ModelPicker } from './modelpick.jsx'
@@ -20,13 +21,14 @@ const PANEL_ID = 'media-desk'
 // navKey：同一个中文在别处意思不同（单数的“灵感”“风格”），英文导航另查一条
 const NAV = [
   { id: 'home', label: '灵感', navKey: '灵感（导航）' },
+  { id: 'dm', label: '私信', navKey: '私信（导航）' },
   { id: 'content', label: '内容' },
   { id: 'schedule', label: '排期' },
   { id: 'insights', label: '复盘' },
   { id: 'style', label: '风格', navKey: '风格（导航）' },
 ]
 
-const VIEWS = { home: HomeView, content: ContentView, schedule: ScheduleView, insights: InsightsView, style: StyleView }
+const VIEWS = { home: HomeView, dm: DmView, content: ContentView, schedule: ScheduleView, insights: InsightsView, style: StyleView }
 
 function CaptureDialog() {
   const capture = useDesk(s => s.capture)

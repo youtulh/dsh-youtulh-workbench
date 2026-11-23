@@ -894,3 +894,27 @@ body[data-ds-dark-theme] .md-root {
 .md-chip.is-stage { cursor: pointer; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .md-chip.is-stage.stage-published { color: var(--ink3); background: var(--hover); }
 @media (max-width: 720px) { .md-positioning-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== 回私信分诊台 ===== */
+.md-dm { display: grid; gap: 10px; width: min(1080px, 100%); margin: 0 auto; padding: 18px clamp(14px, 3vw, 36px) 40px; }
+.md-dm .md-tile { padding: 16px 18px; }
+.md-dm-input .md-field textarea { width: 100%; min-height: 96px; padding: 10px 12px; border: .5px solid var(--line); border-radius: var(--r-md); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); resize: vertical; font: inherit; font-size: 13.5px; line-height: 21px; }
+.md-dm-input .md-field textarea:focus { border-color: var(--accent); }
+.md-dm-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12.5px; }
+.md-dm-engine { margin-top: 6px; color: var(--ink3); font-size: 12px; }
+.md-dm-chips { display: flex; gap: 6px; }
+.md-dm-chips b { padding: 0 8px; border-radius: var(--r-xs); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-weight: 400; font-size: 12.5px; line-height: 21px; }
+.md-dm-chips b.is-3 { color: var(--ink3); background: var(--hover); }
+.md-dm-drafts { display: grid; gap: 10px; margin-top: 4px; }
+.md-dm-drafts li { padding: 10px 12px; border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 60%, transparent); box-shadow: inset 0 0 0 .5px var(--line); }
+.md-dm-drafts li.is-used { box-shadow: inset 0 0 0 1px var(--accent); }
+.md-dm-tag { display: inline-block; margin-bottom: 6px; color: var(--ink3); font-size: 12px; }
+.md-dm-drafts p { color: var(--ink); font-size: 13.5px; line-height: 22px; white-space: pre-wrap; }
+.md-dm-draft-actions { display: flex; gap: 6px; margin-top: 8px; }
+.md-dm-note { display: flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--ink2); font-size: 12.5px; line-height: 19px; }
+.md-dm-ledger-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; }
+.md-dm-ledger-grid .md-field input { width: 100%; padding: 6px 8px; border: .5px solid var(--line); border-radius: var(--r-sm); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12.5px; }
+.md-dm-ledger-grid .md-field input:focus { border-color: var(--accent); }
+.md-dm-wrap { max-width: 260px; }
+.md-dm-empty { padding: 6px 0 2px; }
+@media (max-width: 720px) { .md-dm-ledger-grid { grid-template-columns: minmax(0, 1fr); } }

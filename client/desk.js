@@ -103,8 +103,12 @@ export async function runProduce(id, { withImages } = {}) {
   }
 }
 
-export async function cancelProduce(id) {
-  try {
+/** 回私信分诊：把原文交给 Host，拿回 { verdict, engine }。 */
+export async function triageDm(text) {
+  return request('dm', { text })
+}
+
+export async function cancelProduce(id) {  try {
     await request('produce/cancel', { id })
   } catch (err) {
     report(err)

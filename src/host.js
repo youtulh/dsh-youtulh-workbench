@@ -6,6 +6,7 @@ import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, saveProduction } from './export.js'
+import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { harvest, harvestText } from './harvest.js'
 import { generateImage } from './images.js'
 import { generateToolImage, imageTool } from './image-tool.js'
@@ -353,6 +354,23 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { label, state: await store.read(), canUndo: store.undo.length > 0 })
     }
     case 'chat': return json(res, 200, await chatTurn(ctx, store, desk, body))
+    case 'dm': {
+      // 回私信分诊：有模型就用模型判断，模型不可用时退回规则兜底，不让按钮转圈
+      const raw = String(body.text ?? '').trim()
+      if (!raw) return json(res, 400, { error: tr('先把私信原话粘进来') })
+      const state = await store.read()
+      let verdict
+      let engine = 'local'
+      try {
+        const prompts = dmPrompts(state, raw)
+        const result = await callModel(ctx, { ...prompts, maxTokens: 1200, light: true })
+        verdict = normalizeVerdict(extractJson(result.text))
+        engine = result.model
+      } catch {
+        verdict = fallbackVerdict(raw)
+      }
+      return json(res, 200, { verdict, engine })
+    }
     case 'chat/clear': {
       const state = await store.mutate('清空对话', (draft) => { draft.chat = []; return draft }, { undoable: false })
       return json(res, 200, { state })

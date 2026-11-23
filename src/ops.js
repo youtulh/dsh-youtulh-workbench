@@ -35,6 +35,8 @@ const ANGLE_FIELDS = { name: 'text', hook: 'text', prompt: 'text' }
 const STYLE_FIELDS = { name: 'text', icon: 'text', summary: 'text', tone: 'text', sentences: 'text', opening: 'text', structure: 'text', logic: 'text', story: 'text', flow: 'text', words: 'list', avoid: 'list', samples: 'list' }
 const SKILL_FIELDS = { name: 'text', rule: 'text', source: 'text', status: 'text', confidence: 'num', evidence: 'text' }
 const METRIC_FIELDS = { itemId: 'id', platform: 'platform', date: 'date', views: 'num', likes: 'num', comments: 'num', shares: 'num', saves: 'num', dms: 'num', adds: 'num', trials: 'num' }
+// 私信线索：原文 + 分诊结果 + 台账七个字段
+const LEAD_FIELDS = { raw: 'text', type: 'text', category: 'text', draft: 'text', name: 'text', grade: 'text', school: 'text', painPoint: 'text', source: 'text', next: 'text', note: 'text' }
 const ACCOUNT_FIELDS = { platform: 'text', handle: 'text', url: 'url', followers: 'num', note: 'text', title: 'text', description: 'text', avatar: 'url', fetchedAt: 'date', fetchError: 'text' }
 
 let counter = 0
@@ -254,8 +256,28 @@ const handlers = {
     if (state.activeStyleId === op.id) state.activeStyleId = null
     return { text: tr('删除风格「{name}」', { name: style.name }) }
   },
-  update_positioning(state, op) {
-    const next = { ...(state.positioning ?? {}) }
+  add_lead(state, op, now) {
+    const fields = pick(LEAD_FIELDS, op)
+    const lead = {
+      id: newId('lead'), createdAt: now, raw: '', type: '家长', category: '无', draft: '',
+      name: '', grade: '', school: '', painPoint: '', source: '', next: '待加微', note: '', ...fields,
+    }
+    if (!lead.raw.trim() && !lead.name.trim()) throw new Error(tr('私信内容为空'))
+    lead.raw = lead.raw.trim()
+    state.leads = [...(state.leads ?? []), lead]
+    return { text: tr('记下一条私信线索'), target: lead.id, kind: 'lead' }
+  },
+  update_lead(state, op) {
+    const lead = findById(state.leads ?? [], op.id)
+    Object.assign(lead, pick(LEAD_FIELDS, op))
+    return { text: tr('更新线索「{name}」', { name: short(lead.name || lead.raw) }), target: lead.id, kind: 'lead' }
+  },
+  delete_lead(state, op) {
+    const lead = findById(state.leads ?? [], op.id)
+    state.leads = (state.leads ?? []).filter(row => row.id !== lead.id)
+    return { text: tr('删掉一条线索') }
+  },
+  update_positioning(state, op) {    const next = { ...(state.positioning ?? {}) }
     let changed = 0
     for (const key of POSITIONING_FIELDS) {
       if (typeof op[key] !== 'string') continue
