@@ -4,10 +4,13 @@
   "description": "Youtulh 工作台：DeepSeek Harness 插件。一句话记灵感，一键成稿：口播脚本、标题、视频封面、配图和黑白线稿分镜。",
   "type": "module",
   "main": "src/host.js",
+  "icon": "./icon.svg",
   "exports": {
     ".": "./src/host.js",
     "./client": "./dist/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
     "./package.json": "./package.json"
   },
   "dsh": {
@@ -31,6 +34,7 @@
     "dsh-plugin"
   ],
   "license": "MIT",
+  "author": "youtulh",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/youtulh/dsh-youtulh-workbench.git"
@@ -43,7 +47,7 @@
     "test": "node --test test/*.test.js",
     "assets": "python3 scripts/gen-assets.py",
     "index": "node scripts/build-index.mjs",
-    "prepack": "npm run build"
+    "prepack": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-plugin-market-index": "^0.2.1-rc.2",
@@ -53,6 +57,8 @@
     "src",
     "dist",
     "assets",
+    "locale/*.json",
+    "icon.svg",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
