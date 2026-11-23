@@ -1,5 +1,6 @@
 // 首次打开时的示例数据。全部带 sample 标记，界面上有一键清空入口。
 import { currentLang, normalizeLang } from './i18n.js'
+import { PAIN_POINTS } from './ops.js'
 import { PRESET_VERSION, migratePresets, presetText, seedPresets } from './style-presets.js'
 
 const A = name => `media-desk/assets/${name}`
@@ -113,6 +114,9 @@ export function migrateState(state) {
   if (state.activeStyleId === undefined) state.activeStyleId = null
   // 加入英文之前的数据都是中文示例
   if (state.sampleLang === undefined) state.sampleLang = 'zh'
+  // 定位卡和卡点清单是后加的，老状态补上空对象
+  if (!state.positioning || typeof state.positioning !== 'object') state.positioning = { only: '', notDo: '', voice: '', redline: '' }
+  if (!Array.isArray(state.painPoints) || !state.painPoints.length) state.painPoints = [...PAIN_POINTS]
   if (state.sampleLang === 'en') stashChineseLeftovers(state)
   return migratePresets(state)
 }

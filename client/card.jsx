@@ -1,9 +1,9 @@
 // 灵感卡片：散落、瀑布流复用同一张卡。
 import React from 'react'
-import { setDesk } from './desk.js'
+import { setDesk, dispatchOps } from './desk.js'
 import { t } from './i18n.js'
 import { Icon } from './ui.jsx'
-import { KIND_LABEL, STATUS_LABEL, displayItem, hash, relativeDay } from './util.js'
+import { KIND_LABEL, STAGE_LABEL, STATUS_LABEL, displayItem, hash, nextStage, relativeDay } from './util.js'
 
 export function Media({ item, autoPlay = false, controls = false, onFirstFrame }) {
   const ref = React.useRef(null)
@@ -76,6 +76,24 @@ export function Card({ item: raw, onOpen }) {
       ) : (
         <div className="md-card-caption"><h3>{item.title}</h3></div>
       )}
+
+      {item.painPoint || item.stage ? (
+        <div className="md-card-chips">
+          {item.painPoint ? <span className="md-chip" title={t('卡点')}>{item.painPoint}</span> : null}
+          {item.stage ? (
+            <button
+              type="button"
+              className={`md-chip is-stage stage-${item.stage}`}
+              title={t('点一下改拍摄进度')}
+              onClick={(event) => {
+                event.stopPropagation()
+                const next = nextStage(item.stage)
+                dispatchOps([{ op: 'update_item', id: raw.id, stage: next }], { label: t('拍摄进度改成「{stage}」', { stage: t(STAGE_LABEL[next]) }) })
+              }}
+            >{t(STAGE_LABEL[item.stage])}</button>
+          ) : null}
+        </div>
+      ) : null}
 
       <footer className="md-card-foot">
         <span className={`md-dot status-${item.status}`} title={t(STATUS_LABEL[item.status])} />

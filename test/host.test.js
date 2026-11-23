@@ -304,14 +304,43 @@ test('applyRevision 能改小红书标题、标签和说明文案', () => {
   assert.deepEqual(applyRevision(p, { xhsTitle: '新标题', tags: ['新标签'], caption: '新文案\n第二行' }).receipts, [])
 })
 
-test('发布包文本：标题、短标题、标签、说明文案和发布顺序都写在一张纸上', async () => {
-  const { publishPackage } = await import('../src/export.js')
+test('发布包文本：标题、短标题、标签、说明文案和发布顺序都写在一张纸上', async () => {  const { publishPackage } = await import('../src/export.js')
   const text = publishPackage({ title: '高一化学月考垮', tags: ['高一化学', '物质的量'], xhsTitle: '根子在物质的量', caption: '第一行\n\n想看看孩子卡在哪，私信「诊断」。' })
   assert.match(text, /^【发布包】高一化学月考垮/)
   assert.match(text, /#高一化学 #物质的量/)
   assert.match(text, /私信「诊断」/)
   assert.match(text, /抖音 → 视频号 → 小红书/)
   assert.match(publishPackage({ title: '只有标题' }), /（还没生成）/)
+})
+
+test('定位卡：只认四个字段，值没变就不写回，也不产出回执', () => {
+  const state = { items: [], skills: [], styles: [], positioning: {} }
+  const first = applyOps(state, [{ op: 'update_positioning', only: '北京、高一、化学', redline: '不承诺提分', junk: '不该进来' }])
+  assert.equal(first.receipts.length, 1)
+  assert.deepEqual(state.positioning, { only: '北京、高一、化学', redline: '不承诺提分' })
+  assert.deepEqual(applyOps(state, [{ op: 'update_positioning', only: '北京、高一、化学' }]).receipts, [])
+})
+
+test('条目能记卡点和拍摄进度，乱写的阶段被丢掉', () => {
+  const state = { items: [], skills: [], styles: [] }
+  applyOps(state, [{ op: 'add_item', title: '期中掉队的娃', painPoint: '物质的量', stage: 'todo' }])
+  const item = state.items[0]
+  assert.equal(item.painPoint, '物质的量')
+  assert.equal(item.stage, 'todo')
+  applyOps(state, [{ op: 'update_item', id: item.id, stage: '没这个阶段' }])
+  assert.equal(item.stage, 'todo')
+  applyOps(state, [{ op: 'update_item', id: item.id, stage: 'published' }])
+  assert.equal(item.stage, 'published')
+})
+
+test('定位卡和卡点会进成稿的策划案 prompt，成稿要守这四条', () => {
+  const state = { items: [], skills: [], styles: [], people: [], angles: [], positioning: { only: '北京、高一、化学', notDo: '高二高三、外地' }, painPoints: [] }
+  const item = { id: 'x', title: '期中 58 分还能补吗', tags: [], painPoint: '物质的量' }
+  const { system, user } = planPrompts(state, item, { imageCount: 1, shotCount: 2, voice: '' })
+  assert.match(system, /定位卡/)
+  assert.match(system, /北京、高一、化学/)
+  assert.match(system, /高二高三、外地/)
+  assert.match(user, /物质的量/)
 })
 
 async function producerFixture({ callText, generate, ready = true }) {

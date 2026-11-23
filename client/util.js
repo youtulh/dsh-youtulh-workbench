@@ -4,6 +4,13 @@ import { lang, t } from './i18n.js'
 // 这些表只放中文原文，显示时再用 t() 翻译
 export const STATUSES = ['idea', 'outline', 'draft', 'ready', 'published']
 export const STATUS_LABEL = { idea: '灵感', outline: '大纲', draft: '草稿', ready: '待发布', published: '已发布' }
+// 拍摄进度：待拍 → 已拍 → 已发，点一下卡片上的小标签就往下走一格
+export const STAGES = ['todo', 'shot', 'published']
+export const STAGE_LABEL = { todo: '待拍', shot: '已拍', published: '已发' }
+export function nextStage(stage) {
+  const at = STAGES.indexOf(stage)
+  return STAGES[(at + 1) % STAGES.length]
+}
 export const KIND_LABEL = { image: '图片', video: '视频', web: '网页', quote: '金句', note: '笔记' }
 export const PLATFORMS = ['公众号', '小红书', '抖音', 'B站', '视频号', 'TikTok', 'Instagram', 'YouTube', 'X']
 const OVERSEAS = new Set(['TikTok', 'Instagram', 'YouTube', 'X'])

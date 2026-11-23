@@ -99,6 +99,45 @@ function StyleCard({ style, active }) {
   )
 }
 
+/**
+ * 定位卡：只做 / 不做 / 说法 / 红线。
+ * 它管的是「写什么、不写什么」，跟风格卡（怎么写）是两件事，所以放在风格页最上面。
+ */
+function PositioningSection() {
+  const positioning = useDesk(s => s.state?.positioning) ?? {}
+  const painPoints = useDesk(s => s.state?.painPoints) ?? []
+  const rows = [
+    ['only', '只做', '北京、高一、化学、开学后掉队'],
+    ['notDo', '不做', '高二高三、外地、竞赛、只求押题'],
+    ['voice', '说法', '说家长的话：物质的量 → 孩子第一次月考垮的那一课'],
+    ['redline', '红线', '不承诺提分、不说包过、不报价格'],
+  ]
+  const commit = (key) => (value) => {
+    const next = value.trim()
+    if (next === (positioning[key] ?? '')) return
+    dispatchOps([{ op: 'update_positioning', [key]: next }], { label: t('更新定位卡'), silent: true })
+  }
+  return (
+    <section className="md-tile md-positioning" aria-label={t('定位卡')}>
+      <header className="md-tile-head">
+        <h2>{t('定位卡')}</h2>
+        <span className="md-tile-meta">{t('选题和成稿都得守这四条')}</span>
+      </header>
+      <div className="md-positioning-grid">
+        {rows.map(([key, label, hint]) => (
+          <label key={key} className="md-field md-positioning-field">
+            <span>{t(label)}</span>
+            <textarea rows={2} defaultValue={positioning[key] ?? ''} placeholder={t(hint)} onBlur={event => commit(key)(event.target.value)} />
+          </label>
+        ))}
+      </div>
+      {painPoints.length ? (
+        <p className="md-positioning-pains"><span>{t('卡点清单')}</span>{painPoints.map(point => <b key={point}>{point}</b>)}</p>
+      ) : null}
+    </section>
+  )
+}
+
 export function StyleView() {
   useLang()
   const styles = useDesk(s => s.state.styles ?? [])
@@ -141,6 +180,8 @@ export function StyleView() {
             </div>
           </div>
         </section>
+
+        <PositioningSection />
 
         {mine.length ? (
           <section className="md-style-section" aria-label={t('我的风格')}>

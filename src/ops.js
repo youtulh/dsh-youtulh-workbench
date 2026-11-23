@@ -5,17 +5,30 @@ import { draftFormat } from './style.js'
 
 export const STATUSES = ['idea', 'outline', 'draft', 'ready', 'published']
 export const STATUS_LABEL = { idea: '灵感', outline: '大纲', draft: '草稿', ready: '待发布', published: '已发布' }
+// 拍摄进度：选题库给助理看的三态，跟内容状态是两件事（一篇草稿可能已经拍了，也可能没拍）
+export const STAGES = ['todo', 'shot', 'published']
+export const STAGE_LABEL = { todo: '待拍', shot: '已拍', published: '已发' }
 export const KINDS = ['image', 'video', 'web', 'quote', 'note']
 export const PLATFORMS = ['公众号', '小红书', '抖音', 'B站', '视频号', 'TikTok', 'Instagram', 'YouTube', 'X']
+// 定位卡：选题和成稿都要被这四条管住，不是写文风的
+export const POSITIONING_FIELDS = ['only', 'notDo', 'voice', 'redline']
+// 卡点清单（附录 A），选题卡从这里挑；用户可以在界面上改
+export const PAIN_POINTS = ['物质的量', '氧化还原反应', '离子反应', '元素化合物', '计算题']
 
 /** 状态在当前语言下的名字。 */
 export function statusLabel(status) {
   return tr(STATUS_LABEL[status] ?? String(status))
 }
 
+/** 拍摄进度在当前语言下的名字。 */
+export function stageLabel(stage) {
+  return tr(STAGE_LABEL[stage] ?? String(stage))
+}
+
 const ITEM_FIELDS = {
   title: 'text', body: 'text', kind: 'kind', url: 'url', source: 'text', tags: 'list', status: 'status', angleId: 'id',
   personaIds: 'list', parentId: 'id', rel: 'text', scheduledAt: 'date', platform: 'platform', pinned: 'bool', media: 'media', pos: 'pos', score: 'num',
+  painPoint: 'text', stage: 'stage',
 }
 const PERSON_FIELDS = { name: 'text', role: 'text', note: 'text', traits: 'list', tone: 'num' }
 const ANGLE_FIELDS = { name: 'text', hook: 'text', prompt: 'text' }
@@ -45,6 +58,7 @@ function coerce(type, value) {
     case 'id': return value === null || typeof value === 'string' ? value : undefined
     case 'kind': return KINDS.includes(value) ? value : undefined
     case 'status': return STATUSES.includes(value) ? value : undefined
+    case 'stage': return STAGES.includes(value) ? value : undefined
     case 'platform': return value === null || PLATFORMS.includes(value) ? value : undefined
     case 'list': return Array.isArray(value) ? value.filter(v => typeof v === 'string').slice(0, 24) : undefined
     case 'bool': return typeof value === 'boolean' ? value : undefined
@@ -239,6 +253,20 @@ const handlers = {
     state.styles = state.styles.filter(row => row.id !== op.id)
     if (state.activeStyleId === op.id) state.activeStyleId = null
     return { text: tr('删除风格「{name}」', { name: style.name }) }
+  },
+  update_positioning(state, op) {
+    const next = { ...(state.positioning ?? {}) }
+    let changed = 0
+    for (const key of POSITIONING_FIELDS) {
+      if (typeof op[key] !== 'string') continue
+      const value = op[key].trim().slice(0, 400)
+      if (value === (next[key] ?? '')) continue
+      next[key] = value
+      changed += 1
+    }
+    if (!changed) return null
+    state.positioning = next
+    return { text: tr('更新了定位卡') }
   },
   set_style(state, op) {
     if (op.id === null) {
