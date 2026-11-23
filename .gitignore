@@ -3,3 +3,7 @@ dist/
 *.tgz
 .DS_Store
 index.json.tmp
+
+# 本地参考：从 profile 复制出来的编译版，不纳入版本管理
+_reference/
+pnpm-lock.yaml

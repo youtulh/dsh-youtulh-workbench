@@ -1,7 +1,7 @@
 // 版本提示：问 Host 有没有新版本，有就在顶栏和设置里显出来。
 import React from 'react'
 
-const NPM_URL = 'https://www.npmjs.com/package/dsh-media-desk'
+const NPM_URL = 'https://www.npmjs.com/package/dsh-youtulh-workbench'
 const CACHE_TTL_MS = 60 * 60 * 1000
 const RETRY_MS = 30 * 1000
 const RETRY_MAX = 5

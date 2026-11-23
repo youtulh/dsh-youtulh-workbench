@@ -89,7 +89,7 @@ test('#4 模型调用带上会话标识，供 opencode-go 这类按会话路由�
   await callModel(ctx, { system: 's', user: 'u' })
   await callModel(ctx, { system: 's', user: 'u' })
   await callModel(ctx, { system: 's', user: 'u', sessionId: 'custom' })
-  assert.match(PLUGIN_SESSION_ID, /^dsh-media-desk-[\da-f-]{36}$/)
+  assert.match(PLUGIN_SESSION_ID, /^dsh-youtulh-workbench-[\da-f-]{36}$/)
   assert.deepEqual(requests.map(row => row.sessionId), [PLUGIN_SESSION_ID, PLUGIN_SESSION_ID, 'custom'])
 })
 

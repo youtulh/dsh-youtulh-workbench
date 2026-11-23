@@ -1,4 +1,4 @@
-// dsh-media-desk host 半片：/media-desk/* 接口、文件服务和模型调用。
+// dsh-youtulh-workbench host 半片：/media-desk/* 接口、文件服务和模型调用。
 import { createReadStream } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { stat, writeFile } from 'node:fs/promises'
@@ -458,7 +458,7 @@ export function requestRejection(ctx, req) {
   return connection.requestRejection({ headers: req.headers })
 }
 
-export const name = 'dsh-media-desk'
+export const name = 'dsh-youtulh-workbench'
 
 export default {
   inject: ['webServer', 'connection'],
@@ -493,6 +493,6 @@ export default {
           json(res, err.status || 500, { error: err.message })
         }
       },
-    }), 'dsh-media-desk: /media-desk routes')
+    }), 'dsh-youtulh-workbench: /media-desk routes')
   },
 }

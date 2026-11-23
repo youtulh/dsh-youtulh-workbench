@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto'
  * 插件在会话之外调模型，自己带一个会话标识。有些网关（如 opencode-go）按会话路由，
  * 缺了 x-opencode-session 头会直接返回 400 MissingSessionID；DSH 会把 sessionId 映射成这类头。
  */
-export const PLUGIN_SESSION_ID = `dsh-media-desk-${randomUUID()}`
+export const PLUGIN_SESSION_ID = `dsh-youtulh-workbench-${randomUUID()}`
 
 /** 最近一次模型调用的结果。选了模型不等于能用，比如还没配密钥。 */
 export const modelStatus = { ok: null, error: null }
@@ -64,7 +64,7 @@ export async function callModel(ctx, { system, user, maxTokens = 4000, signal, o
     for await (const chunk of call.stream({
       ...call.config,
       system: currentLang() === 'en' ? `${system}\n${ENGLISH_DIRECTIVE}` : system,
-      messages: [{ role: 'user', content: [{ type: 'text', text: user }], source: { kind: 'dsh-media-desk' } }],
+      messages: [{ role: 'user', content: [{ type: 'text', text: user }], source: { kind: 'dsh-youtulh-workbench' } }],
       sessionId,
       signal,
     })) {
@@ -146,7 +146,7 @@ function productionBrief(production) {
 export function chatPrompts(state, message, { focusId, history = [], now = new Date() }) {
   const focused = focusId ? state.items.find(row => row.id === focusId) : null
   const production = focused?.production?.status === 'done' ? focused.production : null
-  const system = `你是 DeepSeek Harness「自媒体工作台」插件里的助手。用户用一句话管理选题、灵感、内容、排期、数据、风格和写作规则。判断用户想做什么，然后把它变成结构化操作。
+  const system = `你是 DeepSeek Harness「Youtulh 工作台」插件里的助手。用户用一句话管理选题、灵感、内容、排期、数据、风格和写作规则。判断用户想做什么，然后把它变成结构化操作。
 
 只输出一个 JSON 对象，不要输出别的内容：
 {"reply":"${byLang('给用户的简短中文回复，不超过 80 字', '给用户的简短英文回复，不超过 40 个英文单词')}","ops":[...],"actions":[{"type":"produce","id":"条目id"},{"type":"open","id":"条目id"},{"type":"nav","view":"home|content|schedule|insights|style"}]}

@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const VERSION_URLS = [
-  'https://registry.npmjs.org/dsh-media-desk/latest',
-  'https://registry.npmmirror.com/dsh-media-desk/latest',
+  'https://registry.npmjs.org/dsh-youtulh-workbench/latest',
+  'https://registry.npmmirror.com/dsh-youtulh-workbench/latest',
 ]
 const FETCH_TIMEOUT_MS = 8_000
 // 成功的结果放一小时，失败半分钟后可以再问；别让离线时的每次刷新都去撞墙

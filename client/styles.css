@@ -843,3 +843,25 @@ button.md-receipt:hover { transform: translateX(2px); }
 .md-version { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 14px 0 4px; color: var(--ink3); font-size: 12px; line-height: 18px; }
 .md-version a { color: var(--accent, #6b5cff); text-decoration: none; }
 .md-version a:hover { text-decoration: underline; }
+
+/* ===== Youtulh 工作台：自有配色 =====
+   墨绿主色 + 暖米底色。只覆盖变量和光斑，不动任何布局规则；
+   底色用 color-mix 叠在宿主背景上，所以暗色主题跟着变深而不是变成白底。 */
+.md-root {
+  --primary: #2f5d4e;
+  --primary-hover: #3a7360;
+  --accent: #3e7a66;
+  --bg: color-mix(in srgb, #f2e8d5 26%, var(--dsw-alias-bg-base));
+  --card: color-mix(in srgb, #fffdf6 55%, var(--dsw-alias-bg-layer-2));
+  --glass: color-mix(in srgb, var(--card) 72%, transparent);
+}
+.md-ambient i:nth-child(1) { background: radial-gradient(circle, color-mix(in srgb, #b7d2c0 48%, var(--bg)), transparent 68%); }
+.md-ambient i:nth-child(2) { background: radial-gradient(circle, color-mix(in srgb, #ecd9b6 44%, var(--bg)), transparent 68%); }
+.md-ambient i:nth-child(3) { background: radial-gradient(circle, color-mix(in srgb, #cfd8c2 40%, var(--bg)), transparent 68%); }
+body[data-ds-dark-theme] .md-root {
+  --primary: #4e9b80;
+  --primary-hover: #5cad91;
+  --accent: #6fbfa1;
+  --bg: color-mix(in srgb, #22453a 30%, var(--dsw-alias-bg-base));
+  --card: color-mix(in srgb, #2b3f37 45%, var(--dsw-alias-bg-layer-2));
+}

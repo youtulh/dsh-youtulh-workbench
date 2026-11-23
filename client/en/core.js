@@ -1,7 +1,7 @@
 // 英文词典（core）。key 是中文原文，value 是英文。
 export const CORE = {
   // 侧栏和顶栏
-  '自媒体工作台': 'Media Desk',
+  'Youtulh 工作台': 'Youtulh Workbench',
   '灵感、内容、排期、复盘、风格': 'Ideas, content, schedule, insights, styles',
   '工作台导航': 'Desk navigation',
   '灵感（导航）': 'Ideas',

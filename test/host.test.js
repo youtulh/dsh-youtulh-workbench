@@ -594,7 +594,7 @@ test('saveProduction 写出文章、脚本和素材，标题里的路径字符�
 })
 
 test('resolveExportDir 展开 ~，空值用默认位置', () => {
-  assert.match(resolveExportDir(''), /Documents\/自媒体工作台$/)
+  assert.match(resolveExportDir(''), /Documents\/Youtulh 工作台$/)
   assert.ok(!resolveExportDir('~/x').startsWith('~'))
   assert.equal(resolveExportDir('/tmp/x'), '/tmp/x')
 })

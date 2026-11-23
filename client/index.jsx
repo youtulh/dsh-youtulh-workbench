@@ -1,4 +1,4 @@
-// dsh-media-desk 浏览器半片：侧栏入口 + main 全局面板。
+// dsh-youtulh-workbench 浏览器半片：侧栏入口 + main 全局面板。
 import React from 'react'
 import { HomeView } from './canvas.jsx'
 import { ChatDock } from './chat.jsx'
@@ -215,13 +215,13 @@ export function apply(ctx) {
         name: 'sidebar.panellist',
         id: PANEL_ID,
         order: 5,
-        label: () => t('自媒体工作台'),
+        label: () => t('Youtulh 工作台'),
       }, PanelIcon))
     }
     mount()
     const off = subscribeLang(mount)
     return () => { off(); release?.() }
-  }, 'dsh-media-desk: sidebar entry')
+  }, 'dsh-youtulh-workbench: sidebar entry')
   mountBetterSidebar(ctx)
 }
 
@@ -235,19 +235,19 @@ function mountBetterSidebar(ctx) {
     if (typeof sidebar?.registerTab !== 'function') return
     inner.effect(() => sidebar.registerTab({
       id: `${PANEL_ID}:workbench`,
-      title: () => t('自媒体工作台'),
+      title: () => t('Youtulh 工作台'),
       description: () => t('灵感、内容、排期、复盘、风格'),
       icon: size => <PanelIcon size={size} />,
       order: 60,
       single: true,
       component: Desk,
-    }), 'dsh-media-desk: better-sidebar tab')
+    }), 'dsh-youtulh-workbench: better-sidebar tab')
   }
   try {
     // 服务晚于我们就绪、或者中途被卸掉再装回，子作用域都会跟着重来
     if (typeof ctx.inject === 'function') ctx.inject(['betterSidebar'], register)
     else register(ctx)
   } catch (error) {
-    console.warn('[dsh-media-desk] better-sidebar tab skipped:', error)
+    console.warn('[dsh-youtulh-workbench] better-sidebar tab skipped:', error)
   }
 }

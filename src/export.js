@@ -8,9 +8,9 @@ import { currentLang, tr } from './i18n.js'
 
 export function defaultExportDir() {
   // 已经有中文文件夹的老用户切到英文后继续用原来的文件夹
-  const zh = join(homedir(), 'Documents', '自媒体工作台')
+  const zh = join(homedir(), 'Documents', 'Youtulh 工作台')
   if (currentLang() !== 'en' || existsSync(zh)) return zh
-  return join(homedir(), 'Documents', 'Media Desk')
+  return join(homedir(), 'Documents', 'Youtulh Workbench')
 }
 
 export function resolveExportDir(value) {

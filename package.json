@@ -1,7 +1,7 @@
 {
-  "name": "dsh-media-desk",
-  "version": "2.7.2",
-  "description": "DeepSeek Harness 插件。一句话记灵感，一键成稿：口播脚本、标题、视频封面、配图和黑白线稿分镜。",
+  "name": "dsh-youtulh-workbench",
+  "version": "0.1.0",
+  "description": "Youtulh 工作台：DeepSeek Harness 插件。一句话记灵感，一键成稿：口播脚本、标题、视频封面、配图和黑白线稿分镜。",
   "type": "module",
   "main": "src/host.js",
   "exports": {
@@ -33,10 +33,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/woniuniuniu/dsh-media-desk.git"
+    "url": "git+https://github.com/youtulh/dsh-youtulh-workbench.git"
   },
-  "homepage": "https://bozhufarm.com/dsh/",
-  "bugs": "https://github.com/woniuniuniu/dsh-media-desk/issues",
+  "homepage": "https://github.com/youtulh/dsh-youtulh-workbench",
+  "bugs": "https://github.com/youtulh/dsh-youtulh-workbench/issues",
   "scripts": {
     "build": "node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
