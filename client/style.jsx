@@ -1,6 +1,6 @@
 // 风格：按博主类型分板块的预设，加上从自己账号提炼的专属风格。选哪张，就按哪张写。
 import React from 'react'
-import { dispatchOps, exportSkills, extractStyle, learnSkills, setDesk, useDesk } from './desk.js'
+import { dispatchOps, exportSkills, extractStyle, learnSkills, setDesk, useDesk, useMonidReady } from './desk.js'
 import { ConnectDialog } from './connect.jsx'
 import { lang, t, useLang } from './i18n.js'
 import { Dialog, Icon, IconButton } from './ui.jsx'
@@ -140,6 +140,7 @@ function PositioningSection() {
 
 export function StyleView() {
   useLang()
+  const monidReady = useMonidReady()
   const styles = useDesk(s => s.state.styles ?? [])
   const activeId = useDesk(s => s.state.activeStyleId)
   const skills = useDesk(s => s.state.skills)
@@ -171,13 +172,15 @@ export function StyleView() {
         <section className="md-tile md-i-hero md-style-hero">
           <div className="md-hero-copy">
             <h1 className="md-i-line">
-              {active ? <>{t('现在按')} <span className="md-inline-emoji" aria-hidden="true">{styleIcon(active)}</span> <b>{active.name}</b> {t('的风格写。')}</> : <>{t('选一种预设直接开写，')}<br />{t('或者抓自己的账号，提炼你的风格。')}</>}
+              {active ? <>{t('现在按')} <span className="md-inline-emoji" aria-hidden="true">{styleIcon(active)}</span> <b>{active.name}</b> {t('的风格写。')}</> : <>{t('选一种预设直接开写，')}<br />{t('或者贴几篇你写过的稿子，提炼你的风格。')}</>}
             </h1>
             <div className="md-hero-actions">
-              <button type="button" className="md-pill is-primary" onClick={() => setConnecting(true)}><Icon name="user" size={14} />{t('抓我的账号')}</button>
-              <button type="button" className="md-pill" onClick={() => setAdding('text')}><Icon name="pen" size={14} />{t('贴内容')}</button>
+              <button type="button" className="md-pill is-primary" onClick={() => setAdding('text')}><Icon name="pen" size={14} />{t('贴内容')}</button>
               <button type="button" className="md-pill" onClick={() => setAdding('url')}><Icon name="link" size={14} />{t('贴链接')}</button>
+              {/* 装好 Monid 才露出抓账号；没装的人不该看到一条走不通的路 */}
+              {monidReady ? <button type="button" className="md-pill" onClick={() => setConnecting(true)}><Icon name="user" size={14} />{t('抓我的账号')}</button> : null}
             </div>
+            {monidReady ? null : <button type="button" className="md-inline-link md-advanced-link" onClick={() => setConnecting(true)}>{t('进阶：装了 Monid 可以直接抓账号，一般不用')}</button>}
           </div>
         </section>
 

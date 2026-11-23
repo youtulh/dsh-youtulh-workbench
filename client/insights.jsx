@@ -1,6 +1,6 @@
 // 数据复盘。
 import React from 'react'
-import { dispatchOps, fetchInsights, learnSkills, openItem, setDesk, toast, useDesk } from './desk.js'
+import { dispatchOps, fetchInsights, learnSkills, openItem, setDesk, toast, useDesk, useMonidReady } from './desk.js'
 import { ConnectDialog } from './connect.jsx'
 import { EN } from './en/index.js'
 import { lang, plural, t, useLang } from './i18n.js'
@@ -156,6 +156,7 @@ function Metric({ label, value, unit, wide }) {
 
 export function InsightsView() {
   useLang()
+  const monidReady = useMonidReady()
   const items = useDesk(s => s.state.items)
   const metrics = useDesk(s => s.state.metrics)
   const skills = useDesk(s => s.state.skills)
@@ -182,9 +183,10 @@ export function InsightsView() {
   const heroPic = bestItem && posterOf(displayItem(bestItem))
   const actions = (
     <div className="md-hero-actions">
-      <button type="button" className="md-pill is-primary" onClick={() => setConnecting(true)}><Icon name="user" size={14} />{t('导入账号数据')}</button>
-      <button type="button" className="md-pill" onClick={() => addMetric(items)}><Icon name="plus" size={14} />{t('录入数据')}</button>
+      <button type="button" className="md-pill is-primary" onClick={() => addMetric(items)}><Icon name="plus" size={14} />{t('录入数据')}</button>
       <button type="button" className="md-pill" onClick={importCsv}><Icon name="upload" size={14} />{t('粘贴 CSV')}</button>
+      {/* 账号自动导入要有 Monid，没装的人不该看到一条走不通的路 */}
+      {monidReady ? <button type="button" className="md-pill" onClick={() => setConnecting(true)}><Icon name="user" size={14} />{t('导入账号数据')}</button> : null}
     </div>
   )
   if (!metrics.length) {

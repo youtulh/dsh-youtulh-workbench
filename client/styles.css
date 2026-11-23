@@ -895,6 +895,9 @@ body[data-ds-dark-theme] .md-root {
 .md-chip.is-stage.stage-published { color: var(--ink3); background: var(--hover); }
 @media (max-width: 720px) { .md-positioning-grid { grid-template-columns: minmax(0, 1fr); } }
 
+/* 走不通的进阶入口：存在，但不打扰 */
+.md-advanced-link { display: inline-block; margin-top: 10px; color: var(--ink3); font-size: 12px; line-height: 18px; }
+
 /* ===== 回私信分诊台 ===== */
 .md-dm { display: grid; gap: 10px; width: min(1080px, 100%); margin: 0 auto; padding: 18px clamp(14px, 3vw, 36px) 40px; }
 .md-dm .md-tile { padding: 16px 18px; }

@@ -319,6 +319,19 @@ export async function monidStatus() {
   }
 }
 
+let monidReadyCache = null
+/** Monid 是不是真的能用（装了、而且配了密钥）。只问一次，之后用缓存。 */
+export function useMonidReady() {
+  const [ready, setReady] = React.useState(Boolean(monidReadyCache))
+  React.useEffect(() => {
+    if (monidReadyCache !== null) return
+    monidStatus()
+      .then(status => { monidReadyCache = status?.state === 'ready'; setReady(monidReadyCache) })
+      .catch(() => { monidReadyCache = false })
+  }, [])
+  return ready
+}
+
 export async function importAccount(payload) {
   try {
     const data = await request('monid/import', payload)
