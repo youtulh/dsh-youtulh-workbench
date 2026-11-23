@@ -19,7 +19,7 @@ function itemTotals(state) {
   const totals = new Map()
   for (const metric of state.metrics) {
     if (!metric.itemId) continue
-    const entry = totals.get(metric.itemId) ?? { views: 0, likes: 0, comments: 0, shares: 0, saves: 0 }
+    const entry = totals.get(metric.itemId) ?? { views: 0, likes: 0, comments: 0, shares: 0, saves: 0, dms: 0, adds: 0, trials: 0 }
     for (const key of Object.keys(entry)) entry[key] += metric[key] || 0
     totals.set(metric.itemId, entry)
   }
@@ -160,10 +160,14 @@ export function computeInsights(state) {
   // 互动率只算读得到播放量的内容，否则分子分母对不上
   const withViews = metrics.filter(metric => metric.views > 0)
   const accounts = state.accounts.filter(account => (onlyReal ? !account.sample : true))
+  // 销售池的三个卡口：私信 → 加微 → 约成试听。platform 给不了，只有人知道
+  const funnel = { dms: sum(metrics, 'dms'), adds: sum(metrics, 'adds'), trials: sum(metrics, 'trials') }
+  // 「哪条视频真带人」：先看加微和约试听，再看私信，最后才看播放
+  const byLeads = [...top].sort((a, b) => (b.adds + b.trials) - (a.adds + a.trials) || b.dms - a.dms || b.views - a.views)
   return {
     views, engaged, engagementRate: views ? withViews.reduce((total, metric) => total + engagement(metric), 0) / views : 0,
     published: state.items.filter(item => item.status === 'published' && (onlyReal ? !item.sample : true)).length,
-    followers: sum(accounts, 'followers'), daily: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)), platforms: [...platforms.values()].sort((a, b) => (b.views - a.views) || (b.engaged - a.engaged)), top,
+    followers: sum(accounts, 'followers'), daily: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)), platforms: [...platforms.values()].sort((a, b) => (b.views - a.views) || (b.engaged - a.engaged)), top, byLeads, funnel,
     hasSample: metrics.some(metric => metric.sample),
     // 导入的数据记在发布那天，是累计数；和导入数据重复的手动数据不再算一遍
     imported: metrics.some(metric => metric.externalId), skipped: real.length - metrics.length,

@@ -97,10 +97,13 @@ function addMetric(items) {
         { name: 'likes', label: t('点赞'), type: 'number' },
         { name: 'comments', label: t('评论'), type: 'number' },
         { name: 'saves', label: t('收藏'), type: 'number' },
+        { name: 'dms', label: t('私信'), type: 'number' },
+        { name: 'adds', label: t('加微'), type: 'number' },
+        { name: 'trials', label: t('约试听'), type: 'number' },
       ],
       onSubmit: (v) => {
         const n = key => Number(v[key]) || 0
-        dispatchOps([{ op: 'add_metric', itemId: v.itemId || null, platform: v.platform, date: new Date(`${v.date}T12:00:00`).toISOString(), views: n('views'), likes: n('likes'), comments: n('comments'), saves: n('saves') }], { label: t('录入数据') })
+        dispatchOps([{ op: 'add_metric', itemId: v.itemId || null, platform: v.platform, date: new Date(`${v.date}T12:00:00`).toISOString(), views: n('views'), likes: n('likes'), comments: n('comments'), saves: n('saves'), dms: n('dms'), adds: n('adds'), trials: n('trials') }], { label: t('录入数据') })
       },
     },
   })
@@ -125,8 +128,8 @@ export function parseCsv(text) {
       errors.push(index + 1)
       return
     }
-    const [views, likes, comments, shares, saves] = cols.slice(2).map(v => Number(v) || 0)
-    ops.push({ op: 'add_metric', platform, date: date.toISOString(), views: views ?? 0, likes: likes ?? 0, comments: comments ?? 0, shares: shares ?? 0, saves: saves ?? 0 })
+    const [views, likes, comments, shares, saves, dms, adds, trials] = cols.slice(2).map(v => Number(v) || 0)
+    ops.push({ op: 'add_metric', platform, date: date.toISOString(), views: views ?? 0, likes: likes ?? 0, comments: comments ?? 0, shares: shares ?? 0, saves: saves ?? 0, dms: dms ?? 0, adds: adds ?? 0, trials: trials ?? 0 })
   })
   return { ops, errors }
 }
@@ -265,6 +268,31 @@ export function InsightsView() {
             })}
           </ol>
         </section>
+
+        {data.funnel && (data.funnel.dms || data.funnel.adds || data.funnel.trials) ? (
+          <section className="md-tile md-i-leads">
+            <header className="md-tile-head">
+              <h2>{t('哪条真带人')}</h2>
+              <span className="md-tile-meta">{t('私信 {dms} · 加微 {adds} · 约试听 {trials}', { dms: compact(data.funnel.dms), adds: compact(data.funnel.adds), trials: compact(data.funnel.trials) })}</span>
+            </header>
+            <div className="md-i-table">
+              <table className="md-table is-plain">
+                <thead><tr><th>{t('内容')}</th><th className="is-num">{t('播放')}</th><th className="is-num">{t('私信')}</th><th className="is-num">{t('加微')}</th><th className="is-num">{t('约试听')}</th></tr></thead>
+                <tbody>
+                  {data.byLeads.slice(0, 8).map(row => (
+                    <tr key={row.id}>
+                      <td><button type="button" className="md-inline-link" onClick={() => openItem(row.id)}>{row.title}</button></td>
+                      <td className="is-num">{row.views ? row.views.toLocaleString() : '—'}</td>
+                      <td className="is-num">{row.dms || '—'}</td>
+                      <td className="is-num">{row.adds || '—'}</td>
+                      <td className="is-num">{row.trials || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
 
         <section className="md-tile md-i-advice">
           <header className="md-tile-head">

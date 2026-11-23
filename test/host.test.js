@@ -313,6 +313,20 @@ test('发布包文本：标题、短标题、标签、说明文案和发布顺�
   assert.match(publishPackage({ title: '只有标题' }), /（还没生成）/)
 })
 
+test('复盘漏斗：私信、加微、约试听按内容汇总，按带人多少排另一张榜', () => {
+  const state = { items: [{ id: 'a', title: '带人的', platform: '抖音' }, { id: 'b', title: '播放高的', platform: '抖音' }], metrics: [], accounts: [], styles: [], skills: [] }
+  applyOps(state, [
+    { op: 'add_metric', itemId: 'a', platform: '抖音', date: '2026-10-30T12:00:00+08:00', views: 5000, dms: 6, adds: 4, trials: 1 },
+    { op: 'add_metric', itemId: 'b', platform: '抖音', date: '2026-10-30T12:00:00+08:00', views: 90000, dms: 1, adds: 0, trials: 0 },
+  ])
+  const data = computeInsights(state)
+  assert.deepEqual(data.funnel, { dms: 7, adds: 4, trials: 1 })
+  // 播放榜还是按播放排，带人榜按加微+试听排
+  assert.equal(data.top[0].id, 'b')
+  assert.equal(data.byLeads[0].id, 'a')
+  assert.equal(data.byLeads[0].adds, 4)
+})
+
 test('定位卡：只认四个字段，值没变就不写回，也不产出回执', () => {
   const state = { items: [], skills: [], styles: [], positioning: {} }
   const first = applyOps(state, [{ op: 'update_positioning', only: '北京、高一、化学', redline: '不承诺提分', junk: '不该进来' }])

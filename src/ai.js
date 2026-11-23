@@ -125,7 +125,7 @@ const OP_DOC = `可用 ops（每个都是对象，op 字段必填，其余按需
 - set_style {id}：切换写作风格，id 从 styles 里选，id 为 null 表示不用特定风格
 - update_positioning {only?, notDo?, voice?, redline?}：改定位卡（只做/不做/语言/红线），它是所有选题和成稿的硬约束
 - set_format {format: script|article}：之后成稿写成口播脚本（一句一行）还是文章（自然段）
-- add_metric {itemId?, platform, date, views, likes, comments, shares, saves}
+- add_metric {itemId?, platform, date, views, likes, comments, shares, saves, dms, adds, trials}：dms 是私信条数，adds 是加上的微信数，trials 是约成的试听数
 platform 只能取：公众号、小红书、抖音、B站、视频号、X。`
 
 const REVISE_DOC = () => `
