@@ -886,7 +886,12 @@ async function route(ctx, store, desk, req, res) {
       const { cols, rows } = parseLeadTable(body.raw)
       if (!cols.includes('name')) return json(res, 400, { error: tr('第一行要有「姓名」列') })
       let imported = 0
+      let skipped = 0
+      const seen = new Set(readLeads(root).map(lead => `${lead.name ?? ''}\u0000${lead.raw ?? ''}`))
       for (const row of rows) {
+        const key = `${row.name ?? ''}\u0000${row.raw ?? ''}`
+        if (seen.has(key)) { skipped += 1; continue }
+        seen.add(key)
         const createdAt = row.date ? `${row.date}T12:00:00` : undefined
         appendLead(root, {
           ...row,
@@ -895,7 +900,7 @@ async function route(ctx, store, desk, req, res) {
         })
         imported += 1
       }
-      return json(res, 200, { leads: readLeads(root), imported })
+      return json(res, 200, { leads: readLeads(root), imported, skipped })
     }
     case 'students/import': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

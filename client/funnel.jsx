@@ -75,7 +75,12 @@ export function FunnelPanel({ students = [], onChanged }) {
       }],
       onSubmit: values => {
         importLeads(values.raw)
-          .then(data => { setLeads(data.leads ?? []); toast(t('导入了 {n} 条线索', { n: data.imported })) })
+          .then(data => {
+            setLeads(data.leads ?? [])
+            toast(data.skipped
+              ? t('导入了 {n} 条线索，跳过 {m} 条重复', { n: data.imported, m: data.skipped })
+              : t('导入了 {n} 条线索', { n: data.imported }))
+          })
           .catch(err => toast(err.message, { error: true }))
       },
     },
