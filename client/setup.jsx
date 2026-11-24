@@ -313,6 +313,9 @@ export function SetupView() {
             {t('线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons} · 反馈 {feedback} · 备份 {backups}', stats)}
           </p>
         ) : null}
+        {stats?.legacy?.length ? (
+          <p className="md-muted md-legacy-note">{t('旧版表头：{tables}。读取已经兼容，下次保存会自动升级成新列。', { tables: stats.legacy.join('、') })}</p>
+        ) : null}
         <div className="md-setup-samples-foot">
           <span className="md-muted">{backup ? t('备份好了：{dir}', { dir: backup }) : t('建议每周点一次')}</span>
           <span className="md-grow" />

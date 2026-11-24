@@ -13,7 +13,7 @@ import { localSuggestions, normalizeSuggestions, suggestPrompts } from './sugges
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
-import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -284,7 +284,17 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'workspace/stats') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      return json(res, 200, {
+      // 老版本表头先认出来：读取已经兼容，第一次保存会自动升级，这里只是提前告诉用户
+      const headerOf = file => {
+        try { return readTable(root, file).header } catch { return [] }
+      }
+      const has = (file, name) => headerOf(file).includes(name)
+      const legacy = []
+      if (has(LAYOUT.classes, '期次') && !has(LAYOUT.classes, '班名')) legacy.push(tr('班课'))
+      if (headerOf(LAYOUT.students).length && !has(LAYOUT.students, '微信')) legacy.push(tr('学生档案'))
+      if (headerOf(LAYOUT.lessons).length && !has(LAYOUT.lessons, '课次')) legacy.push(tr('课次记录'))
+      if (headerOf(LAYOUT.leads).length && !has(LAYOUT.leads, '阶段')) legacy.push(tr('线索表'))
+      return json(res, 200, { legacy,
         leads: readLeads(root).length,
         students: readStudents(root).length,
         classes: readClasses(root).length,
