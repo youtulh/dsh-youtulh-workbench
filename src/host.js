@@ -1,5 +1,5 @@
 // dsh-youtulh-workbench host 半片：/media-desk/* 接口、文件服务和模型调用。
-import { createReadStream, existsSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve as path_resolve } from 'node:path'
@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
-import { styleMarkdown } from './style-guide.js'
+import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { creativeText, localScript, localTopics, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt } from './topics.js'
@@ -134,9 +134,12 @@ async function route(ctx, store, desk, req, res) {
         // 老用户升级上来时 md 可能还不存在：先补写一份，agent 读到才有依据
         if (!existsSync(join(root, LAYOUT.settings))) writeSettingsMarkdown(root, state.positioning ?? {}, state.painPoints ?? [])
         // 说话样本也落成文件：用户想换成自己的口气，直接改这个 md
-        if (!existsSync(join(root, '说话样本.md'))) {
+        const styleFile = join(root, '说话样本.md')
+        const styleText = existsSync(styleFile) ? readFileSync(styleFile, 'utf8') : ''
+        if (!styleText || !styleText.startsWith(`<!-- ${STYLE_VERSION} -->`)) {
+          // 旧版本生成的样本自动升级；用户自己改过（没有版本标记）的不动
           ensureLayout(root)
-          writeFile(join(root, '说话样本.md'), styleMarkdown()).catch(() => {})
+          writeFile(styleFile, styleMarkdown()).catch(() => {})
         }
         const fromFile = readSettingsMarkdown(root)
         if (fromFile) {

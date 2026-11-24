@@ -37,10 +37,15 @@ test('本地口播按五段结构：场景提问 → 破旧认知 → 说法 →
   const one = localScript(state, '偏科的孩子，多半卡在物质的量')
   const lines = one.script.split('\n')
   assert.match(lines[0], /有没有这样的情况/)
+  // 结论句要早，共情在方法前
+  assert.match(one.script, /先说结论/)
+  assert.match(one.script, /我特别理解你现在的心情/)
   assert.match(one.script, /其实都不是/)
-  assert.match(one.script, /第一，/)
-  assert.match(one.script, /第二，/)
-  assert.match(one.script, /第三，/)
+  // 只给一半 how，留钩子
+  assert.match(one.script, /第一步，/)
+  assert.match(one.script, /第二步，/)
+  assert.doesNotMatch(one.script, /第三步，/)
+  assert.match(one.script, /后面还有几步/)
   assert.match(one.script, /私信我「诊断」/)
   // 不能有书面连接词和黑话
   assert.doesNotMatch(one.script, /首先|其次|综上所述|赋能|闭环|底层逻辑/)
@@ -60,4 +65,40 @@ test('经验块会拼进选题和口播 prompt', async () => {
   const lessons = '\n经验（照这个来）：\n- 「偏科的孩子卡在哪」私信 6'
   assert.match(scriptPrompt(state, '偏科', lessons).system, /偏科的孩子卡在哪/)
   assert.match(topicsPrompt(state, 30, lessons).system, /偏科的孩子卡在哪/)
+})
+
+test('课程要求：选题按 3:3:3:1、口播带八条红线、同城要带地名', async () => {
+  const { cityRule, localTopics, scriptPrompt, topicsPrompt } = await import('../src/topics.js')
+  const { RED_LINES, SCRIPT_STRUCTURE } = await import('../src/style-guide.js')
+
+  // 红线八条，够覆盖课程 IP6
+  assert.equal(RED_LINES.length, 8)
+  assert.ok(RED_LINES.some(row => row.includes('分数承诺')))
+  assert.ok(RED_LINES.some(row => row.includes('极限词')))
+
+  // 六段结构：共情在方法前、只给一半 how
+  assert.match(SCRIPT_STRUCTURE, /接住情绪/)
+  assert.match(SCRIPT_STRUCTURE, /占一半以上/)
+  assert.match(SCRIPT_STRUCTURE, /钩子/)
+
+  // prompt 里带上红线
+  const { system } = scriptPrompt(state, '偏科')
+  assert.match(system, /平台红线/)
+  assert.match(system, /提高 20 分/)
+
+  // 选题分四类，且带配比说明
+  const topics = topicsPrompt(state, 30).system
+  assert.match(topics, /3:3:3:1/)
+  assert.match(topics, /家庭教育/)
+  assert.match(topics, /考试和考情/)
+
+  // 同城：北京要带地名；线上不要求
+  assert.match(cityRule({ positioning: { city: '北京' } }), /北京/)
+  assert.match(cityRule({ positioning: { city: '线上' } }), /不用刻意带地名/)
+
+  // 本地选题也能分出三类以上
+  const list = localTopics(state, 30)
+  assert.equal(list.length, 30)
+  assert.ok(list.some(row => row.includes('写作业') || row.includes('手机')))
+  assert.ok(list.some(row => row.includes('期中') || row.includes('一模') || row.includes('志愿')))
 })
