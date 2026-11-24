@@ -321,7 +321,13 @@ export function SetupView() {
               upgradeWorkspace()
                 .then(data => {
                   fetchWorkspaceStats().then(setStats).catch(() => {})
-                  toast(data.upgraded?.length ? t('升级好了：{tables}', { tables: data.upgraded.join('、') }) : t('没有需要升级的表'))
+                  fetchBackups().then(next => setBackups(next.backups ?? [])).catch(() => {})
+                  if (data.sameCounts === false) {
+                    toast(t('升级后条数对不上，先别继续操作；已自动备份，请联系我排查'), { error: true })
+                    return
+                  }
+                  const base = data.upgraded?.length ? t('升级好了：{tables}', { tables: data.upgraded.join('、') }) : t('没有需要升级的表')
+                  toast(data.backupDir ? t('{base} · 已自动备份一份', { base }) : base)
                 })
                 .catch(err => toast(err.message, { error: true }))
             }}>{t('现在升级')}</button>

@@ -275,6 +275,18 @@ export function studentRecords(name, className, rows = []) {
 
 
 
+/** 哪些表还是旧版表头（只读，不改文件）。 */
+export function legacyTables(root) {
+  const has = (file, name) => readTable(root, file).header.includes(name)
+  const header = file => readTable(root, file).header
+  const list = []
+  if (header(LAYOUT.classes).length && !has(LAYOUT.classes, '班名') && has(LAYOUT.classes, '期次')) list.push('班课')
+  if (header(LAYOUT.students).length && !has(LAYOUT.students, '微信')) list.push('学生档案')
+  if (header(LAYOUT.lessons).length && !has(LAYOUT.lessons, '课次')) list.push('课次记录')
+  if (header(LAYOUT.leads).length && !has(LAYOUT.leads, '阶段')) list.push('线索表')
+  return list
+}
+
 /** 一次性把老表头升级成当前列（用户点按钮才执行）。返回升级了哪几张表。 */
 export function upgradeTables(root) {
   const upgraded = []

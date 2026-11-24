@@ -673,4 +673,6 @@ export const PAGES = {
   '现在把这几张表升级成新列？会按当前字段重写；你自己在表格里加的额外列不会保留。': 'Upgrade these tables now? They will be rewritten with current fields; extra columns you added by hand will not be kept.',
   '升级好了：{tables}': 'Upgraded: {tables}',
   没有需要升级的表: 'Nothing to upgrade',
+  '{base} · 已自动备份一份': '{base} · backed up automatically',
+  '升级后条数对不上，先别继续操作；已自动备份，请联系我排查': 'Row counts changed after upgrading. Stop here; a backup exists — contact me to check.',
 }

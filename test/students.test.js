@@ -7,6 +7,7 @@ import {
   groupByLayer, parseLayers, progressOf, readClasses, readLessons, readStudents,
   removeClass, removeStudent, saveClass, saveLessonRows, saveStudent,
   upgradeTables,
+  legacyTables,
 } from '../src/students.js'
 import { appendLead, readLeads, stageOfLead, updateLeadRow } from '../src/workspace.js'
 
@@ -284,6 +285,20 @@ test('一键升级老表头：期次→班名、补微信、补课次，数据�
     assert.equal(readClasses(root)[0].name, '高一补漏一期')
     assert.equal(readStudents(root)[0].school, '某中学')
     assert.equal(readLessons(root, '高一补漏一期')[0].no, 1)
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
+
+
+test('老表头检测：能列出班课/学生/课次/线索', async () => {
+  const root = await temp()
+  try {
+    await writeFile(join(root, '班课.csv'), '\uFEFF"期次","上课时间"\n"班","周日"\n')
+    await writeFile(join(root, '学生档案.csv'), '\uFEFF"姓名","年级"\n"王","高一"\n')
+    const legacy = legacyTables(root)
+    assert.ok(legacy.includes('班课'))
+    assert.ok(legacy.includes('学生档案'))
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
