@@ -23,6 +23,14 @@ const FILTERS = [
 
 const EMPTY_FIELDS = { name: '', grade: '', school: '', painPoint: '', source: '' }
 
+// 新用户不知道粘什么的时候，点一条示例先看效果（随手能改）
+const SCENARIOS = [
+  { label: '问价格', platform: '老师，高一物理一对一怎么收费？', wechat: '老师，一节课多少钱？' },
+  { label: '能不能提分', platform: '孩子高一物理才考 58 分，还能补上来吗？', wechat: '孩子高二物理四十多分，还来得及吗？' },
+  { label: '怎么补', platform: '老师，物质的量这一块完全听不懂，该怎么补？', wechat: '我们报过班，成绩还是不动，您看该怎么弄？' },
+  { label: '时间怎么排', platform: '周末能上课吗？我们平时没什么时间。', wechat: '周末能排课吗？孩子平时作业多。' },
+]
+
 // 粘了一半的消息和建议不要丢：切页面记得，刷新页面也记得
 const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
@@ -317,6 +325,12 @@ export function DmView() {
               : t('老师你好，我孩子高一，化学期中才 58 分，还能补上来吗？')}
           />
         </label>
+        <div className="md-dm-scenarios">
+          <span>{t('不知道粘什么？点一条示例：')}</span>
+          {SCENARIOS.map(item => (
+            <button type="button" key={item.label} className="md-chip" onClick={() => setRaw(channel === '微信' ? item.wechat : item.platform)}>{t(item.label)}</button>
+          ))}
+        </div>
         <div className="md-dm-actions">
           <span className="md-muted">{t('点「判断一下」就在这页出结果，不用跳到对话。')}</span>
           <span className="md-grow" />

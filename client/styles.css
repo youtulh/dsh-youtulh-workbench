@@ -1816,3 +1816,8 @@ body[data-ds-dark-theme] .md-root {
 .md-funnel-stat:disabled { cursor: default; opacity: .7; }
 .md-funnel-stat.is-due dd { color: var(--accent); }
 .md-funnel-stat:hover:not(:disabled) dt { color: var(--ink); }
+
+/* 聊天台：示例场景 */
+.md-dm-scenarios { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--ink3); font-size: 12px; }
+.md-dm-scenarios .md-chip { cursor: pointer; }
+.md-dm-scenarios .md-chip:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
