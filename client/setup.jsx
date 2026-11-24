@@ -40,11 +40,15 @@ export function SetupView() {
   const [banText, setBanText] = React.useState('')
   const [wordsBusy, setWordsBusy] = React.useState(false)
   const [activeSection, setActiveSection] = React.useState(SECTIONS[0][0])
-  const [caseCount, setCaseCount] = React.useState(null)
+  const [caseInfo, setCaseInfo] = React.useState(null)
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
-    fetchChatRecords().then(data => setCaseCount((data.cases ?? []).length)).catch(() => {})
+    fetchChatRecords().then(data => {
+      const cases = data.cases ?? []
+      const latest = cases[cases.length - 1]
+      setCaseInfo({ count: cases.length, latest })
+    }).catch(() => {})
     fetchPlatformWords().then(data => {
       setAllowText((data.allow ?? []).join('\n'))
       setBanText((data.ban ?? []).join('\n'))
@@ -273,7 +277,10 @@ export function SetupView() {
         <h2><span>7</span>{t('案例库')}</h2>
         <p className="md-setup-hint">{t('你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去回私信页管理。')}</p>
         <div className="md-setup-samples-foot">
-          <span className="md-muted">{caseCount === null ? t('读取中…') : t('现在有 {n} 条案例', { n: caseCount })}</span>
+          <span className="md-muted">
+            {caseInfo === null ? t('读取中…') : t('现在有 {n} 条案例', { n: caseInfo.count })}
+            {caseInfo?.latest ? t(' · 最近：{scene}（{result}）', { scene: caseInfo.latest.scene || t('没写场景'), result: caseInfo.latest.result || t('未定') }) : ''}
+          </span>
           <span className="md-grow" />
           <button type="button" className="md-pill is-small" onClick={() => setDesk({ view: 'dm', focusId: null, dmCases: true })}>{t('去管理案例')}</button>
         </div>

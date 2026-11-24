@@ -1,7 +1,7 @@
 // 看数据 = 内容库：每一条口播的真实结果（播放/涨粉/私信），自动打分、自动标爆款。
 // 插件里做的稿子、以前发过的视频（手动补录 / 从后台导入），都记在 内容库.csv 这一张表里。
 import React from 'react'
-import { createContent, fetchContent, fetchWorkspace, importData, removeContent, revealDir, toast, updateContentRow, useDesk } from './desk.js'
+import { createContent, fetchContent, fetchWorkspace, importData, removeContent, revealDir, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS } from './util.js'
@@ -191,6 +191,7 @@ export function DataView() {
       {rows?.length === 0 ? (
         <div className="md-works-empty">
           <p>{t('内容库还是空的。先去「做内容」生成几条口播，发出去以后再回来填结果；以前发过的视频也能用上面的「补录一条」。')}</p>
+          <button type="button" className="md-pill is-primary" onClick={() => setDesk({ view: 'content', focusId: null })}>{t('去做第一条口播')}</button>
         </div>
       ) : null}
 
