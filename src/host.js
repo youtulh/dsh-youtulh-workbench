@@ -2,7 +2,7 @@
 import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { readFile, stat, writeFile } from 'node:fs/promises'
-import { dirname, extname, join, resolve as path_resolve } from 'node:path'
+import { basename, dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, savePiece } from './export.js'
@@ -471,6 +471,28 @@ async function route(ctx, store, desk, req, res) {
       rescore(root)
       writeLessonMarkdown(root)
       return json(res, 200, { dir: saved.dir, row })
+    }
+    case 'content/revise': {
+      // 采用之后又点了「改一下」：目录不变，覆盖 Word / Markdown，内容库跟着更新
+      const rawDir = String(body.dir ?? '').trim()
+      const script = String(body.script ?? '')
+      if (!rawDir || !script.trim()) return json(res, 400, { error: tr('没有可保存的稿子') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const dir = path_resolve(rawDir)
+      if (!dir.startsWith(root) || !existsSync(dir)) return json(res, 404, { error: tr('找不到这条稿子，重新采用一次') })
+      const title = String(body.title ?? '').trim() || basename(dir)
+      const tags = Array.isArray(body.tags) ? body.tags : []
+      const text = `【标题】${title}\n\n【口播文案】\n${script}\n\n【标签】${tags.map(tag => `#${tag}`).join(' ')}`
+      const saved = await savePiece({ dir: join(root, LAYOUT.content), title: basename(dir), text, formats: ['md', 'docx'] })
+      updateContent(root, saved.dir, {
+        '标题': title,
+        '选题': String(body.topic ?? ''),
+        '标签': tags.map(tag => `#${tag}`).join(' '),
+        '备注': '采用后改过一版',
+      })
+      rescore(root)
+      writeLessonMarkdown(root)
+      return json(res, 200, { dir: saved.dir })
     }
     case 'output/save': {
       // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开

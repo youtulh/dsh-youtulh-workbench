@@ -34,7 +34,7 @@ export function CreateView() {
   const create = useDesk(s => s.create)
   const modelOk = useDesk(s => s.modelOk)
   const modelError = useDesk(s => s.modelError)
-  const { topics, angles, picked, groups, adopted, batch, lessons, source, examples, brief, notes } = create
+  const { topics, angles, picked, groups, adopted, dirs, batch, lessons, source, examples, brief, notes } = create
   const briefText = String(brief ?? '').trim()
   const [busy, setBusy] = React.useState('')
   const [editKey, setEditKey] = React.useState('')
@@ -144,7 +144,7 @@ export function CreateView() {
     setBusy(key)
     try {
       const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], batch })
-      patchCreate(state => ({ adopted: { ...state.adopted, [key]: true } }))
+      patchCreate(state => ({ adopted: { ...state.adopted, [key]: true }, dirs: { ...state.dirs, [key]: data.dir } }))
       toast(t('已保存到 {dir}，并记进内容库', { dir: data.dir }))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -163,17 +163,28 @@ export function CreateView() {
     setEditText(variant.script)
   }
 
-  const saveEdit = (group) => {
+  const saveEdit = async (group, variant) => {
+    const key = variantKey(group.topic, variant.title)
+    const text = editText
     patchCreate(state => ({
       groups: state.groups.map(item => (item.topic !== group.topic ? item : {
         ...item,
-        variants: item.variants.map(variant => (variantKey(item.topic, variant.title) === editKey
-          ? { ...variant, script: editText }
-          : variant)),
+        variants: item.variants.map(row => (variantKey(item.topic, row.title) === key ? { ...row, script: text } : row)),
       })),
     }))
     setEditKey('')
-    toast(t('改好了；采用时保存的就是改过的这版'))
+    // 已经采用过的这版：本地 Word / Markdown 也要跟着更新，不然文件夹里还是旧稿
+    const dir = dirs?.[key]
+    if (!dir) {
+      toast(t('改好了；采用时保存的就是改过的这版'))
+      return
+    }
+    setBusy(`save-${key}`)
+    try {
+      await post('content/revise', { dir, title: variant.title, topic: group.topic, script: text, tags: variant.tags ?? [] })
+      toast(t('改好了，本地文件也更新了'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
   }
 
   return (
@@ -337,10 +348,12 @@ export function CreateView() {
                       <div className="md-script-edit">
                         <textarea rows={10} value={editText} onChange={event => setEditText(event.target.value)} />
                         <div className="md-script-edit-foot">
-                          <span className="md-muted">{t('一句话一行，改完点保存再采用。')}</span>
+                          <span className="md-muted">{dirs?.[key] ? t('这版已经采用，保存会同步更新本地文件。') : t('一句话一行；采用时会保存这一版。')}</span>
                           <span className="md-grow" />
                           <button type="button" className="md-inline-link" onClick={() => setEditKey('')}>{t('取消')}</button>
-                          <button type="button" className="md-pill is-small" onClick={() => saveEdit(group)}>{t('保存改动')}</button>
+                          <button type="button" className="md-pill is-small" onClick={() => saveEdit(group, variant)} disabled={busy === `save-${key}`}>
+                            {busy === `save-${key}` ? t('保存中…') : t('保存改动')}
+                          </button>
                         </div>
                       </div>
                     ) : (
