@@ -86,3 +86,20 @@ test('切入点建议、定位一句话、家长原话解析', () => {
   assert.match(sentence, /期中卷/)
   assert.deepEqual(parsePains('期中 58 分还能补吗，物质的量听不懂；上课走神'), ['期中 58 分还能补吗', '物质的量听不懂', '上课走神'])
 })
+
+test('城市写成「北京；线上」仍算同城，句子里只取城市名', () => {
+  const list = suggestTargets({ ...base, city: '北京；线上' })
+  assert.match(list[0].value, /^北京/)
+  const sentence = positioningSentence({ city: '北京；线上', grade: '高二', subject: '物理', target: '期中掉队的家长', entry: '期中卷' })
+  assert.match(sentence, /我是北京高二物理老师/)
+  const diagnosis = diagnosePositioning({
+    ...base,
+    city: '北京；线上',
+    pains: ['期中 58 分还能补吗', '物质的量听不懂'],
+    target: '北京高二物理 40–60 分',
+    entry: '期中卷',
+    fear: '怕没起色',
+    notDo: '外地',
+  })
+  assert.ok(diagnosis.firstVideos.some(row => row.angle === '本地'))
+})

@@ -18,7 +18,13 @@ export function parsePains(value) {
     .slice(0, 12)
 }
 
-const isLocal = city => Boolean(text(city, 20)) && !/线上|全国|网课/.test(city)
+/** 城市标签：「北京；线上」取「北京」，「线上」取空。 */
+const cityLabel = (city) => {
+  const row = text(city, 20)
+  if (!row) return ''
+  return row.split(/[；;、,，/\s]+/).find(part => part && !/线上|全国|网课/.test(part)) || ''
+}
+const isLocal = city => Boolean(cityLabel(city))
 
 /** 年级 + 科目，比如「高二物理」；都没有就给个兜底。 */
 function who(subject, grade) {
@@ -35,7 +41,7 @@ const ARCHETYPES = [
     key: 'middle',
     match: ['期中掉队'],
     title: ({ subject, grade }) => `${who(subject, grade)}，卡在及格线上下、补了也没起色的家长`,
-    value: ({ subject, grade, city }) => `${isLocal(city) ? text(city, 12) : ''}${who(subject, grade)} 40–60 分、已经补过课但没起色、家长急但不知道问题在哪`,
+    value: ({ subject, grade, city }) => `${cityLabel(city)}${who(subject, grade)} 40–60 分、已经补过课但没起色、家长急但不知道问题在哪`,
     why: '中等生是沉默的大多数，人数最多，转化也稳；她们不缺补课，缺的是判断',
     fear: '怕补了一学期还是原地踏步，钱和时间都搭进去',
     entry: '期中卷里丢分最集中的那一块',
@@ -45,7 +51,7 @@ const ARCHETYPES = [
     key: 'subject',
     match: ['偏科'],
     title: ({ subject }) => `别的科都还行，就${text(subject, 10) || '这一科'}拖后腿的家长`,
-    value: ({ subject, grade, city }) => `${isLocal(city) ? text(city, 12) : ''}${text(grade, 10)}其他科都不错、就${text(subject, 10) || '这一科'}拖后腿、家长怕这一科把总分拽下来`,
+    value: ({ subject, grade, city }) => `${cityLabel(city)}${text(grade, 10)}其他科都不错、就${text(subject, 10) || '这一科'}拖后腿、家长怕这一科把总分拽下来`,
     why: '家长已经确定要补，只是在挑老师；决策快，聊两句就知道你是不是她要的人',
     fear: '怕这一科把总分拽下来',
     entry: ({ subject }) => `${text(subject, 10) || '这门课'}里最容易被跳过的那一章`,
@@ -55,7 +61,7 @@ const ARCHETYPES = [
     key: 'top',
     match: ['想冲高分'],
     title: ({ subject, grade }) => `${who(subject, grade)}班里前十、想稳住冲重点的家长`,
-    value: ({ subject, grade, city }) => `${isLocal(city) ? text(city, 12) : ''}${who(subject, grade)}成绩靠前、想冲重点或稳住名次、家长对结果要求高`,
+    value: ({ subject, grade, city }) => `${cityLabel(city)}${who(subject, grade)}成绩靠前、想冲重点或稳住名次、家长对结果要求高`,
     why: '转化率最高；但交付要求也高，没把握先别主抓',
     fear: '怕关键时刻掉链子',
     entry: '压轴题和新题型怎么拿分',
@@ -65,7 +71,7 @@ const ARCHETYPES = [
     key: 'weak',
     match: ['基础差、听不懂', '开学后跟不上'],
     title: ({ subject, grade }) => `${who(subject, grade)}基础差、但家里还在到处找办法的家长`,
-    value: ({ subject, grade, city }) => `${isLocal(city) ? text(city, 12) : ''}${who(subject, grade)}基础差、上课听不懂、家长还没放弃，正在到处问怎么补`,
+    value: ({ subject, grade, city }) => `${cityLabel(city)}${who(subject, grade)}基础差、上课听不懂、家长还没放弃，正在到处问怎么补`,
     why: '家长还在想办法，说明愿意投入；比已经放弃的差生好带得多',
     fear: '怕花了钱也没用，也怕孩子自己不想学',
     entry: '上学期欠下的那一章',
@@ -75,7 +81,7 @@ const ARCHETYPES = [
     key: 'exam',
     match: ['艺考补基础'],
     title: ({ subject, grade }) => `艺考回来/转学/复读，${who(subject, grade)}底子空的家长`,
-    value: ({ subject, grade, city }) => `${isLocal(city) ? text(city, 12) : ''}${who(subject, grade)}艺考回来或刚转学、时间只剩几个月、家长最怕来不及`,
+    value: ({ subject, grade, city }) => `${cityLabel(city)}${who(subject, grade)}艺考回来或刚转学、时间只剩几个月、家长最怕来不及`,
     why: '时间紧、目标明确，付费意愿强；但先算清还剩多少周，别接了自己也交付不了',
     fear: '怕来不及',
     entry: '考前剩下这几周怎么排',
@@ -119,9 +125,9 @@ export function entrySuggestions(input = {}) {
   const grade = text(input.grade, 10)
   const city = text(input.city, 12)
   const rows = [
-    pains[0] ? `${pains[0]}这一块` : '',
+    pains[0] ? `从「${pains[0]}」切进去` : '',
     `${who(subject, grade)}期中卷丢分最多的题型`,
-    isLocal(city) ? `${city}本地考情和进度` : '考前 2 周怎么复习',
+    isLocal(city) ? `${cityLabel(city)}本地考情和进度` : '考前 2 周怎么复习',
     `${subject || '这门课'}里最容易被跳过的那一章`,
   ].filter(Boolean)
   return [...new Set(rows)].slice(0, 4)
@@ -129,7 +135,7 @@ export function entrySuggestions(input = {}) {
 
 /** 定位一句话：我是谁 + 我为谁 + 解决什么问题。 */
 export function positioningSentence(input = {}) {
-  const self = [text(input.city, 12), text(input.grade, 10), text(input.subject, 10)].filter(Boolean).join('')
+  const self = [cityLabel(input.city), text(input.grade, 10), text(input.subject, 10)].filter(Boolean).join('')
   const target = text(input.target)
   const entry = text(input.entry)
   if (!self && !target) return ''
@@ -147,11 +153,11 @@ function firstVideos({ subject, grade, city, entry, fear, local }) {
   const e = entry ? shorten(entry, 24) : '基础那一块'
   const fearText = text(fear).replace(/^(最?怕|担心)+/, '').replace(/[。.]$/, '') || '补了很久没起色'
   const rows = [
-    { angle: '考情', text: `${local ? `${text(city, 12)}的` : ''}${g}${s}这次考完，${e}到底难在哪` },
+    { angle: '考情', text: `${local ? `${cityLabel(city)}的家长，` : ''}${g}${s}这次考完，${e}到底难在哪` },
     { angle: '科目', text: `${e}，为什么比多刷题更重要` },
     { angle: '家庭', text: `${shorten(fearText, 20)}，先别急着换老师` },
   ]
-  if (local) rows.push({ angle: '本地', text: `${text(city, 12)}的家长，${g}${s}这学期讲到哪了` })
+  if (local) rows.push({ angle: '本地', text: `${cityLabel(city)}的家长，${g}${s}这学期讲到哪了` })
   else rows.push({ angle: '科目', text: `${g}${s}补了很久没起色，问题多半在${e}` })
   return rows
 }
