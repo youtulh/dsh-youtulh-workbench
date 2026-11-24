@@ -1,7 +1,7 @@
 // 回私信的分诊台：粘一条私信 → 判断是谁、问什么 → 两条草稿 → 台账落表。
 // 这不是聊天窗，是分诊台：先判断，再给话。话术是原句，肖月改两个词就能发。
 import React from 'react'
-import { dispatchOps, toast, triageDm, useDesk } from './desk.js'
+import { dispatchOps, fetchLeads, revealDir, toast, triageDm, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { fmtDate } from './util.js'
@@ -34,7 +34,9 @@ function ledgerRows(ledger) {
 
 export function DmView() {
   useLang()
-  const leads = useDesk(s => s.state?.leads ?? [])
+  const [leads, setLeads] = React.useState([])
+  const reload = React.useCallback(() => { fetchLeads().then(setLeads).catch(() => {}) }, [])
+  React.useEffect(() => { reload() }, [reload])
   const [raw, setRaw] = React.useState('')
   const [busy, setBusy] = React.useState(false)
   const [verdict, setVerdict] = React.useState(null)
@@ -69,6 +71,7 @@ export function DmView() {
       ...ledger,
       note: verdict.note ?? '',
     }], { label: t('记下一条私信线索') })
+    setTimeout(reload, 300)
     setRaw('')
     setVerdict(null)
     setLedger(null)
@@ -165,24 +168,24 @@ export function DmView() {
             <span className="md-tile-meta">{t('{n} 条', { n: leads.length })}</span>
             <span className="md-grow" />
             {leads.length ? <button type="button" className="md-pill is-small" onClick={exportCsv}><Icon name="copy" size={13} />{t('复制成 CSV')}</button> : null}
+            <button type="button" className="md-pill is-small" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}><Icon name="folder" size={13} />{t('打开线索表')}</button>
           </header>
           {leads.length ? (
             <div className="md-i-table">
               <table className="md-table is-plain">
                 <thead><tr><th>{t('姓名')}</th><th>{t('年级')}</th><th>{t('卡点')}</th><th>{t('来源')}</th><th>{t('下一步')}</th><th /></tr></thead>
                 <tbody>
-                  {[...leads].reverse().map(lead => (
+                  {leads.map(lead => (
                     <tr key={lead.id}>
                       <td>{lead.name || <span className="md-muted">{t('未填')}</span>}</td>
                       <td>{lead.grade || '—'}</td>
                       <td className="md-dm-wrap">{lead.painPoint || '—'}</td>
                       <td>{lead.source || '—'}</td>
                       <td>
-                        <button type="button" className="md-chip is-stage" title={t('点一下换下一步')} onClick={() => dispatchOps([{ op: 'update_lead', id: lead.id, next: nextOf(lead.next) }], { label: t('下一步改成「{next}」', { next: t(nextOf(lead.next)) }) })}>{t(lead.next)}</button>
+                        <span className="md-chip">{lead.next || '—'}</span>
                       </td>
                       <td className="is-num">
-                        <button type="button" className="md-inline-link" onClick={() => copy(`${lead.raw}\n\n${lead.draft}`)}>{t('复制')}</button>
-                        <button type="button" className="md-inline-link" onClick={() => dispatchOps([{ op: 'delete_lead', id: lead.id }], { label: t('删掉一条线索') })}>{t('删除')}</button>
+                        <button type="button" className="md-inline-link" onClick={() => copy(lead.raw)}>{t('复制原文')}</button>
                       </td>
                     </tr>
                   ))}

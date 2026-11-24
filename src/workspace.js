@@ -5,7 +5,7 @@
 //   <根>/私信/<日期 某人>/    判断 + 两条话术
 //   <根>/线索表.csv           台账（Excel 能开）
 //   <根>/数据/<日期>.csv      复盘数据
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -112,4 +112,70 @@ export function appendLead(root, lead) {
     writeFileSync(file, `${LEAD_COLUMNS.map(csvCell).join(',')}\n${row}\n`)
   }
   return file
+}
+
+// ---- 读回来：线索表、目录树 ----
+
+/** 解析一行 CSV（支持引号、引号内逗号、"" 转义）。 */
+export function parseCsvLine(line) {
+  const out = []
+  let cell = ''
+  let quoted = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (quoted) {
+      if (ch === '"' && line[i + 1] === '"') { cell += '"'; i++ } else if (ch === '"') quoted = false
+      else cell += ch
+    } else if (ch === '"') quoted = true
+    else if (ch === ',') { out.push(cell); cell = '' }
+    else cell += ch
+  }
+  out.push(cell)
+  return out
+}
+
+/** 读线索表，返回最近的在前。文件不存在就是空数组。 */
+export function readLeads(root) {
+  const file = leadsCsvPath(root)
+  if (!existsSync(file)) return []
+  const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  if (!lines.length) return []
+  const head = parseCsvLine(lines[0])
+  const index = name => head.indexOf(name)
+  const rows = lines.slice(1).map(line => {
+    const cells = parseCsvLine(line)
+    const at = name => cells[index(name)] ?? ''
+    return {
+      date: at('日期'), name: at('姓名'), grade: at('年级'), school: at('学校'), painPoint: at('卡点'),
+      source: at('来源'), next: at('下一步'), type: at('类型'), category: at('分类'), raw: at('原文'),
+    }
+  })
+  return rows.reverse()
+}
+
+/** 工作区里有哪些产出：内容/私信/数据 三个目录下的文件夹和文件。 */
+export function listTree(root) {
+  const groups = []
+  for (const [key, dir] of Object.entries({ content: LAYOUT.content, dm: LAYOUT.dm, data: LAYOUT.data })) {
+    const abs = join(root, dir)
+    if (!existsSync(abs)) continue
+    const entries = readdirSync(abs, { withFileTypes: true })
+    const items = []
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const sub = join(abs, entry.name)
+        const files = readdirSync(sub).map(name => {
+          const stat = statSync(join(sub, name))
+          return { name, size: stat.size, updatedAt: new Date(stat.mtimeMs).toISOString() }
+        })
+        items.push({ kind: key, name: entry.name, dir: sub, files })
+      } else if (entry.isFile()) {
+        const stat = statSync(join(abs, entry.name))
+        items.push({ kind: key, name: entry.name, dir: abs, files: [{ name: entry.name, size: stat.size, updatedAt: new Date(stat.mtimeMs).toISOString() }] })
+      }
+    }
+    items.sort((a, b) => (b.files[0]?.updatedAt ?? '').localeCompare(a.files[0]?.updatedAt ?? ''))
+    groups.push(...items)
+  }
+  return groups
 }

@@ -113,6 +113,23 @@ export async function fetchWorkspace() {
   return request('workspace/info')
 }
 
+/** 读工作区里的线索表（CSV）。 */
+export async function fetchLeads() {
+  const data = await request('workspace/leads')
+  return data.leads ?? []
+}
+
+/** 在 Finder 里打开工作区里的某个目录。 */
+export async function revealDir(dir) {
+  return request('workspace/reveal', { dir })
+}
+
+/** 读工作区目录树（内容/私信/数据）。 */
+export async function fetchTree() {
+  const data = await request('workspace/tree')
+  return data.tree ?? []
+}
+
 /** 拉产出库列表。 */
 export async function fetchWorks() {
   const data = await request('works')

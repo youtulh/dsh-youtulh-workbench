@@ -1032,3 +1032,9 @@ body[data-ds-dark-theme] .md-root {
 .md-work-actions { display: flex; gap: 14px; margin-top: 10px; font-size: 12.5px; }
 .md-work-content { max-height: 320px; overflow: auto; margin-top: 10px; padding: 10px 12px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font-size: 12.5px; line-height: 20px; white-space: pre-wrap; }
 .md-works-path { color: var(--ink3); font-size: 12px; }
+
+/* 我的产出：按目录分组 */
+.md-works-group { display: grid; gap: 8px; }
+.md-works-group h2 { display: flex; align-items: baseline; gap: 8px; font-size: 14px; font-weight: 500; }
+.md-works-group h2 small { color: var(--ink3); font-size: 12px; font-weight: 400; }
+.md-work-files code em { margin-left: 6px; color: var(--ink3); font-style: normal; font-size: 11px; }

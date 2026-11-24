@@ -2,12 +2,12 @@
 import { createReadStream } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { stat, writeFile } from 'node:fs/promises'
-import { dirname, extname, join } from 'node:path'
+import { dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
 import { addWork, listWorks, removeWork } from './works.js'
-import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, resolveRoot, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readLeads, readSettingsMarkdown, resolveRoot, writeSettingsMarkdown } from './workspace.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
 import { harvest, harvestText } from './harvest.js'
@@ -304,6 +304,22 @@ async function route(ctx, store, desk, req, res) {
     if (path === 'state') {
       if (!desk.settled) { desk.settled = true; await desk.producer.settleAll().catch(() => {}) }
       let state = await store.read()
+      // 用户可能在编辑器里直接改了「我的设定.md」：文件优先，读进来盖掉状态
+      try {
+        const fromFile = readSettingsMarkdown(resolveRoot((await desk.settings.read()).saveRoot))
+        if (fromFile) {
+          const same = JSON.stringify(fromFile.positioning) === JSON.stringify(state.positioning)
+            && JSON.stringify(fromFile.painPoints) === JSON.stringify(state.painPoints)
+          if (!same && (fromFile.positioning.subject || fromFile.painPoints.length)) {
+            const merged = await store.mutate('从文件读取设定', (draft) => {
+              draft.positioning = { ...(draft.positioning ?? {}), ...fromFile.positioning }
+              draft.painPoints = fromFile.painPoints
+              return draft
+            }, { undoable: false })
+            state = merged
+          }
+        }
+      } catch { /* 读不到就按状态里的来 */ }
       // 示例数据跟着界面语言走；用户自己的内容不动
       if (samplesNeedLocale(state, currentLang())) state = await store.mutate('', draft => (localizeSamples(draft, currentLang()), draft), { undoable: false })
       return json(res, 200, { state, model: engineLabel(ctx), modelOk: modelStatus.ok, modelError: modelStatus.error, canUndo: store.undo.length > 0 })
@@ -332,6 +348,16 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'insights') return json(res, 200, computeInsights(await store.read()))
     if (path === 'works') return json(res, 200, { works: listWorks() })
+    if (path === 'workspace/leads') {
+      const settings = await desk.settings.read()
+      return json(res, 200, { leads: readLeads(resolveRoot(settings.saveRoot)) })
+    }
+    if (path === 'workspace/tree') {
+      const settings = await desk.settings.read()
+      const root = resolveRoot(settings.saveRoot)
+      ensureLayout(root)
+      return json(res, 200, { tree: listTree(root) })
+    }
     if (path === 'workspace/info') {
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
@@ -417,6 +443,14 @@ async function route(ctx, store, desk, req, res) {
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
       execFile(command, [path], () => {})
       return json(res, 200, { path })
+    }
+    case 'workspace/reveal': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const dir = path_resolve(String(body.dir ?? root))
+      if (!dir.startsWith(root)) return json(res, 400, { error: tr('只能打开工作区里的目录') })
+      const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
+      execFile(command, [dir], () => {})
+      return json(res, 200, { path: dir })
     }
     case 'works/remove': {
       const removed = removeWork(String(body.id ?? ''))

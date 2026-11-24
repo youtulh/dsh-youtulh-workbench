@@ -1,74 +1,74 @@
-// 我的产出：做过的东西都在这儿，文件真的落在本地，能打开文件夹、能看正文。
+// 我的产出：直接列工作区里的真实文件，不做二次索引。用户在 Finder 里怎么改，这里就怎么显示。
 import React from 'react'
-import { fetchWorks, removeOutput, revealOutput, setDesk, toast, useDesk } from './desk.js'
+import { fetchTree, fetchWorkspace, revealDir, setDesk, toast } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { fmtWhen } from './util.js'
 
-const KIND_LABEL = { script: '口播稿', dm: '私信话术', data: '复盘' }
+const KIND_LABEL = { content: '内容', dm: '私信', data: '数据' }
 
 export function WorksView() {
   useLang()
-  const [works, setWorks] = React.useState(null)
-  const [open, setOpen] = React.useState(null)
-  const exportDir = useDesk(s => s.settings?.defaultExportDir)
+  const [tree, setTree] = React.useState(null)
+  const [info, setInfo] = React.useState(null)
 
-  const load = () => fetchWorks().then(list => setWorks(list)).catch(err => toast(err.message, { error: true }))
+  const load = () => Promise.all([fetchTree(), fetchWorkspace()]).then(([nextTree, nextInfo]) => {
+    setTree(nextTree)
+    setInfo(nextInfo)
+  }).catch(err => toast(err.message, { error: true }))
+
   React.useEffect(() => { load() }, [])
 
-  const remove = async (id) => {
-    await removeOutput(id).catch(err => toast(err.message, { error: true }))
-    toast(t('已从产出库移除（文件还在）'))
-    load()
-  }
+  const groups = ['content', 'dm', 'data'].map(kind => ({ kind, items: (tree ?? []).filter(row => row.kind === kind) }))
 
   return (
     <div className="md-page md-works">
       <header className="md-page-head">
         <div>
           <h1>{t('我的产出')}</h1>
-          <p className="md-page-sub">{t('保存过的都会写成本地文件：一份 Word，一份 Markdown。')}</p>
+          <p className="md-page-sub">{t('这些就是工作区里的文件，Word 能直接打开，改了这里也会跟着变。')}</p>
         </div>
         <span style={{ flex: 1 }} />
-        <button type="button" className="md-pill" onClick={() => revealOutput().catch(err => toast(err.message, { error: true }))}>
-          <Icon name="folder" size={14} />{t('打开文件夹')}
+        <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
+          <Icon name="folder" size={14} />{t('打开工作区')}
         </button>
       </header>
 
-      {works === null ? <p className="md-muted">{t('读取中…')}</p> : null}
+      {tree === null ? <p className="md-muted">{t('读取中…')}</p> : null}
 
-      {works?.length === 0 ? (
+      {tree?.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('还没有产出。去「做内容」生成一条，点「保存成 Word」，这里就会出现。')}</p>
+          <p>{t('工作区还是空的。去「做内容」生成一条并保存，文件就会出现在这里。')}</p>
           <button type="button" className="md-pill is-primary" onClick={() => setDesk({ view: 'content', focusId: null })}>{t('去做内容')}</button>
         </div>
       ) : null}
 
-      <ul className="md-works-list">
-        {(works ?? []).map(work => (
-          <li key={work.id} className={`md-work ${work.missing ? 'is-missing' : ''}`}>
-            <div className="md-work-head">
-              <span className="md-work-kind">{t(KIND_LABEL[work.kind] ?? work.kind)}</span>
-              <b>{work.title}</b>
-              <span className="md-grow" />
-              <small>{fmtWhen(work.updatedAt)}</small>
-            </div>
-            <div className="md-work-files">
-              {work.files.map(name => <code key={name}>{name}</code>)}
-              {work.missing ? <span className="md-work-missing">{t('文件已不在（可能被移动或删除）')}</span> : null}
-            </div>
-            {work.summary ? <p className="md-work-summary">{work.summary}</p> : null}
-            <div className="md-work-actions">
-              <button type="button" className="md-inline-link" onClick={() => setOpen(open === work.id ? null : work.id)}>{open === work.id ? t('收起') : t('看正文')}</button>
-              <button type="button" className="md-inline-link" onClick={() => revealOutput(work.id).catch(err => toast(err.message, { error: true }))}>{t('在文件夹里打开')}</button>
-              <button type="button" className="md-inline-link" onClick={() => remove(work.id)}>{t('移除')}</button>
-            </div>
-            {open === work.id ? <pre className="md-work-content">{work.content || t('（这份没有留下正文预览）')}</pre> : null}
-          </li>
-        ))}
-      </ul>
+      {groups.map(({ kind, items }) => items.length ? (
+        <section key={kind} className="md-works-group">
+          <h2>{t(KIND_LABEL[kind])}<small>{t('{n} 份', { n: items.length })}</small></h2>
+          <ul className="md-works-list">
+            {items.map(item => (
+              <li key={item.dir + item.name} className="md-work">
+                <div className="md-work-head">
+                  <b>{item.name}</b>
+                  <span className="md-grow" />
+                  <small>{item.files[0]?.updatedAt ? fmtWhen(item.files[0].updatedAt) : ''}</small>
+                </div>
+                <div className="md-work-files">
+                  {item.files.map(file => (
+                    <code key={file.name}>{file.name}<em>{(file.size / 1024).toFixed(file.size > 1024 * 100 ? 0 : 1)} KB</em></code>
+                  ))}
+                </div>
+                <div className="md-work-actions">
+                  <button type="button" className="md-inline-link" onClick={() => revealDir(item.dir).catch(err => toast(err.message, { error: true }))}>{t('在文件夹里打开')}</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null)}
 
-      {exportDir ? <p className="md-works-path">{t('文件位置：{dir}', { dir: exportDir })}</p> : null}
+      {info?.root ? <p className="md-works-path">{t('工作区：{dir}', { dir: info.root })}</p> : null}
     </div>
   )
 }
