@@ -122,6 +122,12 @@ export async function fetchWorkspace() {
   return request('workspace/info')
 }
 
+/** 做内容页的案例提示词：按人设想几条家长会问的问题。 */
+export async function fetchSuggestions() {
+  const data = await request('suggest')
+  return { prompts: data.prompts ?? [], source: data.source }
+}
+
 /** 读工作区里的线索表（CSV）。 */
 export async function fetchLeads() {
   const data = await request('workspace/leads')

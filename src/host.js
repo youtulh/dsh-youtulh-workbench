@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
 import { createTools } from './tools.js'
+import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
@@ -378,6 +379,23 @@ async function route(ctx, store, desk, req, res) {
       ensureLayout(root)
       return json(res, 200, { tree: listTree(root) })
     }
+    if (path === 'suggest') {
+      const state = await store.read()
+      const key = JSON.stringify([state.positioning ?? {}, state.painPoints ?? []])
+      if (suggestCache.key === key && Date.now() - suggestCache.at < 5 * 60 * 1000) {
+        return json(res, 200, { prompts: suggestCache.list, source: 'cache' })
+      }
+      let list = []
+      let source = 'local'
+      try {
+        const { text: raw } = await callModel(ctx, { system: suggestPrompts(state), user: '请给出这 5 个问题。', maxTokens: 600, light: true })
+        list = normalizeSuggestions(extractJson(raw))
+        if (list.length) source = 'model'
+      } catch { /* 没有模型就用本地拼的 */ }
+      if (!list.length) list = localSuggestions(state)
+      suggestCache = { key, at: Date.now(), list }
+      return json(res, 200, { prompts: list, source })
+    }
     if (path === 'workspace/info') {
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
@@ -605,6 +623,8 @@ export default {
     })
     const monid = createMonidRunner()
     const desk = { settings, producer, monid, versionCheck: createVersionCheck() }
+    // 案例提示词的缓存：设定没变就直接给上次那五条
+    let suggestCache = { key: '', at: 0, list: [] }
     // 对话里的 agent 用这两个工具把产出写进工作区
     ctx.effect(() => {
       // 工具只在有 tools 服务的宿主里注册；单元测试的假 ctx 没有它

@@ -29,3 +29,17 @@ test('profileReady 要求科目、年级、城市至少填两样', () => {
   assert.equal(profileReady({ subject: '化学' }), false)
   assert.equal(profileReady({ subject: '化学', grade: '高一' }), true)
 })
+
+test('每题自己写的内容优先，多选里的自定义会追加进去', () => {
+  // 客户端 mergeAnswers 的行为在 onboard 组件里；这里验证 buildProfile 接受这些值
+  const { positioning } = buildProfile({
+    subject: '信息技术', grade: '四年级', city: '线上',
+    situations: ['基础差、听不懂', '自己写的：孩子刚转学'], excludes: ['大班课', '自己写的：只想试听'],
+    pains: '老师，孩子坐不住',
+  })
+  assert.equal(positioning.subject, '信息技术')
+  assert.equal(positioning.grade, '四年级')
+  assert.match(positioning.only, /信息技术/)
+  assert.match(positioning.only, /孩子刚转学/)
+  assert.match(positioning.notDo, /只想试听/)
+})
