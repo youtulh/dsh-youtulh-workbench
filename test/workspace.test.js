@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, backupWorkspace, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -268,5 +268,23 @@ test('内容库对账：文件夹被删掉的条目自动清掉', async () => {
     assert.equal(rows[0]['标题'], '留着')
   } finally {
     await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('备份：整个工作区复制到旁边，原文件不动', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'workbench-backup-'))
+  const root = join(parent, '工作区')
+  try {
+    await mkdir(root)
+    await writeFile(join(root, '线索表.csv'), '姓名\n王\n')
+    const dir = backupWorkspace(root)
+    assert.ok(dir.includes('备份'))
+    const copied = await readFile(join(dir, '线索表.csv'), 'utf8')
+    assert.match(copied, /王/)
+    const original = await readFile(join(root, '线索表.csv'), 'utf8')
+    assert.match(original, /王/)
+  } finally {
+    await rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })

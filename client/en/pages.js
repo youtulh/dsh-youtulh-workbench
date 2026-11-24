@@ -645,4 +645,11 @@ export const PAGES = {
   '第一行是表头：姓名、年级、学校、微信、卡点层、班、来源、备注': 'The first row is the header: name, grade, school, WeChat, weak point, class, source, note',
   '导入了 {n} 个学生': 'Imported {n} students',
   '导入了 {n} 个学生，顺手建了 {m} 个班': 'Imported {n} students and created {m} classes',
+  数据备份: 'Backup',
+  '备份好了：{dir}': 'Backed up to {dir}',
+  建议每周点一次: 'Worth doing once a week',
+  打开备份文件夹: 'Open backup folder',
+  备份工作区: 'Back up workspace',
+  '备份中…': 'Backing up…',
+  备份好了: 'Backup complete',
 }

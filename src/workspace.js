@@ -5,9 +5,9 @@
 //   <根>/私信/<日期 某人>/    判断 + 两条话术
 //   <根>/线索表.csv           台账（Excel 能开）
 //   <根>/数据/<日期>.csv      复盘数据
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 
 export const LAYOUT = {
   settings: '我的设定.md', style: '说话样本.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv',
@@ -425,6 +425,15 @@ export function readTable(root, file) {
 }
 
 /** 写一张表：只重写已知列，表里多出来的列忽略（避免手改的列被抹掉）。 */
+/** 把整个工作区复制到旁边的备份文件夹，随时能找回。 */
+export function backupWorkspace(root) {
+  if (!existsSync(root)) throw new Error('工作区还没建好')
+  const stamp = new Date().toLocaleString('sv-SE').replace(' ', ' ').replace(/[:]/g, '-').slice(0, 16)
+  const dir = join(dirname(root), `${basename(root)} 备份 ${stamp}`)
+  cpSync(root, dir, { recursive: true, errorOnExist: true })
+  return dir
+}
+
 export function writeTable(root, file, columns, rows) {
   ensureLayout(root)
   const abs = join(root, file)

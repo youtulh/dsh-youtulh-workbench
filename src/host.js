@@ -13,7 +13,7 @@ import { localSuggestions, normalizeSuggestions, suggestPrompts } from './sugges
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
-import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -940,6 +940,11 @@ async function route(ctx, store, desk, req, res) {
       const leads = updateLeadRow(root, index, body.patch ?? {})
       if (!leads) return json(res, 404, { error: tr('没找到这一行') })
       return json(res, 200, { leads, lessons: leadLessons(root) })
+    }
+    case 'workspace/backup': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const dir = backupWorkspace(root)
+      return json(res, 200, { dir })
     }
     case 'workspace/reveal': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

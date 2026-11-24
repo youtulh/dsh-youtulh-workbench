@@ -150,6 +150,11 @@ export async function fetchWorkspace() {
   return request('workspace/info')
 }
 
+/** 把整个工作区复制一份到旁边的备份文件夹。 */
+export async function backupWorkspace() {
+  return request('workspace/backup', {})
+}
+
 /** 做内容页的案例提示词：按人设想几条家长会问的问题。 */
 export async function fetchSuggestions() {
   const data = await request('suggest')
