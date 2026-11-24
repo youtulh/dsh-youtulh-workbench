@@ -375,13 +375,26 @@ export function recordContent(root, row) {
   return clean
 }
 
-export function updateContent(root, dir, patch) {
+/** 内容行的主键：有目录用目录，没有目录（手动补录 / 从数据导入）用创建时间。 */
+export const contentKey = row => row['目录'] || row['创建时间'] || ''
+
+export function updateContent(root, key, patch) {
   const { rows } = readTable(root, '内容库.csv')
-  const index = rows.findIndex(row => row['目录'] === dir)
+  const index = rows.findIndex(row => contentKey(row) === key)
   if (index < 0) return null
   rows[index] = { ...rows[index], ...patch }
   writeTable(root, '内容库.csv', CONTENT_COLUMNS, rows)
   return rows[index]
+}
+
+/** 删掉一条内容记录（只删表里的行，文件夹和文件不动）。 */
+export function removeContent(root, key) {
+  const { rows } = readTable(root, '内容库.csv')
+  const index = rows.findIndex(row => contentKey(row) === key)
+  if (index < 0) return null
+  const [removed] = rows.splice(index, 1)
+  writeTable(root, '内容库.csv', CONTENT_COLUMNS, rows)
+  return removed
 }
 
 export function appendTopics(root, batch, topics) {

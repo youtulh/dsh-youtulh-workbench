@@ -1,7 +1,7 @@
 // 做内容：先出 30 个选题草稿让人勾，再给勾中的每一条生成口播（标题 + 稿子 + 标签）。
 // 两段都可以用模型；没有模型就用本地模板拼，保证页面永远有东西可用。
 import { currentLang, tr } from './i18n.js'
-import { RED_LINES, SCRIPT_STRUCTURE, STYLE_RULES, styleBlock } from './style-guide.js'
+import { RED_LINES, styleBlock } from './style-guide.js'
 
 const text = (value, max = 400) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
 
@@ -141,7 +141,7 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}
 - 标签 5 个，不带 # 号，中文，含科目、年级，再加一个地区词或考试词
 ${cityRule(state)}
 ${styleBlock()}
-${SCRIPT_STRUCTURE.split('\n')[0]}: 严格按上面这个五段结构写，五段都要有。${lessons}
+严格按上面那个六段结构写，六段都要有，顺序不要换。${lessons}
 
 只输出 JSON：{"title":"标题","script":"一句话一行","tags":["标签1","标签2","标签3","标签4","标签5"]}`
   return { system, user: `选题：${topic}` }
@@ -213,8 +213,8 @@ export function cityRule(state) {
 
 // ---- 一个选题出 3 个版本 ----
 
-export function variantsPrompt(state, topic) {
-  const base = scriptPrompt(state, topic)
+export function variantsPrompt(state, topic, lessons = '') {
+  const base = scriptPrompt(state, topic, lessons)
   return {
     system: `${base.system}
 

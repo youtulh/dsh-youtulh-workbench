@@ -74,7 +74,7 @@ export function WelcomeView() {
       <div className="md-steps">
         <Step index={1} title={t('认识你')} hint={t('科目、年级、城市、家长最愁什么')} done action={t('改一下')} onAction={() => go('setup')} />
         <Step index={2} title={t('做第一条口播')} hint={t('先看几条案例，改成你自己的说法，点开始')} action={t('开始')} onAction={() => go('content')} primary />
-        <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} />
+        <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
       </div>
 
       <div className="md-welcome-actions">

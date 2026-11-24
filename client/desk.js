@@ -4,10 +4,16 @@ import { lang, plural, setLanguagePreference, t } from './i18n.js'
 
 const BASE = 'media-desk/'
 
+// 做内容页面的中间结果：选题、勾选、口播几组、采用标记。
+// 放在全局快照里，切到别的页面再回来不会丢；再存一份 sessionStorage，刷新也能捡回来。
+export const EMPTY_CREATE = { topics: [], picked: {}, groups: [], adopted: {}, batch: '', lessons: '', source: '', examples: [] }
+const CREATE_DRAFT_KEY = 'youtulh:create:v1'
+
 let snapshot = {
   state: null, model: null, modelOk: null, modelError: null, canUndo: false, error: null,
   view: 'home', mode: 'scatter', focusId: null, sheetOrigin: null, dockOpen: true, studioDock: false, chatQuote: null, query: '', kindFilter: 'all', related: null,
   live: {}, settings: null, settingsOpen: false, modelPickOpen: false, thinking: false, toast: null, capture: null, dialog: null,
+  create: { ...EMPTY_CREATE },
 }
 const listeners = new Set()
 
@@ -18,6 +24,31 @@ export function getDesk() {
 export function setDesk(patch) {
   snapshot = { ...snapshot, ...(typeof patch === 'function' ? patch(snapshot) : patch) }
   listeners.forEach(fn => fn())
+}
+
+/** 改做内容页的中间结果，并顺手存一份，供刷新后恢复。 */
+export function patchCreate(patch) {
+  const next = { ...snapshot.create, ...(typeof patch === 'function' ? patch(snapshot.create) : patch) }
+  setDesk({ create: next })
+  try {
+    const { topics, picked, groups, adopted, batch, lessons, source, examples } = next
+    sessionStorage.setItem(CREATE_DRAFT_KEY, JSON.stringify({ topics, picked, groups, adopted, batch, lessons, source, examples }))
+  } catch { /* 隐私模式下写不进去就算了 */ }
+}
+
+export function resetCreate() {
+  patchCreate({ ...EMPTY_CREATE })
+}
+
+/** 页面刷新后把上一次的选题和口播捡回来；已经有内容就不动。 */
+export function restoreCreateDraft() {
+  if (snapshot.create.topics.length || snapshot.create.groups.length) return
+  try {
+    const data = JSON.parse(sessionStorage.getItem(CREATE_DRAFT_KEY) || 'null')
+    if (!data) return
+    if (!data.topics?.length && !data.groups?.length) return
+    setDesk({ create: { ...snapshot.create, ...data } })
+  } catch { /* 存的东西坏了就当没有 */ }
 }
 
 function subscribe(fn) {
@@ -132,9 +163,19 @@ export async function fetchContent() {
   return request('content')
 }
 
-/** 内容库：改某一条的采用/平台/播放/私信等。 */
-export async function updateContentRow(dir, patch) {
-  return request('content/update', { dir, patch })
+/** 内容库：改某一条的采用/状态/平台/播放/私信等。key 是目录，没有目录的行用创建时间。 */
+export async function updateContentRow(key, patch) {
+  return request('content/update', { key, patch })
+}
+
+/** 内容库：手动补录一条（以前发过的视频也能进库）。 */
+export async function createContent(payload) {
+  return request('content/create', payload)
+}
+
+/** 内容库：删掉一条记录，文件留在文件夹里。 */
+export async function removeContent(key) {
+  return request('content/remove', { key })
 }
 
 /** 粘平台数据，按标题匹配内容库。 */
@@ -182,11 +223,6 @@ export async function revealDir(dir) {
 export async function fetchTree() {
   const data = await request('workspace/tree')
   return data.tree ?? []
-}
-
-/** 做内容：给一句话，拿回 { creative, engine }。 */
-export async function createContent(hint) {
-  return request('create', { hint })
 }
 
 /** 回私信分诊：把原文交给 Host，拿回 { verdict, engine }。 */

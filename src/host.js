@@ -11,7 +11,7 @@ import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { creativeText, localScript, localTopics, localVariants, normalizeScript, normalizeTopics, normalizeVariants, scriptPrompt, topicsPrompt, variantsPrompt } from './topics.js'
-import { LAYOUT, pruneMissingContent, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, contentKey, pruneMissingContent, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
@@ -24,6 +24,39 @@ const MAX_JSON = 4_000_000
 const MAX_UPLOAD = 250_000_000
 const MIME = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime' }
 const UPLOAD_EXT = Object.fromEntries(Object.entries(MIME).filter(([ext]) => ext !== '.jpeg').map(([ext, type]) => [type, ext]))
+
+// 平台后台导出的列名五花八门，先归一到内容库的叫法。顺序有讲究：
+// 「视频发布时间」要落到 发布日，不能被「视频」两个字抢去当标题。
+const IMPORT_KEYS = ['发布日', '播放', '涨粉', '私信', '加微', '平台', '标题']
+const IMPORT_ALIAS = {
+  '发布日': ['发布日', '发布日期', '发布时间', '发布日时间'],
+  '播放': ['播放', '播放量', '播放数', '播放次数', '观看量'],
+  '涨粉': ['涨粉', '新增粉丝', '涨粉数', '新增关注', '涨粉人数'],
+  '私信': ['私信', '私信数', '咨询数', '私信咨询', '咨询人数'],
+  '加微': ['加微', '加微信', '加微数', '加微信数'],
+  '平台': ['平台', '渠道', '发布平台'],
+  '标题': ['标题', '作品名称', '视频标题', '笔记标题', '作品', '笔记'],
+}
+export function canonImportColumn(cell) {
+  const name = String(cell ?? '').trim().replace(/[\s*]/g, '')
+  if (!name) return ''
+  for (const key of IMPORT_KEYS) if (IMPORT_ALIAS[key].some(alias => name === alias)) return key
+  for (const key of IMPORT_KEYS) if (IMPORT_ALIAS[key].some(alias => name.startsWith(alias) || name.endsWith(alias))) return key
+  return name
+}
+
+/** 把粘贴进来的平台数据切成行：表头认得出就按列名对，认不出就按 标题,播放,涨粉,私信 的顺序。 */
+export function parseImportTable(raw) {
+  const lines = String(raw ?? '').split(/\r?\n/).filter(line => line.trim())
+  if (!lines.length) return { hasHead: false, keys: ['标题', '播放', '涨粉', '私信'], data: [] }
+  const cells = lines.map(line => line.split(/\t|,/).map(cell => cell.trim().replace(/^"|"$/g, '')))
+  const head = cells[0].map(cell => cell.trim())
+  const cols = head.map(canonImportColumn)
+  const hasHead = cols.filter(col => IMPORT_KEYS.includes(col)).length >= 2
+  const keys = hasHead ? cols : ['标题', '播放', '涨粉', '私信']
+  const data = (hasHead ? cells.slice(1) : cells).map(row => Object.fromEntries(keys.map((col, i) => [col, row[i] ?? ''])))
+  return { hasHead, keys, data }
+}
 
 function json(res, status, body) {
   res.statusCode = status
@@ -354,7 +387,7 @@ async function route(ctx, store, desk, req, res) {
         const rows = await Promise.all(chunk.map(async (topic) => {
           let variants = []
           try {
-            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic), maxTokens: 2800, light: true })
+            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic, lessons), maxTokens: 2800, light: true })
             variants = normalizeVariants(extractJson(raw))
             if (variants.length) usedModel = true
           } catch { /* 单条失败就退回本地模板 */ }
@@ -401,43 +434,97 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { dir: saved.dir, files: saved.files, summary: String(body.summary ?? '').slice(0, 120) })
     }
     case 'data/import': {
-      // 粘平台导出的数据：按标题匹配内容库，更新播放/涨粉/私信
+      // 平台后台导出的数据：按标题匹配内容库；对不上的直接补一条，别让老视频永远进不了库
       const raw = String(body.text ?? '').trim()
       if (!raw) return json(res, 400, { error: tr('还没有数据') })
-      const lines = raw.split(/\r?\n/).filter(line => line.trim())
-      const cells = lines.map(line => line.split(/\t|,/).map(cell => cell.trim().replace(/^"|"$/g, '')))
-      const head = cells[0].map(cell => cell.trim())
-      const hasHead = head.some(cell => /标题|播放|涨粉|私信/.test(cell))
-      const cols = hasHead ? head : ['标题', '播放', '涨粉', '私信']
-      const data = (hasHead ? cells.slice(1) : cells).map(row => Object.fromEntries(cols.map((col, i) => [col, row[i] ?? ''])))
+      const { data } = parseImportTable(raw)
       const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const today = dayStamp()
       const content = readContent(root)
+      // 先完全相同，再按包含关系取最长的那个标题，避免「期中 58 分」串到别的行
+      const pickTitle = (title) => {
+        const exact = content.find(row => row['标题'] === title)
+        if (exact) return exact
+        return content
+          .filter(row => row['标题'] && (row['标题'].startsWith(title) || title.startsWith(row['标题']) || row['标题'].includes(title) || title.includes(row['标题'])))
+          .sort((a, b) => String(b['标题']).length - String(a['标题']).length)[0]
+      }
       let matched = 0
+      let created = 0
+      const createdTitles = []
       const unmatched = []
       for (const item of data) {
         const title = String(item['标题'] ?? '').trim()
         if (!title) continue
-        const hit = content.find(row => row['标题'] && (row['标题'] === title || row['标题'].includes(title) || title.includes(row['标题'])))
-        if (!hit) { unmatched.push(title); continue }
-        const patch = {}
-        for (const key of ['播放', '涨粉', '私信', '加微', '平台', '发布日']) if (item[key]) patch[key] = item[key]
-        updateContent(root, hit['目录'], patch)
-        matched++
+        const values = {}
+        for (const key of ['播放', '涨粉', '私信', '加微', '平台', '发布日']) {
+          const value = String(item[key] ?? '').trim()
+          if (value) values[key] = value
+        }
+        const hit = pickTitle(title)
+        if (hit) {
+          const patch = { ...values, '状态': '已发布' }
+          if (!hit['发布日'] && !patch['发布日']) patch['发布日'] = today
+          updateContent(root, contentKey(hit), patch)
+          Object.assign(hit, patch)
+          matched++
+          continue
+        }
+        const row = recordContent(root, {
+          '日期': today, '创建时间': new Date().toISOString(), '批次': '', '选题': '', '标题': title, '标签': '',
+          '采用': '未定', '状态': '已发布', '平台': values['平台'] ?? '', '发布日': values['发布日'] ?? today,
+          '播放': values['播放'] ?? '', '涨粉': values['涨粉'] ?? '', '私信': values['私信'] ?? '', '加微': values['加微'] ?? '',
+          '爆款': '', '分数': '', '目录': '', '备注': tr('从后台数据导入'),
+        })
+        content.push(row)
+        createdTitles.push(title)
+        created++
       }
       rescore(root)
       writeLessonMarkdown(root)
-      return json(res, 200, { matched, unmatched })
+      return json(res, 200, { matched, created, createdTitles, unmatched, total: data.length })
+    }
+    case 'content/create': {
+      // 手动补录：以前发过的视频也得能进内容库，不然数据永远只有插件里做的那几条
+      const title = String(body.title ?? '').trim()
+      if (!title) return json(res, 400, { error: tr('先写一个标题') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      ensureLayout(root)
+      const now = new Date()
+      const row = recordContent(root, {
+        '日期': String(body.date ?? '').trim() || dayStamp(now), '创建时间': now.toISOString(), '批次': '',
+        '选题': String(body.topic ?? '').trim(), '标题': title, '标签': '',
+        '采用': String(body.adopt ?? '未定'), '状态': String(body.status ?? '已发布'),
+        '平台': String(body.platform ?? '').trim(), '发布日': String(body.publishedAt ?? '').trim(),
+        '播放': String(body.views ?? '').trim(), '涨粉': String(body.follows ?? '').trim(),
+        '私信': String(body.dms ?? '').trim(), '加微': String(body.added ?? '').trim(),
+        '爆款': '', '分数': '', '目录': '', '备注': String(body.note ?? '').trim() || tr('手动补录'),
+      })
+      rescore(root)
+      writeLessonMarkdown(root)
+      return json(res, 200, { row })
+    }
+    case 'content/remove': {
+      // 只删表里的这一行，文件夹里的 Word / Markdown 留着
+      const key = String(body.key ?? body.dir ?? '')
+      if (!key) return json(res, 400, { error: tr('缺少目录') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const removed = removeContent(root, key)
+      if (!removed) return json(res, 404, { error: tr('没找到这一条') })
+      rescore(root)
+      writeLessonMarkdown(root)
+      return json(res, 200, { removed })
     }
     case 'content/update': {
-      // 内容库：改采用/平台/发布日/播放/涨粉/私信/爆款
-      const dir = String(body.dir ?? '')
-      if (!dir) return json(res, 400, { error: tr('缺少目录') })
+      // 内容库：改采用/状态/平台/发布日/播放/涨粉/私信/加微/爆款
+      const key = String(body.key ?? body.dir ?? '')
+      if (!key) return json(res, 400, { error: tr('缺少目录') })
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      const row = updateContent(root, dir, body.patch ?? {})
+      const row = updateContent(root, key, body.patch ?? {})
       if (!row) return json(res, 404, { error: tr('没找到这一条') })
       rescore(root)
       writeLessonMarkdown(root)
-      const fresh = readContent(root).find(item => item['目录'] === dir) ?? row
+      const fresh = readContent(root).find(item => contentKey(item) === key) ?? row
       return json(res, 200, { row: fresh })
     }
     case 'workspace/lead/update': {

@@ -1,12 +1,16 @@
 // 看数据 = 内容库：每一条口播的真实结果（播放/涨粉/私信），自动打分、自动标爆款。
+// 插件里做的稿子、以前发过的视频（手动补录 / 从后台导入），都记在 内容库.csv 这一张表里。
 import React from 'react'
-import { fetchContent, importData, revealDir, toast, updateContentRow, useDesk } from './desk.js'
+import { createContent, fetchContent, fetchWorkspace, importData, removeContent, revealDir, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS } from './util.js'
 import { Icon } from './ui.jsx'
 
 const num = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0
+const rowKey = row => row['目录'] || row['创建时间'] || row['标题']
+
+const EMPTY_FORM = { title: '', topic: '', platform: '', publishedAt: '', views: '', follows: '', dms: '', added: '' }
 
 export function DataView() {
   useLang()
@@ -14,8 +18,12 @@ export function DataView() {
   const [rows, setRows] = React.useState(null)
   const [stats, setStats] = React.useState({ count: 0, hits: 0, views: 0, follows: 0, dms: 0 })
   const [lessons, setLessons] = React.useState('')
+  const [root, setRoot] = React.useState('')
   const [paste, setPaste] = React.useState('')
+  const [imported, setImported] = React.useState(null)
   const [busy, setBusy] = React.useState('')
+  const [form, setForm] = React.useState(EMPTY_FORM)
+  const [adding, setAdding] = React.useState(false)
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -28,10 +36,20 @@ export function DataView() {
       .catch(err => toast(err.message, { error: true }))
   }, [])
   React.useEffect(() => { load() }, [load])
+  React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
   const patch = async (row, key, value) => {
     try {
-      await updateContentRow(row['目录'], { [key]: value })
+      await updateContentRow(rowKey(row), { [key]: value })
+      load()
+    } catch (err) { toast(err.message, { error: true }) }
+  }
+
+  const remove = async (row) => {
+    if (!window.confirm(t('删掉这条记录？文件夹里的 Word / Markdown 不会被删。'))) return
+    try {
+      await removeContent(rowKey(row))
+      toast(t('已从内容库删掉一条'))
       load()
     } catch (err) { toast(err.message, { error: true }) }
   }
@@ -46,19 +64,36 @@ export function DataView() {
     setBusy('import')
     try {
       const result = await importData(paste)
-      toast(t('匹配 {n} 条，没对上 {m} 条', { n: result.matched ?? 0, m: (result.unmatched ?? []).length }))
+      setImported(result)
+      toast(t('对上 {n} 条，新建 {m} 条', { n: result.matched ?? 0, m: result.created ?? 0 }))
       setPaste('')
       load()
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
 
+  const submitAdd = async (event) => {
+    event.preventDefault()
+    if (!form.title.trim()) return toast(t('先写一个标题'), { error: true })
+    setBusy('create')
+    try {
+      await createContent(form)
+      toast(t('补录好了，已经进内容库'))
+      setForm(EMPTY_FORM)
+      setAdding(false)
+      load()
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const setField = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
+
   return (
     <div className="md-page md-data">
       <header className="md-page-head">
         <div>
           <h1>{t('看数据')}</h1>
-          <p className="md-page-sub">{t('每发一条就回来填一次：播放、涨粉、私信。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
+          <p className="md-page-sub">{t('每条内容回填播放、涨粉、私信：以前发过的视频也能补录。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
         </div>
         <span style={{ flex: 1 }} />
         <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
@@ -86,7 +121,7 @@ export function DataView() {
           <textarea rows={4} value={paste} onChange={event => setPaste(event.target.value)} placeholder={'标题,播放,涨粉,私信\n期中 58 分还能补吗,5200,18,6'} />
         </label>
         <div className="md-create-actions">
-          <span className="md-muted">{t('按标题对上内容库里的那一条；对不上的会告诉你。')}</span>
+          <span className="md-muted">{t('按标题对上内容库里的那一条；没对上的会自动补一条进来。')}</span>
           <span className="md-grow" />
           <button type="button" className="md-pill" onClick={doImport} disabled={!paste.trim() || busy === 'import'}>
             {busy === 'import' ? t('匹配中…') : t('导入数据')}
@@ -95,20 +130,50 @@ export function DataView() {
             <Icon name="chat" size={14} />{t('让助教分析')}
           </button>
         </div>
+        {imported ? (
+          <div className="md-import-result">
+            <b>{t('这次导入：对上 {n} 条 · 新建 {m} 条', { n: imported.matched ?? 0, m: imported.created ?? 0 })}</b>
+            {imported.createdTitles?.length ? <p>{t('新建：{list}', { list: imported.createdTitles.join('、') })}</p> : null}
+            {imported.unmatched?.length ? <p>{t('没对上：{list}', { list: imported.unmatched.join('、') })}</p> : null}
+            <button type="button" className="md-inline-link" onClick={() => setImported(null)}>{t('知道了')}</button>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="md-content-add">
+        <button type="button" className="md-inline-link" onClick={() => setAdding(value => !value)}>
+          {adding ? t('收起') : t('+ 补录一条（以前发过的视频也能进库）')}
+        </button>
+        {adding ? (
+          <form className="md-add-form" onSubmit={submitAdd}>
+            <label className="md-field"><span>{t('标题')}</span><input value={form.title} onChange={event => setField('title', event.target.value)} placeholder={t('家长会搜的那句话')} /></label>
+            <label className="md-field"><span>{t('选题')}</span><input value={form.topic} onChange={event => setField('topic', event.target.value)} placeholder={t('可不填')} /></label>
+            <label className="md-field"><span>{t('平台')}</span><input value={form.platform} onChange={event => setField('platform', event.target.value)} placeholder={t('抖音 / 视频号')} /></label>
+            <label className="md-field"><span>{t('发布日')}</span><input value={form.publishedAt} onChange={event => setField('publishedAt', event.target.value)} placeholder="2026-11-24" /></label>
+            {[['views', '播放'], ['follows', '涨粉'], ['dms', '私信'], ['added', '加微']].map(([key, label]) => (
+              <label className="md-field" key={key}><span>{t(label)}</span><input inputMode="numeric" value={form[key]} onChange={event => setField(key, event.target.value)} placeholder="—" /></label>
+            ))}
+            <div className="md-add-foot">
+              <span className="md-muted">{t('补进来的默认是「已发布」，不写文件，只记数据。')}</span>
+              <span className="md-grow" />
+              <button type="submit" className="md-pill is-primary" disabled={busy === 'create'}>{busy === 'create' ? t('保存中…') : t('记进内容库')}</button>
+            </div>
+          </form>
+        ) : null}
       </section>
 
       {rows === null ? <p className="md-muted">{t('读取中…')}</p> : null}
 
       {rows?.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('内容库还是空的。先去「做内容」生成几条口播，发出去以后再回来填结果。')}</p>
+          <p>{t('内容库还是空的。先去「做内容」生成几条口播，发出去以后再回来填结果；以前发过的视频也能用上面的「补录一条」。')}</p>
         </div>
       ) : null}
 
       {rows?.length ? (
         <ul className="md-content-list">
           {rows.map(row => (
-            <li className="md-content-card" key={row['目录'] || row['标题']}>
+            <li className="md-content-card" key={rowKey(row)}>
               <header className="md-card-head">
                 <h3>{row['标题']}</h3>
                 {row['爆款'] === '是' ? <b className="md-hit">{t('爆款')}</b> : null}
@@ -153,13 +218,14 @@ export function DataView() {
                 </select>
                 <span className="md-grow" />
                 {row['目录'] ? <button type="button" className="md-inline-link" onClick={() => revealDir(row['目录']).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button> : null}
+                <button type="button" className="md-inline-link" onClick={() => remove(row)}>{t('删除')}</button>
               </footer>
             </li>
           ))}
         </ul>
       ) : null}
 
-      <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: '~/Documents/Youtulh 工作台' })}</p>
+      <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: root || '~/Documents/Youtulh 工作台' })}</p>
       {!positioning.subject ? <p className="md-muted">{t('还没填设定，先去「我的设定」把科目和年级填上。')}</p> : null}
     </div>
   )

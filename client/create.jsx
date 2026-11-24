@@ -1,6 +1,7 @@
-// 做内容：出 10 个选题 → 勾选 → 每个选题出 3 个口播版本 → 挑一条。两步都能刷新，全程不跳页。
+// 做内容：出 10 个选题 → 勾选 → 每个选题出 3 个口播版本 → 挑一条。
+// 中间结果放在全局 store（并写一份 sessionStorage）：切页、刷新都不会丢。
 import React from 'react'
-import { fetchSuggestions, pickTopics, profileSummary, toast, useDesk } from './desk.js'
+import { fetchSuggestions, patchCreate, pickTopics, profileSummary, resetCreate, restoreCreateDraft, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
@@ -18,25 +19,27 @@ async function post(path, body) {
   return data
 }
 
+const variantKey = (topic, title) => `${topic}|${title}`
+
 export function CreateView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const configured = Boolean(positioning.subject || positioning.grade)
   const summary = profileSummary({ positioning, painPoints: pains })
-
-  const [topics, setTopics] = React.useState([])
-  const [picked, setPicked] = React.useState({})
-  const [groups, setGroups] = React.useState([])
-  const [examples, setExamples] = React.useState([])
-  const [lessons, setLessons] = React.useState('')
-  const [batch, setBatch] = React.useState('')
+  const create = useDesk(s => s.create)
+  const modelOk = useDesk(s => s.modelOk)
+  const modelError = useDesk(s => s.modelError)
+  const { topics, picked, groups, adopted, batch, lessons, source, examples } = create
   const [busy, setBusy] = React.useState('')
-  const [adopted, setAdopted] = React.useState({})
+
+  // 刷新页面后把上一次的选题和口播捡回来
+  React.useEffect(() => { restoreCreateDraft() }, [])
 
   React.useEffect(() => {
-    fetchSuggestions().then(result => setExamples(result.prompts)).catch(() => {})
-  }, [])
+    if (examples.length) return
+    fetchSuggestions().then(result => patchCreate({ examples: result.prompts ?? [] })).catch(() => {})
+  }, [examples.length])
 
   const selected = topics.filter(topic => picked[topic])
 
@@ -44,12 +47,10 @@ export function CreateView() {
     setBusy('topics')
     try {
       const data = await post('topics', { count: TOPIC_COUNT })
-      setTopics(data.topics ?? [])
-      setBatch(data.batch ?? '')
-      setLessons(data.lessons ?? '')
-      setPicked({})
-      setGroups([])
-      setAdopted({})
+      patchCreate({
+        topics: data.topics ?? [], batch: data.batch ?? '', lessons: data.lessons ?? '',
+        source: data.source ?? '', picked: {}, groups: [], adopted: {},
+      })
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
@@ -60,7 +61,10 @@ export function CreateView() {
     try {
       if (batch) await pickTopics(batch, selected).catch(() => {})
       const data = await post('scripts', { topics: selected, batch })
-      setGroups((data.groups ?? []).map((group, index) => ({ ...group, key: `${group.topic}-${index}` })))
+      patchCreate({
+        groups: (data.groups ?? []).map((group, index) => ({ ...group, key: `${group.topic}-${index}` })),
+        source: data.source ?? '',
+      })
       toast(t('每个选题出了 3 个版本，挑一条'))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -72,18 +76,23 @@ export function CreateView() {
       const data = await post('scripts', { topics: [group.topic], batch })
       const next = data.groups?.[0]
       if (next) {
-        setGroups(prev => prev.map(item => (item.topic === group.topic ? { ...next, key: `${next.topic}-${Date.now()}` } : item)))
+        patchCreate(state => ({
+          groups: state.groups.map(item => (item.topic === group.topic ? { ...next, key: `${next.topic}-${Date.now()}` } : item)),
+          // 这一组换了新稿子，之前那条「已采用」不再算数
+          adopted: Object.fromEntries(Object.entries(state.adopted).filter(([key]) => !key.startsWith(`${group.topic}|`))),
+          source: data.source ?? state.source,
+        }))
       }
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
 
-  const adopt = async (group, variant, index) => {
-    const key = `${group.topic}-${index}`
+  const adopt = async (group, variant) => {
+    const key = variantKey(group.topic, variant.title)
     setBusy(key)
     try {
       const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], batch })
-      setAdopted(prev => ({ ...prev, [key]: true }))
+      patchCreate(state => ({ adopted: { ...state.adopted, [key]: true } }))
       toast(t('已保存到 {dir}，并记进内容库', { dir: data.dir }))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -99,10 +108,26 @@ export function CreateView() {
       <header className="md-page-head">
         <div>
           <h1>{t('做内容')}</h1>
-          <p className="md-page-sub">{t('先出 10 个选题，勾中的每个给 3 个版本，你挑一条。不喜欢哪一批，就按刷新。')}</p>
+          <p className="md-page-sub">{t('先出 10 个选题，勾中的每个给 3 个版本，你挑一条。不喜欢哪一批，就按刷新；切到别的页面也不会丢。')}</p>
           {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         </div>
       </header>
+
+      {!configured ? (
+        <div className="md-warn">
+          <b>{t('还没填设定')}</b>
+          <span>{t('先告诉我科目、年级、城市，出的选题才是给你的，不是给所有人的。')}</span>
+          <button type="button" className="md-pill is-small" onClick={() => setDesk({ view: 'setup', focusId: null })}>{t('去填设定')}</button>
+        </div>
+      ) : null}
+
+      {modelOk === false ? (
+        <div className="md-warn">
+          <b>{t('模型没通')}</b>
+          <span>{modelError || t('现在只能用本地模板凑合，写出来会偏平。')}</span>
+          <button type="button" className="md-pill is-small" onClick={() => setDesk({ settingsOpen: true })}>{t('去设置')}</button>
+        </div>
+      ) : null}
 
       {lessons ? (
         <details className="md-lessons md-lessons-inline">
@@ -115,7 +140,7 @@ export function CreateView() {
         <div className="md-create-pains">
           <span>{t('没方向就点一条：')}</span>
           {examples.slice(0, 4).map(example => (
-            <button type="button" key={example} className="md-chip" onClick={() => { setTopics([example]); setPicked({ [example]: true }) }}>{example}</button>
+            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], picked: { [example]: true }, groups: [], adopted: {} })}>{example}</button>
           ))}
         </div>
       ) : null}
@@ -125,6 +150,7 @@ export function CreateView() {
           <span className="md-muted">
             {topics.length ? t('已出 {n} 个选题，勾选后生成。', { n: topics.length }) : t('点右边先出 10 个选题。')}
           </span>
+          {source ? <span className={`md-source ${source === 'local' ? 'is-local' : ''}`}>{source === 'local' ? t('本地模板 · 模型没通') : t('模型生成')}</span> : null}
           <span className="md-grow" />
           <button type="button" className="md-pill" onClick={() => { if (!startChat('content', { hint: selected[0] ?? '', profile: summary })) launchFailedToast(toast) }} disabled={!selected.length}>
             <Icon name="chat" size={14} />{t('去对话里写')}
@@ -141,13 +167,14 @@ export function CreateView() {
             <b>{t('选题')}</b>
             <span className="md-muted">{t('勾 {n} 个', { n: selected.length })}</span>
             <span className="md-grow" />
-            <button type="button" className="md-inline-link" onClick={() => setPicked(Object.fromEntries(topics.map(topic => [topic, true])))}>{t('全选')}</button>
-            <button type="button" className="md-inline-link" onClick={() => setPicked({})}>{t('清空')}</button>
+            <button type="button" className="md-inline-link" onClick={() => patchCreate({ picked: Object.fromEntries(topics.map(topic => [topic, true])) })}>{t('全选')}</button>
+            <button type="button" className="md-inline-link" onClick={() => patchCreate({ picked: {} })}>{t('清空')}</button>
+            <button type="button" className="md-inline-link" onClick={() => { resetCreate(); toast(t('这一批清掉了')) }}>{t('清空这批')}</button>
           </header>
           <ul className="md-topic-list">
             {topics.map(topic => (
               <li key={topic}>
-                <button type="button" className={`md-topic ${picked[topic] ? 'is-on' : ''}`} onClick={() => setPicked({ ...picked, [topic]: !picked[topic] })}>
+                <button type="button" className={`md-topic ${picked[topic] ? 'is-on' : ''}`} onClick={() => patchCreate(state => ({ picked: { ...state.picked, [topic]: !state.picked[topic] } }))}>
                   <span className="md-topic-dot" aria-hidden="true" />{topic}
                 </button>
               </li>
@@ -183,10 +210,11 @@ export function CreateView() {
                 </button>
               </div>
               <ul>
-                {group.variants.map((variant, index) => {
-                  const key = `${group.topic}-${index}`
+                {group.variants.map((variant) => {
+                  const key = variantKey(group.topic, variant.title)
+                  const isAdopted = Boolean(adopted[key])
                   return (
-                  <li key={key} className={`md-script-item ${adopted[key] ? 'is-adopted' : ''}`}>
+                  <li key={key} className={`md-script-item ${isAdopted ? 'is-adopted' : ''}`}>
                     <header className="md-variant-head">
                       <span className="md-variant-tag">{variant.variant ?? 'A'}</span>
                       <h4>{variant.title}</h4>
@@ -194,8 +222,8 @@ export function CreateView() {
                     <div className="md-script-lines">{variant.script.split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
                     <div className="md-script-tags">{(variant.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
                     <div className="md-script-actions">
-                      <button type="button" className={`md-pill is-small ${adopted[key] ? 'is-primary' : ''}`} onClick={() => adopt(group, variant, index)} disabled={adopted[key] || busy === key}>
-                        {adopted[key] ? t('已采用') : busy === key ? t('保存中…') : t('采用这条')}
+                      <button type="button" className={`md-pill is-small ${isAdopted ? 'is-primary' : ''}`} onClick={() => adopt(group, variant)} disabled={isAdopted || busy === key}>
+                        {isAdopted ? t('已采用') : busy === key ? t('保存中…') : t('采用这条')}
                       </button>
                       <button type="button" className="md-inline-link" onClick={() => copy(variant)}>{t('复制')}</button>
                     </div>

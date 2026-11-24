@@ -86,32 +86,35 @@ export function DmView() {
           </button>
         </header>
         {leads.length ? (
-          <div className="md-i-table">
-            <table className="md-table is-plain">
-              <thead><tr><th>{t('日期')}</th><th>{t('家长')}</th><th>{t('卡点')}</th><th>{t('家长反应')}</th><th>{t('结果')}</th><th /></tr></thead>
-              <tbody>
-                {leads.map(lead => (
-                  <tr key={`${lead.date}-${lead.name}-${lead.raw.slice(0, 8)}`}>
-                    <td>{lead.date}</td>
-                    <td>{lead.name || lead.grade || <span className="md-muted">{t('未填')}</span>}</td>
-                    <td className="md-dm-wrap">{lead.painPoint || '—'}</td>
-                    <td>
-                      <select value={lead.reaction || ''} onChange={event => mark(lead, { reaction: event.target.value })}>
-                        <option value="">{t('还没回')}</option>
-                        {REACTIONS.filter(row => row !== '没回').map(row => <option key={row} value={row}>{t(row)}</option>)}
-                      </select>
-                    </td>
-                    <td>
-                      <select value={lead.result || '待定'} onChange={event => mark(lead, { result: event.target.value })}>
-                        {RESULTS.map(row => <option key={row} value={row}>{t(row)}</option>)}
-                      </select>
-                    </td>
-                    <td className="is-num"><button type="button" className="md-inline-link" onClick={() => copy(lead.raw)}>{t('复制原文')}</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="md-lead-list">
+            {leads.map(lead => (
+              <li className="md-lead" key={`${lead.date}-${lead.name}-${lead.raw.slice(0, 8)}`}>
+                <div className="md-lead-head">
+                  <b>{lead.name || lead.grade || t('未填')}</b>
+                  <span className="md-lead-date">{lead.date}</span>
+                  <span className="md-grow" />
+                  <span className={`md-lead-next ${lead.next === '待跟进' || lead.next === '待加微' ? 'is-todo' : ''}`}>{lead.next}</span>
+                </div>
+                {lead.painPoint ? <p className="md-lead-pain">{lead.painPoint}</p> : null}
+                <div className="md-lead-actions">
+                  <label className="md-lead-field">
+                    <span>{t('家长反应')}</span>
+                    <select value={lead.reaction || ''} onChange={event => mark(lead, { reaction: event.target.value })}>
+                      <option value="">{t('还没回')}</option>
+                      {REACTIONS.filter(row => row !== '没回').map(row => <option key={row} value={row}>{t(row)}</option>)}
+                    </select>
+                  </label>
+                  <label className="md-lead-field">
+                    <span>{t('结果')}</span>
+                    <select value={lead.result || '待定'} onChange={event => mark(lead, { result: event.target.value })}>
+                      {RESULTS.map(row => <option key={row} value={row}>{t(row)}</option>)}
+                    </select>
+                  </label>
+                  <button type="button" className="md-inline-link" onClick={() => copy(lead.raw)}>{t('复制原文')}</button>
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : <p className="md-muted md-dm-empty">{t('还没有线索。粘第一条私信交给助教，他会把台账写进 线索表.csv。')}</p>}
       </section>
     </div>

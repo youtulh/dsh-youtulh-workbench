@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, removeContent, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -130,6 +130,23 @@ test('内容库：记录一条口播、按目录更新不重复、未知列不�
     rows = readContent(root)
     assert.equal(rows[0]['涨粉'], '12')
     assert.equal(updateContent(root, join(root, '不存在'), {}), null)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('内容库：没有目录的行（补录 / 导入）按创建时间更新和删除', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-content-manual-'))
+  try {
+    const stamp = '2026-11-24T10:00:00.000Z'
+    recordContent(root, { '日期': '2026-11-24', '创建时间': stamp, '标题': '以前发过的视频', '状态': '已发布', '目录': '' })
+    assert.equal(readContent(root).length, 1)
+    assert.equal(updateContent(root, stamp, { '私信': '9' })['私信'], '9')
+    assert.equal(readContent(root)[0]['私信'], '9')
+    const removed = removeContent(root, stamp)
+    assert.equal(removed['标题'], '以前发过的视频')
+    assert.equal(readContent(root).length, 0)
+    assert.equal(removeContent(root, 'nope'), null)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

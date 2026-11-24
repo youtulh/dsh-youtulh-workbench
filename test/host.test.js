@@ -8,7 +8,7 @@ import { assertPublicUrl, harvest, harvestText } from '../src/harvest.js'
 import { activeStyle, normalizeStyle, stylePrompts, styleToVoice } from '../src/style.js'
 import { articlePrompts, planPrompts } from '../src/ai.js'
 import { migrateState } from '../src/seed.js'
-import { requestRejection } from '../src/host.js'
+import { canonImportColumn, parseImportTable, requestRejection } from '../src/host.js'
 import { localIntent, parseWhen } from '../src/intents.js'
 import { computeInsights, exportSkill, proposeRules } from '../src/learn.js'
 import { applyOps } from '../src/ops.js'
@@ -27,6 +27,24 @@ const NOW = new Date('2026-10-31T15:00:00+08:00') // 周六
 function seed() {
   return buildSeed(NOW)
 }
+
+test('导入数据：认得抖音/视频号后台的列名，没表头就按顺序', () => {
+  assert.equal(canonImportColumn('作品名称'), '标题')
+  assert.equal(canonImportColumn('视频发布时间'), '发布日')
+  assert.equal(canonImportColumn('播放量'), '播放')
+  assert.equal(canonImportColumn('新增粉丝'), '涨粉')
+  assert.equal(canonImportColumn('私信数'), '私信')
+  assert.equal(canonImportColumn('点赞量'), '点赞量')
+
+  const withHead = parseImportTable('作品名称,播放量,新增粉丝,私信数,发布时间\n期中 58 分还能补吗,5200,18,6,2026-11-20')
+  assert.equal(withHead.hasHead, true)
+  assert.deepEqual(withHead.data[0], { 标题: '期中 58 分还能补吗', 播放: '5200', 涨粉: '18', 私信: '6', 发布日: '2026-11-20' })
+
+  const noHead = parseImportTable('期中 58 分还能补吗\t5200\t18\t6')
+  assert.equal(noHead.hasHead, false)
+  assert.deepEqual(noHead.data[0], { 标题: '期中 58 分还能补吗', 播放: '5200', 涨粉: '18', 私信: '6' })
+  assert.deepEqual(parseImportTable('').data, [])
+})
 
 test('parseWhen 解析常见中文时间', () => {
   const at = (text) => {

@@ -33,7 +33,7 @@ test('normalizeScript：只认三个字段，标签去掉 #', () => {
   assert.deepEqual(one.tags, ['x', 'y'])
 })
 
-test('本地口播按五段结构：场景提问 → 破旧认知 → 说法 → 三条动作 → 引导', () => {
+test('本地口播按六段结构：场景提问 → 接情绪 → 破旧认知 → 说法 → 讲 why → 引导', () => {
   const one = localScript(state, '偏科的孩子，多半卡在物质的量')
   const lines = one.script.split('\n')
   assert.match(lines[0], /有没有这样的情况/)
@@ -55,7 +55,7 @@ test('口播 prompt 带上他的开头句式，选题 prompt 要求从家长原�
   const { scriptPrompt, topicsPrompt } = await import('../src/topics.js')
   const { system } = scriptPrompt(state, '偏科的孩子')
   assert.match(system, /我不知道咱们家里边有没有这样的孩子/)
-  assert.match(system, /五段/)
+  assert.match(system, /六段/)
   const topics = topicsPrompt(state, 30)
   assert.match(topics.system, /家长的原话/)
 })
@@ -65,6 +65,9 @@ test('经验块会拼进选题和口播 prompt', async () => {
   const lessons = '\n经验（照这个来）：\n- 「偏科的孩子卡在哪」私信 6'
   assert.match(scriptPrompt(state, '偏科', lessons).system, /偏科的孩子卡在哪/)
   assert.match(topicsPrompt(state, 30, lessons).system, /偏科的孩子卡在哪/)
+  // 三个版本也要吃到经验块，不然「越用越好」只到选题这一层
+  const { variantsPrompt } = await import('../src/topics.js')
+  assert.match(variantsPrompt(state, '偏科', lessons).system, /偏科的孩子卡在哪/)
 })
 
 test('课程要求：选题按 3:3:3:1、口播带八条红线、同城要带地名', async () => {

@@ -136,7 +136,7 @@ function Desk() {
         <main className="md-content" key={view}>
           {error ? (
             <div className="md-page"><p className="md-muted">{t('工作台加载失败：{error}', { error })}</p><button type="button" className="md-btn" onClick={loadDesk}>{t('重试')}</button></div>
-          ) : ready ? <Active /> : <div className="md-loading"><span className="md-shimmer">{t('正在铺开灵感…')}</span></div>}
+          ) : ready ? <Active /> : <div className="md-loading"><span className="md-shimmer">{t('正在打开工作台…')}</span></div>}
         </main>
       </div>
       <FormDialog />
