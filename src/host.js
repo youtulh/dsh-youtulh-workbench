@@ -92,7 +92,7 @@ const STUDENT_IMPORT_ALIAS = {
   name: ['姓名', '学生', '学生姓名', '名字', '孩子'],
   grade: ['年级'],
   school: ['学校', '学校名称'],
-  contact: ['微信', '手机', '电话', '联系方式', '微信手机'],
+  contact: ['微信', '手机', '电话', '联系方式', '微信手机', '手机号', '联系电话', '微信/手机'],
   layer: ['卡点层', '卡点', '薄弱点'],
   className: ['班', '班级', '所在班', '在哪个班'],
   source: ['来源'],
@@ -830,6 +830,7 @@ async function route(ctx, store, desk, req, res) {
       if (!cols.includes('name')) return json(res, 400, { error: tr('第一行要有「姓名」列') })
       let imported = 0
       let skipped = 0
+      const classNames = new Set()
       for (const row of table.slice(1)) {
         const input = {}
         for (let i = 0; i < cols.length; i += 1) {
@@ -837,9 +838,18 @@ async function route(ctx, store, desk, req, res) {
         }
         if (!String(input.name ?? '').trim()) { skipped += 1; continue }
         saveStudent(root, input)
+        if (String(input.className ?? '').trim()) classNames.add(String(input.className).trim())
         imported += 1
       }
-      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped })
+      // 名单里提到但还没建过的班，顺手建一个空班，免得学生挂在「不存在的班」里
+      const existing = new Set(readClasses(root).map(row => row.name))
+      let createdClasses = 0
+      for (const name of classNames) {
+        if (existing.has(name)) continue
+        saveClass(root, { name })
+        createdClasses += 1
+      }
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped, createdClasses })
     }
     case 'students/save': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
