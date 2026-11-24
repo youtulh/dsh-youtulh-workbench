@@ -328,6 +328,13 @@ export const PAGES = {
   '按你的提示写的': 'Written from your line',
   '想好了就写一句，直接出 3 版草稿；没想好就先出 10 个选题，勾中的每个给 3 个版本。切到别的页面也不会丢。': 'Have a direction? One line gets you 3 drafts. Not yet? Pick from 10 topics, 3 versions each. Nothing is lost when you switch pages.',
   '正在写…': 'Writing…',
+  '用 AI 分析': 'Analyze with AI',
+  '想怎么改？比如：开头别报分数，压到 40 秒': 'What should change? e.g. no score in the opening, trim to 40s',
+  按提示改: 'Revise as asked',
+  '正在改…': 'Revising…',
+  '先写一句想怎么改': 'Write one line about what to change',
+  '模型没通，这次没改；可以先点「改一下」手动改': 'No model connection, nothing changed. Edit it by hand for now.',
+  '按你说的改好了，还是 3 版': 'Revised as asked — still 3 versions',
   // 问卷和设定：把说明书口气改成人话
   '说清楚你教哪一科。家长刷到你，先看你教的是不是她要的科目。': 'Name the subject. Parents check that first.',
   '同年级的家长，愁的事差不多；换个年级，愁的就全变了。': 'Parents in one grade worry about the same things; change the grade and it all changes.',

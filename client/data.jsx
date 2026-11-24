@@ -151,7 +151,7 @@ export function DataView() {
             {busy === 'import' ? t('匹配中…') : t('导入数据')}
           </button>
           <button type="button" className="md-pill is-primary" onClick={analyze}>
-            <Icon name="chat" size={14} />{t('让助教分析')}
+            <Icon name="chat" size={14} />{t('用 AI 分析')}
           </button>
         </div>
         {imported ? (

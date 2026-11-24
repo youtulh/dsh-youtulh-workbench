@@ -335,9 +335,15 @@ ${given}
   }
 }
 
+const VARIANT_KEYS = ['A', 'B', 'C']
+
 export function normalizeVariants(json) {
   const list = Array.isArray(json?.variants) ? json.variants : []
-  return list.map(row => normalizeScript(row)).filter(row => row.title && row.script).slice(0, 3)
+  return list
+    .map(row => normalizeScript(row))
+    .filter(row => row.title && row.script)
+    .slice(0, 3)
+    .map((row, index) => ({ ...row, variant: VARIANT_KEYS[index] }))
 }
 
 /** 没模型时的三个版本：换开场，其余照六段结构。 */
@@ -355,7 +361,48 @@ export function localVariants(state, topic) {
   const titles = [base.title, `${topic}（说清楚版）`, `${topic}（家长版）`]
   return opens.map((opening, index) => ({
     ...base,
+    variant: VARIANT_KEYS[index],
     title: titles[index],
     script: [...opening, base.script.split('\n').slice(2).join('\n')].filter(Boolean).join('\n'),
   }))
+}
+
+// ---- 已经出过稿子，按老师的一句话改 ----
+
+/** 校验「按提示改」的请求：一句要求 + 1 到 3 条原稿。 */
+export function normalizeImprove(body) {
+  const topic = normalizeBrief(body?.topic)
+  const note = normalizeBrief(body?.note, 200)
+  const variants = (Array.isArray(body?.variants) ? body.variants : [])
+    .map(row => normalizeScript(row))
+    .filter(row => row.title && row.script)
+    .slice(0, 3)
+  return { topic, note, variants }
+}
+
+export function improvePrompt(state, topic, variants, note, lessons = '') {
+  const pains = (state?.painPoints ?? []).slice(0, 8)
+  const drafts = variants
+    .map((row, index) => `[${VARIANT_KEYS[index]}] ${row.title}\n${row.script}`)
+    .join('\n\n')
+  const system = `你是给补课老师改短视频口播的编辑。老师已经看过三版，现在按他的一句要求改，不要推翻重写、不要换选题。
+${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
+${styleBlock()}
+
+改稿规则：
+- 三版各自保留原来的切入角度（A 分数/焦虑、B 知识点/场景、C 家长误区），只改他不满意的地方
+- 保留原稿里讲对的判断、例子和结尾动作；不新增他没提过的事实、分数、学校名
+- 仍然一句话一行、按气口断句、开头 3 秒抓人、结尾只留一个动作
+- 他的要求和上面红线冲突时，按红线改，并在正文里体现出来${lessons}
+
+只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]}]}`
+  return {
+    system,
+    user: `选题：${topic || '（沿用原来的）'}
+
+老师的要求：${note}
+
+原来的三版：
+${drafts}`,
+  }
 }

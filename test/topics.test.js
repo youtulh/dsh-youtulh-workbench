@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { localScript, localTopics, normalizeBrief, normalizeScript, normalizeTopics, topicsPrompt, variantsPrompt } from '../src/topics.js'
+import { improvePrompt, localScript, localTopics, normalizeBrief, normalizeImprove, normalizeScript, normalizeTopics, topicsPrompt, variantsPrompt } from '../src/topics.js'
 
 const state = { positioning: { subject: '化学', grade: '高一', city: '北京' }, painPoints: ['期中 58 分还能补吗', '物质的量听不懂', '上课听懂了做题就废'] }
 
@@ -128,6 +128,44 @@ test('一个选题出三个版本：标题和开头各不相同，本地兜底�
   ] })
   assert.equal(normalized.length, 3)
   assert.deepEqual(normalized.map(item => item.title), ['a', 'b', 'c'])
+  // 页面上靠这个标 A/B/C，别三版全写成 A
+  assert.deepEqual(normalized.map(item => item.variant), ['A', 'B', 'C'])
+  assert.deepEqual(list.map(item => item.variant), ['A', 'B', 'C'])
+})
+
+test('按提示改：只认一句要求和 1 到 3 条原稿', () => {
+  const got = normalizeImprove({
+    topic: '  期中 58 分，先补哪一块  ',
+    note: '  开头别报分数\n压到 40 秒  ',
+    variants: [
+      { title: 'a', script: 'x' },
+      { title: '', script: '' },
+      { title: 'b', script: 'y' },
+      { title: 'c', script: 'z' },
+      { title: 'd', script: 'w' },
+    ],
+  })
+  assert.equal(got.topic, '期中 58 分，先补哪一块')
+  assert.equal(got.note, '开头别报分数 压到 40 秒')
+  assert.deepEqual(got.variants.map(row => row.title), ['a', 'b', 'c'])
+  assert.equal(normalizeImprove({ note: '   ' }).note, '')
+  assert.equal(normalizeImprove({ note: '改'.repeat(300) }).note.length, 200)
+  assert.deepEqual(normalizeImprove(null).variants, [])
+})
+
+test('改稿 prompt：带上老师的要求和原稿，不让他从零重写', () => {
+  const variants = [
+    { title: '期中 58 分还能补吗', script: '第一行\n第二行', tags: [] },
+    { title: '别急着报班', script: '第三行', tags: [] },
+  ]
+  const prompt = improvePrompt(state, '期中 58 分，先补哪一块', variants, '开头别报分数，压到 40 秒')
+  assert.match(prompt.user, /老师的要求：开头别报分数，压到 40 秒/)
+  assert.match(prompt.user, /\[A\] 期中 58 分还能补吗/)
+  assert.match(prompt.user, /\[B\] 别急着报班/)
+  assert.match(prompt.system, /不要推翻重写/)
+  assert.match(prompt.system, /红线/)
+  assert.match(prompt.system, /只输出 JSON/)
+  assert.match(prompt.system, /\{"variants"/)
 })
 
 test('选题去重与配比：换皮的去掉，缺的类补上，四类都要有', async () => {

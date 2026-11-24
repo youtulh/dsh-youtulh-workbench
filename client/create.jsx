@@ -34,7 +34,7 @@ export function CreateView() {
   const create = useDesk(s => s.create)
   const modelOk = useDesk(s => s.modelOk)
   const modelError = useDesk(s => s.modelError)
-  const { topics, angles, picked, groups, adopted, batch, lessons, source, examples, brief } = create
+  const { topics, angles, picked, groups, adopted, batch, lessons, source, examples, brief, notes } = create
   const briefText = String(brief ?? '').trim()
   const [busy, setBusy] = React.useState('')
   const [editKey, setEditKey] = React.useState('')
@@ -112,6 +112,31 @@ export function CreateView() {
       }
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
+  }
+
+  // 出过稿子以后，按老师写的一句要求改这组（还是 3 版）
+  const improve = async (group) => {
+    const note = String(notes?.[group.topic] ?? '').trim()
+    if (!note) return toast(t('先写一句想怎么改'), { error: true })
+    setBusy(`improve-${group.topic}`)
+    try {
+      const data = await post('scripts/improve', { topic: group.topic, note, variants: group.variants, batch })
+      const variants = data.variants ?? []
+      if (!variants.length) {
+        toast(t('模型没通，这次没改；可以先点「改一下」手动改'), { error: true })
+        return
+      }
+      patchCreate(state => ({
+        groups: state.groups.map(item => (item.topic === group.topic ? { ...item, variants } : item)),
+        // 稿子换了，这一组之前「已采用」的标记不再算数
+        adopted: Object.fromEntries(Object.entries(state.adopted).filter(([key]) => !key.startsWith(`${group.topic}|`))),
+        notes: { ...state.notes, [group.topic]: '' },
+        source: data.source ?? state.source,
+      }))
+      setEditKey('')
+      toast(t('按你说的改好了，还是 3 版'))
+    } catch (err) { toast(err.message, { error: true }) }
+    finally { setBusy('') }
   }
 
   const adopt = async (group, variant) => {
@@ -276,8 +301,25 @@ export function CreateView() {
                 <h3>{group.source === 'brief' ? t('按你的提示写的') : group.topic}</h3>
                 {group.source === 'brief' ? <span className="md-brief-echo" title={group.topic}>{group.topic}</span> : null}
                 <span className="md-grow" />
-                <button type="button" className="md-inline-link" onClick={() => refreshGroup(group)} disabled={busy === `group-${group.topic}`}>
+                <button type="button" className="md-inline-link" onClick={() => refreshGroup(group)} disabled={busy === `group-${group.topic}` || busy === `improve-${group.topic}`}>
                   {busy === `group-${group.topic}` ? t('重写中…') : t('刷新这组')}
+                </button>
+              </div>
+              <div className="md-script-note">
+                <input
+                  value={notes?.[group.topic] ?? ''}
+                  maxLength={200}
+                  onChange={event => patchCreate(state => ({ notes: { ...state.notes, [group.topic]: event.target.value } }))}
+                  onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent?.isComposing) { event.preventDefault(); improve(group) } }}
+                  placeholder={t('想怎么改？比如：开头别报分数，压到 40 秒')}
+                />
+                <button
+                  type="button"
+                  className="md-pill is-small"
+                  onClick={() => improve(group)}
+                  disabled={!String(notes?.[group.topic] ?? '').trim() || busy === `improve-${group.topic}` || busy === `group-${group.topic}`}
+                >
+                  <Icon name="spark" size={13} />{busy === `improve-${group.topic}` ? t('正在改…') : t('按提示改')}
                 </button>
               </div>
               <ul>

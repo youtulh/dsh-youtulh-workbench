@@ -1355,6 +1355,11 @@ body[data-ds-dark-theme] .md-root {
 /* 口播：按选题分组，一组三个版本 */
 .md-script-group + .md-script-group { margin-top: 16px; }
 .md-script-group-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+/* 出过稿以后按一句要求改这组 */
+.md-script-note { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.md-script-note input { flex: 1; min-width: 0; padding: 7px 10px; border: .5px solid var(--line); border-radius: var(--r-sm); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12.5px; line-height: 18px; }
+.md-script-note input:focus { border-color: var(--accent); }
+@media (max-width: 700px) { .md-script-note { flex-wrap: wrap; } }
 .md-root .md-script-group-head h3 { font-size: 13px; line-height: 20px; font-weight: 500; color: var(--ink2); }
 .md-script-group ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 1120px) { .md-script-group ul { grid-template-columns: minmax(0, 1fr); } }

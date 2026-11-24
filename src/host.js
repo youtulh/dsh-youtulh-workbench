@@ -10,7 +10,7 @@ import { createTools } from './tools.js'
 import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
-import { fillTopicAngles, guessTopicAngle, localTopics, localVariants, normalizeBrief, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
+import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { dmPrompt, localDm, normalizeDm } from './dm.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, recordPickedTopics, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
@@ -417,6 +417,21 @@ async function route(ctx, store, desk, req, res) {
         groups.push(...rows)
       }
       return json(res, 200, { groups, source: usedModel ? 'model' : 'local', lessons })
+    }
+    case 'scripts/improve': {
+      // 已经出过稿子，按老师写的一句要求改；改不了就说改不了，不假装改过
+      const { topic, note, variants: before } = normalizeImprove(body)
+      if (!note) return json(res, 400, { error: tr('先写一句想怎么改') })
+      if (!before.length) return json(res, 400, { error: tr('没有可改的稿子') })
+      const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const lessons = buildLessonBlock(root)
+      let variants = []
+      try {
+        const { text: raw } = await callModel(ctx, { ...improvePrompt(state, topic, before, note, lessons), maxTokens: 2800, light: true })
+        variants = normalizeVariants(extractJson(raw))
+      } catch { /* 没模型就保持原样，交给页面提示 */ }
+      return json(res, 200, { variants, source: variants.length ? 'model' : 'local' })
     }
     case 'content/adopt': {
       // 采用这条 → 现在才写文件、记进内容库
