@@ -957,3 +957,33 @@ body[data-ds-dark-theme] .md-root {
 .md-setup-more summary { cursor: pointer; color: var(--ink3); font-size: 13px; }
 .md-setup-more .md-setup-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
 @media (max-width: 700px) { .md-setup-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== 做内容：三组候选，挑一版 ===== */
+.md-create { display: grid; gap: 12px; width: min(880px, 100%); margin: 0 auto; }
+.md-create-input { padding: 16px 18px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-create-input textarea { width: 100%; padding: 10px 12px; border: .5px solid var(--line); border-radius: var(--r-md); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); resize: vertical; font: inherit; font-size: 14px; line-height: 22px; }
+.md-create-input textarea:focus { border-color: var(--accent); }
+.md-create-pains { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; color: var(--ink3); font-size: 12.5px; }
+.md-create-pains .md-chip { cursor: pointer; }
+.md-create-pains .md-chip:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.md-create-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.md-create-results { display: grid; gap: 10px; }
+.md-create-card { padding: 16px 18px; }
+.md-create-card .md-tile-head { margin-bottom: 10px; }
+.md-create-script .md-create-lines { max-height: 320px; overflow: auto; }
+.md-create-lines p { color: var(--ink); font-size: 13.5px; line-height: 24px; }
+.md-create-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.md-create-tabs button { padding: 4px 10px; border-radius: 999px; color: var(--ink3); font-size: 12.5px; background: var(--hover); }
+.md-create-tabs button.is-on { color: var(--on-primary); background: var(--primary); }
+.md-pick { display: grid; gap: 6px; }
+.md-pick-row { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 8px 10px; border-radius: var(--r-sm); text-align: left; transition: background .15s; }
+.md-pick-row:hover { background: var(--hover); }
+.md-pick-row.is-on { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.md-pick-dot { flex: none; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.md-pick-row.is-on .md-pick-dot { box-shadow: inset 0 0 0 4px var(--accent); }
+.md-pick-text { color: var(--ink); font-size: 13.5px; line-height: 21px; }
+.md-create-tagsets { display: flex; flex-direction: column; gap: 8px; }
+.md-tagset { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; border-radius: var(--r-sm); text-align: left; box-shadow: inset 0 0 0 .5px var(--line); }
+.md-tagset.is-on { box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.md-tagset span { padding: 0 7px; border-radius: var(--r-xs); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12.5px; line-height: 20px; }
+.md-create-empty { display: flex; align-items: center; gap: 6px; color: var(--ink3); font-size: 12.5px; }

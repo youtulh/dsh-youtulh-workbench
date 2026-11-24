@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, saveProduction } from './export.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
+import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
 import { harvest, harvestText } from './harvest.js'
 import { generateImage } from './images.js'
 import { generateToolImage, imageTool } from './image-tool.js'
@@ -354,6 +355,24 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { label, state: await store.read(), canUndo: store.undo.length > 0 })
     }
     case 'chat': return json(res, 200, await chatTurn(ctx, store, desk, body))
+    case 'create': {
+      // 做内容：老师给一句话，回三组候选让人挑。没模型时给一份朴素能改的稿子
+      const hint = String(body.hint ?? '').trim()
+      if (!hint) return json(res, 400, { error: tr('先写一句你想讲什么') })
+      const state = await store.read()
+      let creative
+      let engine = 'local'
+      try {
+        const prompts = createPrompts(state, hint)
+        const result = await callModel(ctx, { ...prompts, maxTokens: 1600, light: true })
+        creative = normalizeCreative(extractJson(result.text))
+        engine = result.model
+        if (!creative.titles.length && !creative.scripts.length) creative = fallbackCreative(state, hint)
+      } catch {
+        creative = fallbackCreative(state, hint)
+      }
+      return json(res, 200, { creative, engine })
+    }
     case 'dm': {
       // 回私信分诊：有模型就用模型判断，模型不可用时退回规则兜底，不让按钮转圈
       const raw = String(body.text ?? '').trim()

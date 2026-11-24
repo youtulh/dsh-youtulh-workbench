@@ -49,7 +49,7 @@ export function WelcomeView() {
 
       <div className="md-welcome-actions">
         <BigButton icon="chat" title={t('回私信')} hint={t('粘一条家长消息，30 秒知道该回什么、怎么引到加微信')} onClick={() => setDesk({ view: 'dm', focusId: null })} />
-        <BigButton icon="pen" title={t('做内容')} hint={t('一点选题，出口播稿、标题、封面大字和标签')} onClick={() => setDesk({ view: 'content', focusId: null })} />
+        <BigButton icon="pen" title={t('做内容')} hint={t('写一句你想讲的，出口播稿、标题和标签，挑一版')} onClick={() => setDesk({ view: 'content', focusId: null })} />
         <BigButton icon="list" title={t('看数据')} hint={t('粘一段后台数据，看哪条真带人')} onClick={() => setDesk({ view: 'data', focusId: null })} />
       </div>
 

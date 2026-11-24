@@ -1,7 +1,7 @@
 // dsh-youtulh-workbench 浏览器半片：侧栏入口 + main 全局面板。
 import React from 'react'
 import { ChatDock } from './chat.jsx'
-import { ContentView } from './content.jsx'
+import { CreateView } from './create.jsx'
 import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { InsightsView } from './insights.jsx'
 import { DmView } from './dm.jsx'
@@ -26,7 +26,7 @@ const NAV = [
   { id: 'setup', label: '我的设定' },
 ]
 
-const VIEWS = { home: WelcomeView, dm: DmView, content: ContentView, data: InsightsView, setup: SetupView }
+const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: InsightsView, setup: SetupView }
 
 function CaptureDialog() {
   const capture = useDesk(s => s.capture)

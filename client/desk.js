@@ -103,6 +103,11 @@ export async function runProduce(id, { withImages } = {}) {
   }
 }
 
+/** 做内容：给一句话，拿回 { creative, engine }。 */
+export async function createContent(hint) {
+  return request('create', { hint })
+}
+
 /** 回私信分诊：把原文交给 Host，拿回 { verdict, engine }。 */
 export async function triageDm(text) {
   return request('dm', { text })
