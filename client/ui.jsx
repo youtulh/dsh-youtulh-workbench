@@ -125,8 +125,9 @@ export function FormDialog() {
       <form onSubmit={submit} className="md-form" onKeyDown={event => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
           event.preventDefault()
-          dialog.onSubmit(values)
-          close()
+          // 走浏览器的必填校验，别把空表单直接提交掉
+          if (event.currentTarget.requestSubmit) event.currentTarget.requestSubmit()
+          else submit(event)
         }
       }}>
         {dialog.fields.map((field, index) => {
@@ -165,7 +166,7 @@ export function FormDialog() {
           {dialog.onDelete ? <button type="button" className="md-btn is-danger" onClick={() => { dialog.onDelete(); close() }}>{t('删除')}</button> : null}
           <span style={{ flex: 1 }} />
           <button type="button" className="md-btn" onClick={close}>{t('取消')}</button>
-          <button type="submit" className="md-btn is-primary">{dialog.submitLabel ?? t('保存')}</button>
+          <button type="submit" className="md-btn is-primary" disabled={!dialog.fields.every(field => !field.required || String(values[field.name] ?? '').trim())}>{dialog.submitLabel ?? t('保存')}</button>
         </div>
       </form>
     </Dialog>
