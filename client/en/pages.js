@@ -693,4 +693,6 @@ export const PAGES = {
   '这些班只差空格或大小写，可能是重复班：{names}': 'These classes differ only by spacing/case — possibly duplicates: {names}',
   '最近一次课：{date}': 'Latest lesson: {date}',
   还没记过课: 'No lessons yet',
+  '下一节：第 {n} 次': 'Next: lesson {n}',
+  课次已记满: 'all lessons recorded',
 }

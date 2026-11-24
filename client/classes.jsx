@@ -93,8 +93,13 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
                       <span>{t('{n} 人', { n: roster.length })}</span>
                       <span>{done ? t('已上 {done}/{total} 次', { done, total: row.total }) : t('共 {n} 次课', { n: row.total })}</span>
                       {(() => {
-                        const last = lessons.filter(item => item.className === row.name).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]
-                        return <span>{last?.date ? t('最近一次课：{date}', { date: last.date }) : t('还没记过课')}</span>
+                        const own = lessons.filter(item => item.className === row.name)
+                        const last = own.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]
+                        const used = new Set(own.map(item => item.no))
+                        let next = 1
+                        while (next <= row.total && used.has(next)) next += 1
+                        const nextLabel = done >= row.total ? t('课次已记满') : t('下一节：第 {n} 次', { n: next })
+                        return <span>{last?.date ? t('最近一次课：{date}', { date: last.date }) : t('还没记过课')} · {nextLabel}</span>
                       })()}
                     </span>
                     {row.layers.length ? <span className="md-layer-chips">{row.layers.map(layer => <em key={layer}>{layer}</em>)}</span> : null}
