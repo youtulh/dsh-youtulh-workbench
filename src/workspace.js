@@ -432,7 +432,7 @@ export function readTable(root, file) {
   return { header, rows }
 }
 
-/** 写一张表：只重写已知列，表里多出来的列忽略（避免手改的列被抹掉）。 */
+/** 写一张表：按当前已知列重写（表里你手加的额外列不会保留；升级/保存前请先备份）。 */
 /** 把整个工作区复制到旁边的备份文件夹，随时能找回；只保留最近 keep 份。 */
 export function backupWorkspace(root, { keep = 10, at = new Date() } = {}) {
   if (!existsSync(root)) throw new Error('工作区还没建好')

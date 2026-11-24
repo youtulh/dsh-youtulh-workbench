@@ -128,3 +128,11 @@ Word 导出（`src/word.js`）不依赖任何第三方库：手写 zip 容器 + 
 ## 许可证
 
 MIT。见 [LICENSE](LICENSE)。
+
+## 开发 / 自检
+
+```bash
+npm test                 # 全量测试
+npm run check:workspace  # 读真实工作区，打印各表条数（不写文件）
+node scripts/smoke-flow.mjs  # 用工作区副本跑一遍主流程，不动原数据
+```

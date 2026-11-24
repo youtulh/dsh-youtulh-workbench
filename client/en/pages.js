@@ -686,4 +686,5 @@ export const PAGES = {
   '第一行是表头：日期、姓名、年级、卡点、来源、阶段、下次跟进': 'The first row is the header: date, name, grade, weak point, source, stage, next follow-up',
   '导入了 {n} 条线索': 'Imported {n} leads',
   '导入了 {n} 条线索，跳过 {m} 条重复': 'Imported {n} leads; skipped {m} duplicates',
+  '跳过 {n} 行（没写姓名）': 'Skipped {n} rows (no name)',
 }

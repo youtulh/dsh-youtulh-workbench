@@ -157,9 +157,12 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         importStudents(values.raw)
           .then(data => {
             onChanged?.(data)
-            toast(data.createdClasses
-              ? t('导入了 {n} 个学生，顺手建了 {m} 个班', { n: data.imported, m: data.createdClasses })
-              : t('导入了 {n} 个学生', { n: data.imported }))
+            toast([
+              data.createdClasses
+                ? t('导入了 {n} 个学生，顺手建了 {m} 个班', { n: data.imported, m: data.createdClasses })
+                : t('导入了 {n} 个学生', { n: data.imported }),
+              data.skipped ? t('跳过 {n} 行（没写姓名）', { n: data.skipped }) : '',
+            ].filter(Boolean).join('；'))
           })
           .catch(err => toast(err.message, { error: true }))
       },
