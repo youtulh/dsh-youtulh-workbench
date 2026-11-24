@@ -274,6 +274,14 @@ export function DmView() {
 
       {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
 
+      {!positioning.subject ? (
+        <div className="md-warn">
+          <b>{t('还没填设定')}</b>
+          <span>{t('先告诉我科目和年级，下一句才像你说的话，不是通用话术。')}</span>
+          <button type="button" className="md-pill is-small" onClick={() => setDesk({ view: 'setup', focusId: null })}>{t('去填设定')}</button>
+        </div>
+      ) : null}
+
       {lessons.length ? (
         <div className="md-lessons">
           <b>{t('已经加到微信的经验')}</b>
