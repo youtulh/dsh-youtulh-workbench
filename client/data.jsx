@@ -4,7 +4,7 @@ import React from 'react'
 import { createContent, fetchContent, fetchLeads, fetchWorkspace, importData, removeContent, revealDir, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
-import { ADOPT_OPTIONS } from './util.js'
+import { ADOPT_OPTIONS, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
 import { WorksPanel } from './works.jsx'
 
@@ -122,6 +122,10 @@ export function DataView() {
         <button type="button" className={tab === 'files' ? 'is-on' : ''} onClick={() => setTab('files')}>{t('工作区文件')}</button>
       </div>
 
+      <div className="md-biz-head">
+        <span>{t('私信漏斗（线索表）')}</span>
+        <em>{t('近 7 天新增 {n}', { n: leads.filter(row => row.date && row.date >= dayKey(new Date(Date.now() - 6 * 86400000))).length })}</em>
+      </div>
       <section className="md-biz-strip">
         <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.length || '—'}</b><span>{t('私信线索')}</span></button>
         <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.filter(row => ['已加微信', '已进群'].includes(row.stage)).length || '—'}</b><span>{t('已加微')}</span></button>
@@ -131,6 +135,7 @@ export function DataView() {
 
       {tab === 'files' ? <WorksPanel /> : (
         <>
+      <div className="md-biz-head"><span>{t('内容结果（内容库）')}</span></div>
       <section className="md-data-summary">
         <div><b>{stats.count ?? 0}</b><span>{t('条内容')}</span></div>
         <div><b>{stats.hits ?? 0}</b><span>{t('条爆款')}</span></div>
