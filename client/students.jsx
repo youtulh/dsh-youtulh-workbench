@@ -18,15 +18,19 @@ export function StudentsView() {
   const [students, setStudents] = React.useState(null)
   const [classes, setClasses] = React.useState([])
   const [lessons, setLessons] = React.useState([])
+  const [loadError, setLoadError] = React.useState('')
   const studentFocus = useDesk(s => s.studentFocus)
 
-  const load = () => Promise.all([fetchStudents(), fetchLessons('').catch(() => [])])
+  const load = () => {
+    setLoadError('')
+    return Promise.all([fetchStudents(), fetchLessons('').catch(() => [])])
     .then(([data, rows]) => {
       setStudents(data.students ?? [])
       setClasses(data.classes ?? [])
       setLessons(rows)
     })
-    .catch(err => toast(err.message, { error: true }))
+    .catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
+  }
   React.useEffect(() => { load() }, [])
   React.useEffect(() => { if (studentFocus) setTab('roster') }, [studentFocus])
 
@@ -52,6 +56,13 @@ export function StudentsView() {
           <Icon name="chat" size={14} />{t('去回私信')}
         </button>
       </header>
+
+      {!students && loadError ? (
+        <div className="md-load-error">
+          <p>{t('读取失败：{msg}', { msg: loadError })}</p>
+          <button type="button" className="md-pill is-small" onClick={load}>{t('重试')}</button>
+        </div>
+      ) : null}
 
       {students && (students.length > 0 || classes.length > 0) ? (
         <section className="md-student-summary">

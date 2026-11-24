@@ -33,8 +33,10 @@ export function DataView() {
   const [leads, setLeads] = React.useState([])
   const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
   const [query, setQuery] = React.useState(DATA_UI.query)
+  const [loadError, setLoadError] = React.useState('')
 
   const load = React.useCallback(() => {
+    setLoadError('')
     fetchContent()
       .then(data => {
         setRows(data.rows ?? [])
@@ -42,7 +44,7 @@ export function DataView() {
         setLessons(data.lessons ?? '')
         if (data.removed?.length) toast(t('有 {n} 条在文件夹里已经删掉了，已同步移除', { n: data.removed.length }))
       })
-      .catch(err => toast(err.message, { error: true }))
+      .catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
   }, [])
   React.useEffect(() => { load() }, [load])
   React.useEffect(() => { fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}) }, [])
@@ -214,7 +216,13 @@ export function DataView() {
         ) : null}
       </section>
 
-      {rows === null ? <p className="md-muted">{t('读取中…')}</p> : null}
+      {rows === null && !loadError ? <p className="md-muted">{t('读取中…')}</p> : null}
+      {rows === null && loadError ? (
+        <div className="md-load-error">
+          <p>{t('读取失败：{msg}', { msg: loadError })}</p>
+          <button type="button" className="md-pill is-small" onClick={load}>{t('重试')}</button>
+        </div>
+      ) : null}
 
       {rows?.length === 0 ? (
         <div className="md-works-empty">
