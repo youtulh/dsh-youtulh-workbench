@@ -452,6 +452,8 @@ export const PAGES = {
   没搜到相关内容: 'Nothing matches your search.',
   这个筛选下没有案例: 'No cases match this filter',
   案例删掉了: 'Case deleted',
+  线索删掉了: 'Lead deleted',
+  '删掉这条线索？对话记录和学生档案不会一起删。': 'Delete this lead? Chat history and student records stay.',
   '你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去回私信页管理。': 'Your imported real chats. Successful ones guide the next suggestion; see how many you have here and manage them in the chat desk.',
   去管理案例: 'Manage cases',
   '现在有 {n} 条案例': '{n} cases',

@@ -259,6 +259,10 @@ export async function appendLeadRow(payload) {
   return request('lead/append', payload)
 }
 
+export async function removeLead(index) {
+  return request('lead/remove', { index })
+}
+
 /** 家长有反应了：按行号更新那条线索。 */
 export async function updateLead(index, patch) {
   return request('workspace/lead/update', { index, patch })

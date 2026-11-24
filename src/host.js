@@ -12,7 +12,7 @@ import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
-import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -810,6 +810,12 @@ async function route(ctx, store, desk, req, res) {
         return json(res, 400, { error: tr(err.message) })
       }
       return json(res, 200, { rows })
+    }
+    case 'lead/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const leads = removeLeadRow(root, body.index)
+      if (!leads) return json(res, 404, { error: tr('没找到这条线索') })
+      return json(res, 200, { leads })
     }
     case 'workspace/lead/update': {
       // 家长有反应了：按行号改这一条的「反应 / 结果 / 下一步 / 话术」

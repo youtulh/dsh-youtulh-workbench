@@ -302,6 +302,20 @@ export const REACTION_NEXT = {
 export const REACTIONS = Object.keys(REACTION_NEXT)
 export const RESULTS = ['待定', '加微成功', '失败']
 
+/** 按行号删一条线索（导错了、广告、重复录入）。只删这一行，不动对话和学生。 */
+export function removeLeadRow(root, index) {
+  const file = leadsCsvPath(root)
+  if (!existsSync(file)) return null
+  const at = Number(index)
+  if (!Number.isInteger(at) || at < 0) return null
+  const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+  const row = 1 + at
+  if (row >= lines.length || !lines[row]) return null
+  lines.splice(row, 1)
+  writeFileSync(file, lines.join('\n'))
+  return readLeads(root)
+}
+
 /** 按行号改一条线索（行号从 0 开始，按文件里的数据行算）。 */
 const LEAD_PATCH_COLUMN = {
   name: '姓名', grade: '年级', school: '学校', painPoint: '卡点', source: '来源',

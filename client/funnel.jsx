@@ -1,7 +1,7 @@
 // 线索漏斗：一条线索从私信走到报课，拖一下就换个阶段。
 // 数据就是工作区里的 线索表.csv，页面只是换个看法。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, setDesk, setLeadStage, toast, updateLead } from './desk.js'
+import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, removeLead, setDesk, setLeadStage, toast, updateLead } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { LEAD_CATEGORIES, LEAD_STAGES, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
@@ -185,6 +185,15 @@ export function FunnelPanel({ students = [], onChanged }) {
                                 <Icon name="user" size={13} />{t('转成学生')}
                               </button>
                         ) : null}
+                        <button type="button" className="md-inline-link" onClick={async event => {
+                          event.stopPropagation()
+                          if (!window.confirm(t('删掉这条线索？对话记录和学生档案不会一起删。'))) return
+                          try {
+                            const data = await removeLead(lead.rowIndex)
+                            setLeads(data.leads ?? [])
+                            toast(t('线索删掉了'))
+                          } catch (err) { toast(err.message, { error: true }) }
+                        }}>{t('删除')}</button>
                       </div>
                     ) : null}
                   </article>

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, removeContent, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -131,6 +131,14 @@ test('线索表：记录话术、反应、结果；改了反应自动推下一�
     assert.equal(rows.find(row => row.name === '王').stage, '已加微信')
 
     // 手动改成失败 → 流失，不再算成功经验
+    // 删一条：只删这一行
+    appendLead(root, { name: '广告', raw: '加我赚钱' })
+    assert.equal(readLeads(root).length, 3)
+    const left = removeLeadRow(root, 2)
+    assert.equal(left.length, 2)
+    assert.equal(left.some(row => row.name === '广告'), false)
+    assert.equal(removeLeadRow(root, 9), null)
+
     rows = updateLeadRow(root, 0, { result: '失败' })
     assert.equal(rows.find(row => row.name === '王').result, '失败')
     assert.equal(rows.find(row => row.name === '王').stage, '流失')
