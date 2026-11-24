@@ -6,6 +6,7 @@ import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS } from './util.js'
 import { Icon } from './ui.jsx'
+import { WorksPanel } from './works.jsx'
 
 const num = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0
 const rowKey = row => row['目录'] || row['创建时间'] || row['标题']
@@ -25,6 +26,7 @@ export function DataView() {
   const [form, setForm] = React.useState(EMPTY_FORM)
   const [adding, setAdding] = React.useState(false)
   const [filter, setFilter] = React.useState('all')
+  const [tab, setTab] = React.useState('content')
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -103,7 +105,9 @@ export function DataView() {
       <header className="md-page-head">
         <div>
           <h1>{t('看数据')}</h1>
-          <p className="md-page-sub">{t('每条内容回填播放、涨粉、私信：以前发过的视频也能补录。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
+          <p className="md-page-sub">{tab === 'files'
+            ? t('工作区里的文件夹和文件，直接看、直接开，改了这里也跟着变。')
+            : t('每条内容回填播放、涨粉、私信：以前发过的视频也能补录。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
         </div>
         <span style={{ flex: 1 }} />
         <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
@@ -111,6 +115,13 @@ export function DataView() {
         </button>
       </header>
 
+      <div className="md-content-tabs md-data-tabs">
+        <button type="button" className={tab === 'content' ? 'is-on' : ''} onClick={() => setTab('content')}>{t('内容库')}</button>
+        <button type="button" className={tab === 'files' ? 'is-on' : ''} onClick={() => setTab('files')}>{t('工作区文件')}</button>
+      </div>
+
+      {tab === 'files' ? <WorksPanel /> : (
+        <>
       <section className="md-data-summary">
         <div><b>{stats.count ?? 0}</b><span>{t('条内容')}</span></div>
         <div><b>{stats.hits ?? 0}</b><span>{t('条爆款')}</span></div>
@@ -252,6 +263,8 @@ export function DataView() {
 
       <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: root || '~/Documents/Youtulh 工作台' })}</p>
       {!positioning.subject ? <p className="md-muted">{t('还没填设定，先去「我的设定」把科目和年级填上。')}</p> : null}
+        </>
+      )}
     </div>
   )
 }

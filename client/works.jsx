@@ -1,4 +1,5 @@
-// 我的产出：直接列工作区里的真实文件，不做二次索引。用户在 Finder 里怎么改，这里就怎么显示。
+// 工作区文件：直接列工作区里的真实文件，不做二次索引。放在「看数据」的「工作区文件」里。
+// 用户在 Finder 里怎么改，这里就怎么显示。
 import React from 'react'
 import { fetchTree, fetchWorkspace, fetchWorkspaceFile, revealDir, setDesk, toast } from './desk.js'
 import { t, useLang } from './i18n.js'
@@ -7,11 +8,12 @@ import { fmtWhen } from './util.js'
 
 const KIND_LABEL = { content: '内容', dm: '私信', data: '数据' }
 
-export function WorksView() {
+export function WorksPanel() {
   useLang()
   const [tree, setTree] = React.useState(null)
   const [info, setInfo] = React.useState(null)
   const [preview, setPreview] = React.useState(null)
+
   const view = async (item) => {
     if (preview?.dir === item.dir) return setPreview(null)
     const textFile = item.files.find(file => /\.(md|txt|csv)$/i.test(file.name))
@@ -34,17 +36,12 @@ export function WorksView() {
   const groups = ['content', 'dm', 'data'].map(kind => ({ kind, items: (tree ?? []).filter(row => row.kind === kind) }))
 
   return (
-    <div className="md-page md-works">
-      <header className="md-page-head">
-        <div>
-          <h1>{t('我的产出')}</h1>
-          <p className="md-page-sub">{t('这些就是工作区里的文件，Word 能直接打开，改了这里也会跟着变。')}</p>
-        </div>
-        <span style={{ flex: 1 }} />
-        <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
-          <Icon name="folder" size={14} />{t('打开工作区')}
-        </button>
-      </header>
+    <div className="md-works-panel">
+      <div className="md-works-tools">
+        <span className="md-muted">{t('这里就是工作区里的文件，Word 能直接打开；改了这里也会跟着变。')}</span>
+        <span className="md-grow" />
+        <button type="button" className="md-pill is-small" onClick={load}>{t('刷新')}</button>
+      </div>
 
       {tree === null ? <p className="md-muted">{t('读取中…')}</p> : null}
 

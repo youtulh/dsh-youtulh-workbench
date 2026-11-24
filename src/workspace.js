@@ -405,6 +405,30 @@ export function appendTopics(root, batch, topics) {
   return batch
 }
 
+/** 只把勾中的选题记进选题库：没勾的不占地方，勾选信号也更干净。 */
+export function recordPickedTopics(root, batch, picked) {
+  if (!batch || !picked.length) return []
+  const { rows } = readTable(root, '选题库.csv')
+  const missing = picked.filter(topic => !rows.some(row => row['批次'] === batch && row['选题'] === topic))
+  if (missing.length) {
+    appendRows(root, '选题库.csv', TOPICS_COLUMNS, missing.map(topic => ({
+      '日期': dayStamp(), '批次': batch, '选题': topic, '勾选': '是', '生成条数': 0,
+    })))
+  }
+  return markTopicsPicked(root, batch, picked)
+}
+
+/** 选题库只留最近 keep 批，老的自动清掉（批次号按时间排序）。 */
+export function archiveTopics(root, keep = 20) {
+  const { rows } = readTable(root, '选题库.csv')
+  const batches = [...new Set(rows.map(row => row['批次']).filter(Boolean))]
+  if (batches.length <= keep) return rows
+  const alive = new Set(batches.slice(-keep))
+  const next = rows.filter(row => alive.has(row['批次']))
+  writeTable(root, '选题库.csv', TOPICS_COLUMNS, next)
+  return next
+}
+
 export function markTopicsPicked(root, batch, picked) {
   const { rows } = readTable(root, '选题库.csv')
   const set = new Set(picked)

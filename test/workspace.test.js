@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, removeContent, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, removeContent, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -151,6 +151,32 @@ test('内容库：没有目录的行（补录 / 导入）按创建时间更新�
     assert.equal(removed['标题'], '以前发过的视频')
     assert.equal(readContent(root).length, 0)
     assert.equal(removeContent(root, 'nope'), null)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('选题库：只记勾中的，重复勾不重复追加，超过 20 批自动归档', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-topics-picked-'))
+  try {
+    recordPickedTopics(root, 'B1', ['甲', '乙'])
+    let rows = readTable(root, '选题库.csv').rows
+    assert.equal(rows.length, 2)
+    assert.ok(rows.every(row => row['勾选'] === '是'))
+
+    // 同一批再勾一条：只补新的，不重复
+    recordPickedTopics(root, 'B1', ['甲', '丙'])
+    rows = readTable(root, '选题库.csv').rows
+    assert.equal(rows.length, 3)
+    assert.deepEqual(rows.filter(row => row['勾选'] === '是').map(row => row['选题']).sort(), ['丙', '甲'])
+
+    // 25 批只留最近 20 批
+    for (let i = 0; i < 25; i++) recordPickedTopics(root, `P${String(i).padStart(2, '0')}`, [`题${i}`])
+    archiveTopics(root, 20)
+    const kept = new Set(readTable(root, '选题库.csv').rows.map(row => row['批次']))
+    assert.equal(kept.size, 20)
+    assert.ok(!kept.has('B1'))
+    assert.ok(kept.has('P24'))
   } finally {
     await rm(root, { recursive: true, force: true })
   }

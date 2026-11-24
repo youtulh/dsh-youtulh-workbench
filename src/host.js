@@ -12,7 +12,7 @@ import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, localTopics, localVariants, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { dmPrompt, localDm, normalizeDm } from './dm.js'
-import { LAYOUT, contentKey, pruneMissingContent, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, recordPickedTopics, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
@@ -374,10 +374,8 @@ async function route(ctx, store, desk, req, res) {
       entries = fillTopicAngles(entries, state, count)
       const topics = entries.map(entry => entry.text)
       const angles = Object.fromEntries(entries.map(entry => [entry.text, entry.angle]))
-      // 记下这一批，后面才能算「哪些选题被勾中」
+      // 这一批先不落库：等用户勾了再记，选题库只留真正用过的
       const batch = batchId()
-      appendTopics(root, batch, topics)
-      writeLessonMarkdown(root)
       return json(res, 200, { topics, angles, source, batch, lessons: buildLessonBlock(root) })
     }
     case 'topics/pick': {
@@ -386,7 +384,10 @@ async function route(ctx, store, desk, req, res) {
       const picked = (Array.isArray(body.picked) ? body.picked : []).map(row => String(row ?? '').trim()).filter(Boolean)
       if (!batch) return json(res, 400, { error: tr('缺少批次号') })
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      return json(res, 200, { topics: markTopicsPicked(root, batch, picked) })
+      const rows = recordPickedTopics(root, batch, picked)
+      archiveTopics(root, 20)
+      writeLessonMarkdown(root)
+      return json(res, 200, { topics: rows })
     }
     case 'scripts': {
       // 只生成、不落盘：用户点「采用这条」时才保存

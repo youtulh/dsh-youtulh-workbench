@@ -20,6 +20,9 @@ async function post(path, body) {
 }
 
 const variantKey = (topic, title) => `${topic}|${title}`
+// 中文口播大约每秒 4.2 个字，用来给个时长感觉
+const charCount = value => String(value ?? '').replace(/\s/g, '').length
+const secondsOf = value => Math.max(1, Math.round(charCount(value) / 4.2))
 
 export function CreateView() {
   useLang()
@@ -32,6 +35,8 @@ export function CreateView() {
   const modelError = useDesk(s => s.modelError)
   const { topics, angles, picked, groups, adopted, batch, lessons, source, examples } = create
   const [busy, setBusy] = React.useState('')
+  const [editKey, setEditKey] = React.useState('')
+  const [editText, setEditText] = React.useState('')
 
   // 刷新页面后把上一次的选题和口播捡回来
   React.useEffect(() => { restoreCreateDraft() }, [])
@@ -98,9 +103,30 @@ export function CreateView() {
     setBusy('')
   }
 
-  const copy = (variant) => {
-    const text = `【标题】${variant.title}\n\n【口播文案】\n${variant.script}\n\n【标签】${(variant.tags ?? []).map(tag => `#${tag}`).join(' ')}`
+  const copyText = (text) => {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败'), { error: true }))
+  }
+
+  const copy = (variant) => {
+    copyText(`【标题】${variant.title}\n\n【口播文案】\n${variant.script}\n\n【标签】${(variant.tags ?? []).map(tag => `#${tag}`).join(' ')}`)
+  }
+
+  const startEdit = (group, variant) => {
+    setEditKey(variantKey(group.topic, variant.title))
+    setEditText(variant.script)
+  }
+
+  const saveEdit = (group) => {
+    patchCreate(state => ({
+      groups: state.groups.map(item => (item.topic !== group.topic ? item : {
+        ...item,
+        variants: item.variants.map(variant => (variantKey(item.topic, variant.title) === editKey
+          ? { ...variant, script: editText }
+          : variant)),
+      })),
+    }))
+    setEditKey('')
+    toast(t('改好了；采用时保存的就是改过的这版'))
   }
 
   return (
@@ -220,13 +246,28 @@ export function CreateView() {
                       <span className="md-variant-tag">{variant.variant ?? 'A'}</span>
                       <h4>{variant.title}</h4>
                     </header>
-                    <div className="md-script-lines">{variant.script.split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
+                    <p className="md-script-meta">{t('约 {s} 秒 · {n} 字', { s: secondsOf(variant.script), n: charCount(variant.script) })}</p>
+                    {editKey === key ? (
+                      <div className="md-script-edit">
+                        <textarea rows={10} value={editText} onChange={event => setEditText(event.target.value)} />
+                        <div className="md-script-edit-foot">
+                          <span className="md-muted">{t('一句话一行，改完点保存再采用。')}</span>
+                          <span className="md-grow" />
+                          <button type="button" className="md-inline-link" onClick={() => setEditKey('')}>{t('取消')}</button>
+                          <button type="button" className="md-pill is-small" onClick={() => saveEdit(group)}>{t('保存改动')}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="md-script-lines">{variant.script.split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
+                    )}
                     <div className="md-script-tags">{(variant.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
                     <div className="md-script-actions">
-                      <button type="button" className={`md-pill is-small ${isAdopted ? 'is-primary' : ''}`} onClick={() => adopt(group, variant)} disabled={isAdopted || busy === key}>
+                      <button type="button" className={`md-pill is-small ${isAdopted ? 'is-primary' : ''}`} onClick={() => adopt(group, variant)} disabled={isAdopted || busy === key || editKey === key}>
                         {isAdopted ? t('已采用') : busy === key ? t('保存中…') : t('采用这条')}
                       </button>
-                      <button type="button" className="md-inline-link" onClick={() => copy(variant)}>{t('复制')}</button>
+                      {editKey === key ? null : <button type="button" className="md-inline-link" onClick={() => startEdit(group, variant)}>{t('改一下')}</button>}
+                      <button type="button" className="md-inline-link" onClick={() => copy(variant)}>{t('复制全文')}</button>
+                      <button type="button" className="md-inline-link" onClick={() => copyText(variant.title)}>{t('复制标题')}</button>
                     </div>
                   </li>
                   )

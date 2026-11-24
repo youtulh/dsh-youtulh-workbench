@@ -115,29 +115,6 @@ export async function undo() {
   }
 }
 
-export function openItem(id, origin = null) {
-  setDesk({ focusId: id, sheetOrigin: origin })
-}
-
-export function closeItem() {
-  setDesk({ focusId: null, sheetOrigin: null, studioDock: false, chatQuote: null })
-}
-
-/** 一键成稿。任务在 Host 里跑，这里只负责启动和看进度。 */
-export async function runProduce(id, { withImages } = {}) {
-  try {
-    const data = await request('produce', { id, ...(typeof withImages === 'boolean' ? { withImages } : {}) })
-    setDesk({ state: data.state })
-  } catch (err) {
-    report(err)
-  }
-}
-
-/** 把一份产出写成本地文件并登记进产出库。 */
-export async function saveOutput({ kind, title, content, summary, formats }) {
-  return request('output/save', { kind, title, content, summary, formats })
-}
-
 /** 读工作区里的一个文本文件（预览正文用）。 */
 export async function fetchWorkspaceFile(dir, name) {
   const query = `?dir=${encodeURIComponent(dir)}&name=${encodeURIComponent(name)}`
@@ -233,18 +210,6 @@ export async function revealDir(dir) {
 export async function fetchTree() {
   const data = await request('workspace/tree')
   return data.tree ?? []
-}
-
-/** 回私信分诊：把原文交给 Host，拿回 { verdict, engine }。 */
-export async function triageDm(text) {
-  return request('dm', { text })
-}
-
-export async function cancelProduce(id) {  try {
-    await request('produce/cancel', { id })
-  } catch (err) {
-    report(err)
-  }
 }
 
 export async function regenAsset(id, target) {

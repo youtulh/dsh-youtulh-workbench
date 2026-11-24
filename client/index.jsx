@@ -6,7 +6,6 @@ import { DataView } from './data.jsx'
 import { DmView } from './dm.jsx'
 import { setAppCtx } from './launch.js'
 import { SetupView } from './setup.jsx'
-import { WorksView } from './works.jsx'
 import { WelcomeView } from './welcome.jsx'
 import { SettingsDialog } from './settings.jsx'
 import css from './styles.css'
@@ -22,11 +21,10 @@ const NAV = [
   { id: 'dm', label: '回私信', icon: 'chat' },
   { id: 'content', label: '做内容', icon: 'pen' },
   { id: 'data', label: '看数据', icon: 'list' },
-  { id: 'works', label: '我的产出', icon: 'folder' },
   { id: 'setup', label: '我的设定', icon: 'user' },
 ]
 
-const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: DataView, works: WorksView, setup: SetupView }
+const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: DataView, setup: SetupView }
 
 function UpdateBadge() {
   const info = useVersionInfo()

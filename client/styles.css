@@ -1439,3 +1439,18 @@ body[data-ds-dark-theme] .md-root {
 .md-lead-draft textarea { width: 100%; min-height: 64px; padding: 8px 10px; border: .5px solid var(--line); border-radius: var(--r-sm); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12.5px; line-height: 20px; resize: vertical; outline: 0; }
 .md-lead-draft textarea:focus { border-color: var(--accent); }
 .md-lead-draft-foot { display: flex; align-items: center; gap: 10px; }
+
+/* 口播：字数时长、就地改稿 */
+.md-script-meta { color: var(--ink3); font-size: 11px; line-height: 17px; letter-spacing: .02em; }
+.md-script-edit { display: flex; flex-direction: column; gap: 8px; }
+.md-script-edit textarea { width: 100%; min-height: 180px; padding: 9px 11px; border: .5px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 13px; line-height: 21px; resize: vertical; outline: 0; }
+.md-script-edit textarea:focus { border-color: var(--accent); }
+.md-script-edit-foot { display: flex; align-items: center; gap: 10px; }
+
+/* 看数据：内容库 / 工作区文件 */
+.md-data-tabs { margin-bottom: 18px; }
+.md-works-panel { display: flex; flex-direction: column; gap: 18px; }
+.md-works-tools { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+
+/* 看数据的统计卡：数量不固定，按宽度自动排 */
+.md-data-summary { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
