@@ -158,13 +158,16 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
   const saveLesson = async () => {
     const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft()) }))
     const recorded = rows.filter(row => row.attend || row.mastery || row.homework).length
+    const wasRecorded = savedCount > 0
     if (!recorded && savedCount > 0 && !window.confirm(t('这一节还没记人，保存会把原来的记录清掉，继续吗？'))) return
     setBusy('lesson')
     try {
       const data = await saveLessons({ class: klass.name, no, date, rows })
       setLessons(data.rows ?? [])
       onLessons?.(klass.name, data.rows ?? [])
-      toast(recorded ? t('第 {n} 次课记好了 {m} 人', { n: no, m: recorded }) : t('第 {n} 次课还没记人', { n: no }))
+      toast(recorded
+        ? (wasRecorded ? t('第 {n} 次课更新了 {m} 人', { n: no, m: recorded }) : t('第 {n} 次课记好了 {m} 人', { n: no, m: recorded }))
+        : t('第 {n} 次课还没记人', { n: no }))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
@@ -358,7 +361,10 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
             </label>
           </header>
           <div className="md-lesson-quick">
-            <span className="md-muted">{t('已记 {n} 人 · 还有 {m} 人没记', { n: draftRecorded, m: Math.max(0, roster.length - draftRecorded) })}</span>
+            <span className="md-muted">
+              {t('已记 {n} 人 · 还有 {m} 人没记', { n: draftRecorded, m: Math.max(0, roster.length - draftRecorded) })}
+              {savedCount ? t(' · 这一节已记过，保存会更新') : ''}
+            </span>
             <span className="md-grow" />
             <button type="button" className="md-inline-link" onClick={() => fillAll('attend', '到')}>{t('全部到齐')}</button>
             <button type="button" className="md-inline-link" onClick={() => fillAll('homework', '交')}>{t('作业全交')}</button>
