@@ -9,6 +9,8 @@ import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS,
 
 const todayKey = () => dayKey(new Date())
 const isDue = lead => Boolean(lead.nextAt) && lead.nextAt <= todayKey() && !['已报课', '流失'].includes(lead.stage)
+// 拖了几天：0 表示今天到期
+const daysLate = lead => (lead.nextAt ? Math.round((Date.parse(todayKey()) - Date.parse(lead.nextAt)) / 86400000) : 0)
 
 const FILTERS = [
   { id: 'all', label: '全部', test: () => true },
@@ -445,7 +447,7 @@ export function DmView() {
         ) : leads.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('还没有线索。粘第一条私信，判断完记进线索表，这里就会多一行。')}</p>
         ) : filtered.length === 0 ? (
-          <p className="md-muted md-dm-empty">{t('这个筛选下没有线索。')}</p>
+          <p className="md-muted md-dm-empty">{filter === 'due' ? t('今天没有到期要跟进的线索。') : t('这个筛选下没有线索。')}</p>
         ) : (
           <ul className="md-lead-list">
             {filtered.map(lead => (
@@ -463,7 +465,9 @@ export function DmView() {
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.nextAt || lead.followUps ? (
                     <span className={`md-lead-follow ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
-                      {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}{lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}
+                      {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}
+                      {lead.nextAt && isDue(lead) ? (daysLate(lead) > 0 ? t(' · 逾期 {n} 天', { n: daysLate(lead) }) : t(' · 今天到期')) : ''}
+                      {lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}
                     </span>
                   ) : null}
                   <span className="md-grow" />
