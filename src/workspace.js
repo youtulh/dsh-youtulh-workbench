@@ -262,7 +262,8 @@ export function updateLeadRow(root, index, patch = {}) {
   for (const [key, value] of Object.entries(patch)) {
     if (key === 'reaction') {
       set('反应', value)
-      if (!patch.next) set('下一步', REACTION_NEXT[value] ?? '待跟进')
+      // 选回「还没回」不应该把下一步改掉
+      if (!patch.next && value) set('下一步', REACTION_NEXT[value] ?? '待跟进')
       if (value === '已加微' && !patch.result) set('结果', '加微成功')
     } else if (key === 'result') set('结果', value)
     else if (key === 'next') set('下一步', value)

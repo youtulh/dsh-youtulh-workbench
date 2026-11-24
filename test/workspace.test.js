@@ -102,6 +102,10 @@ test('线索表：记录话术、反应、结果；改了反应自动推下一�
     assert.match(lessons[0], /加了微信/)
     assert.match(lessons[0], /王|高一 58 分|家长您好/)
 
+    // 选回「还没回」不会把下一步改掉
+    rows = updateLeadRow(root, 0, { reaction: '' })
+    assert.equal(rows.find(row => row.name === '王').next, '已加微')
+
     // 手动改成失败
     rows = updateLeadRow(root, 0, { result: '失败' })
     assert.equal(rows.find(row => row.name === '王').result, '失败')
