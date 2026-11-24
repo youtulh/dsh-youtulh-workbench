@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, backupWorkspace, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, backupWorkspace, listBackups, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -287,8 +287,9 @@ test('备份：整个工作区复制到旁边，原文件不动', async () => {
     // 只留最近 3 份：造 4 个更新的备份，最早的会被清掉
     for (let i = 0; i < 4; i += 1) backupWorkspace(root, { keep: 3, at: new Date(2026, 10, 25, 6, 0, i) })
     const { readdirSync } = await import('node:fs')
-    const backups = readdirSync(parent).filter(name => name.includes('备份'))
+    const backups = listBackups(root)
     assert.equal(backups.length, 3)
+    assert.ok(backups[0].name >= backups[2].name)
   } finally {
     await rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }

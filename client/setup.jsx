@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { backupWorkspace, dispatchOps, fetchChatRecords, fetchPlatformWords, fetchVoice, revealDir, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchPlatformWords, fetchVoice, revealDir, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -44,9 +44,11 @@ export function SetupView() {
   const [caseInfo, setCaseInfo] = React.useState(null)
   const [backup, setBackup] = React.useState(null)
   const [backupBusy, setBackupBusy] = React.useState(false)
+  const [backups, setBackups] = React.useState([])
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
+    fetchBackups().then(data => setBackups(data.backups ?? [])).catch(() => {})
     fetchChatRecords().then(data => {
       const cases = data.cases ?? []
       const latest = cases[cases.length - 1]
@@ -299,11 +301,25 @@ export function SetupView() {
           <button type="button" className="md-pill is-small is-primary" disabled={backupBusy} onClick={() => {
             setBackupBusy(true)
             backupWorkspace()
-              .then(data => { setBackup(data.dir); toast(t('备份好了')) })
+              .then(data => { setBackup(data.dir); fetchBackups().then(next => setBackups(next.backups ?? [])).catch(() => {}); toast(t('备份好了')) })
               .catch(err => toast(err.message, { error: true }))
               .finally(() => setBackupBusy(false))
           }}>{backupBusy ? t('备份中…') : t('备份工作区')}</button>
         </div>
+        {backups.length ? (
+          <details className="md-setup-backups">
+            <summary>{t('已有的备份（{n}）', { n: backups.length })}</summary>
+            <ul>
+              {backups.slice(0, 10).map(item => (
+                <li key={item.name}>
+                  <span>{item.name}</span>
+                  <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => revealDir(item.dir).catch(err => toast(err.message, { error: true }))}>{t('打开')}</button>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
       </section>
 
       <section className="md-setup-card md-advice" id="setup-advice">

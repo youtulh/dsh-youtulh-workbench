@@ -1912,3 +1912,9 @@ body[data-ds-dark-theme] .md-root {
   .md-biz-range { flex-wrap: wrap; }
   .md-student-records li { gap: 6px 10px; }
 }
+
+/* 我的设定：备份历史 */
+.md-setup-backups { margin-top: 10px; color: var(--ink2); font-size: 12px; }
+.md-setup-backups summary { cursor: pointer; color: var(--ink3); }
+.md-setup-backups ul { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.md-setup-backups li { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-top: .5px solid var(--hairline); }

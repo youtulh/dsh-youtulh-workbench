@@ -620,7 +620,6 @@ export const PAGES = {
   重试: 'Retry',
   '写反馈': 'Write parent update',
   '给 {name} 家长的反馈': "Update for {name}'s parent",
-  '正在写…': 'Writing…',
   '依据最近 {n} 次课记录写的，发之前自己看一眼': 'Based on the last {n} lessons — read it before sending',
   '还没有课次记录，这条是按学生档案写的': 'No lesson records yet; this is based on the student profile',
   复制反馈: 'Copy update',
@@ -640,7 +639,6 @@ export const PAGES = {
   未写名字: 'No name',
   导入名单: 'Import list',
   '从表格导入学生': 'Import students from a table',
-  导入: 'Import',
   '把 Excel / 表格里的名单粘进来': 'Paste your roster from Excel / a table',
   '第一行是表头：姓名、年级、学校、微信、卡点层、班、来源、备注': 'The first row is the header: name, grade, school, WeChat, weak point, class, source, note',
   '导入了 {n} 个学生': 'Imported {n} students',
@@ -653,4 +651,6 @@ export const PAGES = {
   '备份中…': 'Backing up…',
   备份好了: 'Backup complete',
   '整个工作区（设定、线索、学生、课次、反馈、内容）就在你的电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。': 'Everything lives on your computer. One click copies the workspace to a backup folder next to it without touching the original; only the latest 10 backups are kept.',
+  '已有的备份（{n}）': 'Existing backups ({n})',
+  打开: 'Open',
 }

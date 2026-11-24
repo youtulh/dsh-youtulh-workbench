@@ -441,6 +441,18 @@ export function backupWorkspace(root, { keep = 10, at = new Date() } = {}) {
   return dir
 }
 
+/** 已有的备份，最新在前。 */
+export function listBackups(root) {
+  const parent = dirname(root)
+  const prefix = `${basename(root)} 备份 `
+  if (!existsSync(parent)) return []
+  return readdirSync(parent)
+    .filter(name => name.startsWith(prefix))
+    .sort()
+    .reverse()
+    .map(name => ({ name, dir: join(parent, name) }))
+}
+
 export function writeTable(root, file, columns, rows) {
   ensureLayout(root)
   const abs = join(root, file)

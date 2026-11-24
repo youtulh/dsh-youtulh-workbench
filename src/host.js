@@ -13,7 +13,7 @@ import { localSuggestions, normalizeSuggestions, suggestPrompts } from './sugges
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
-import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -281,6 +281,10 @@ async function route(ctx, store, desk, req, res) {
     if (path === 'lessons') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       return json(res, 200, { rows: readLessons(root, url.searchParams.get('class') ?? '') })
+    }
+    if (path === 'workspace/backups') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { backups: listBackups(root) })
     }
     if (path === 'feedback/list') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
