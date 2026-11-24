@@ -45,6 +45,7 @@ export function DmView() {
   const [chatPerson, setChatPerson] = React.useState('')
   const [chatResult, setChatResult] = React.useState('all')
   const [chatView, setChatView] = React.useState('turns')
+  const dmPerson = useDesk(s => s.dmPerson)
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
@@ -58,6 +59,15 @@ export function DmView() {
     fetchChatRecords().then(data => setChats(data.rows ?? [])).catch(() => {})
   }, [])
   React.useEffect(() => { reloadChats() }, [reloadChats])
+
+  // 从线索漏斗点「聊过 n 轮」过来：直接只看这个人，并滚到最近对话
+  React.useEffect(() => {
+    if (!dmPerson) return
+    setChatPerson(dmPerson)
+    setChatView('turns')
+    setDesk({ dmPerson: '' })
+    requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [dmPerson])
 
   const run = async () => {
     if (!raw.trim()) return
@@ -424,7 +434,7 @@ export function DmView() {
         )}
       </section>
 
-      <section className="md-tile md-chat-log">
+      <section className="md-tile md-chat-log" id="dm-chat-log">
         <header className="md-tile-head">
           <h2>{t('最近对话')}</h2>
           <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chats.length })}</span>

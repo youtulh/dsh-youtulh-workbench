@@ -38,6 +38,7 @@ export function SetupView() {
   const [allowText, setAllowText] = React.useState('')
   const [banText, setBanText] = React.useState('')
   const [wordsBusy, setWordsBusy] = React.useState(false)
+  const [activeSection, setActiveSection] = React.useState(SECTIONS[0][0])
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
@@ -45,6 +46,18 @@ export function SetupView() {
       setAllowText((data.allow ?? []).join('\n'))
       setBanText((data.ban ?? []).join('\n'))
     }).catch(() => {})
+  }, [])
+
+  // 目录跟着滚动高亮当前那一节
+  React.useEffect(() => {
+    const els = SECTIONS.map(([id]) => document.getElementById(id)).filter(Boolean)
+    if (!els.length || typeof IntersectionObserver === 'undefined') return undefined
+    const observer = new IntersectionObserver((entries) => {
+      const top = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+      if (top) setActiveSection(top.target.id)
+    }, { rootMargin: '-90px 0px -60% 0px', threshold: [0, 0.2, 0.5] })
+    els.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
   }, [])
 
   const saveWords = async () => {
@@ -123,7 +136,10 @@ export function SetupView() {
 
       <nav className="md-setup-nav" aria-label={t('本页目录')}>
         {SECTIONS.map(([id, label]) => (
-          <button type="button" key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t(label)}</button>
+          <button type="button" key={id} className={activeSection === id ? 'is-on' : ''} onClick={() => {
+            setActiveSection(id)
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}>{t(label)}</button>
         ))}
       </nav>
 

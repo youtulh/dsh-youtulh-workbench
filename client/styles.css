@@ -1738,3 +1738,11 @@ body[data-ds-dark-theme] .md-root {
 
 /* 漏斗卡片：来自聊天 */
 .md-pipeline-chat { padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-size: 10.5px; line-height: 17px; white-space: nowrap; }
+
+/* 目录高亮 + 窄屏的「再给一版」 */
+.md-setup-nav button.is-on { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.md-dm-revise { flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .md-dm-revise input { flex-basis: 100%; }
+  .md-dm-revise .md-pill { width: 100%; justify-content: center; }
+}

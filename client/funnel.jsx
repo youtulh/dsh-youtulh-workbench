@@ -133,7 +133,12 @@ export function FunnelPanel({ students = [], onChanged }) {
                     {lead.painPoint ? <p>{lead.painPoint}</p> : null}
                     <footer>
                       {lead.source ? <span className="md-pipeline-source">{lead.source}</span> : null}
-                      {lead.name && chatCounts[lead.name] ? <span className="md-pipeline-chat">{t('聊过 {n} 轮', { n: chatCounts[lead.name] })}</span> : null}
+                      {lead.name && chatCounts[lead.name] ? (
+                        <button type="button" className="md-pipeline-chat" onClick={event => {
+                          event.stopPropagation()
+                          setDesk({ view: 'dm', focusId: null, dmPerson: lead.name })
+                        }}>{t('聊过 {n} 轮', { n: chatCounts[lead.name] })}</button>
+                      ) : null}
                       <span className="md-grow" />
                       <time>{lead.updatedAt || lead.date}</time>
                     </footer>
