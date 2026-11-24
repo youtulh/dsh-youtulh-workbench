@@ -695,4 +695,9 @@ export const PAGES = {
   还没记过课: 'No lessons yet',
   '下一节：第 {n} 次': 'Next: lesson {n}',
   课次已记满: 'all lessons recorded',
+  从档案加: 'From roster',
+  '从学生档案里加进班': 'Add from student roster',
+  '选一个学生': 'Pick a student',
+  '没找到这个学生': 'Student not found',
+  '把 {name} 加进班了': 'Added {name} to the class',
 }

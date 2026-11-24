@@ -260,6 +260,28 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
     },
   })
 
+  const pickFromRoster = () => setDesk({
+    dialog: {
+      title: t('从学生档案里加进班'),
+      submitLabel: t('加进来'),
+      fields: [{
+        name: 'pick', label: t('选一个学生'), type: 'select', required: true,
+        options: students.filter(row => row.className !== klass.name).map(row => ({
+          value: `${row.name}\u0000${row.grade}`,
+          label: `${row.name}${row.grade ? `（${row.grade}）` : ''}${row.className ? ` · 现在在 ${row.className}` : ' · 还没排班'}`,
+        })),
+      }],
+      onSubmit: values => {
+        const [name, grade] = String(values.pick ?? '').split('\u0000')
+        const target = students.find(row => row.name === name && row.grade === grade)
+        if (!target) return toast(t('没找到这个学生'), { error: true })
+        saveStudentRow({ ...target, className: klass.name }, { name: target.name, grade: target.grade })
+          .then(data => { onChanged?.(data); toast(t('把 {name} 加进班了', { name: target.name })) })
+          .catch(err => toast(err.message, { error: true }))
+      },
+    },
+  })
+
   const moveOut = (student) => {
     saveStudentRow({ ...student, className: '' }, { name: student.name, grade: student.grade })
       .then(data => { onChanged?.(data); toast(t('把 {name} 移出班了', { name: student.name })) })
@@ -305,6 +327,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
           <p className="md-muted">{klass.time || t('还没填上课时间')} · {t('{n} 人', { n: roster.length })} · {t('共 {n} 次课', { n: klass.total })}</p>
           {klass.layers.length ? <p className="md-layer-chips">{klass.layers.map(layer => <em key={layer}>{layer}</em>)}</p> : <p className="md-muted">{t('还没填分层，去「改班」里填上，就能看谁卡在哪。')}</p>}
         </div>
+        {students.some(row => row.className !== klass.name) ? <button type="button" className="md-pill is-small" onClick={pickFromRoster}>{t('从档案加')}</button> : null}
         <button type="button" className="md-pill is-small is-primary" onClick={addStudent}><Icon name="plus" size={13} />{t('加学生')}</button>
       </header>
 
