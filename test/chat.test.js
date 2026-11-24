@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats } from '../src/chat.js'
+import { appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats, updateChatRow } from '../src/chat.js'
 
 const state = { positioning: { subject: '物理', grade: '高二', city: '北京' }, painPoints: ['期中 58 分还能补吗'] }
 const temp = () => mkdtemp(join(tmpdir(), 'workbench-chat-'))
@@ -65,6 +65,16 @@ test('对话记录和案例库：写进去能读回来，案例按渠道取', as
     const lessons = chatLessons(root, '微信')
     assert.match(lessons, /先别报数字/)
     assert.doesNotMatch(lessons, /太贵了/) // 流失的不当成功经验
+
+    // 给一轮真实对话标成成交，下一句建议会参考它
+    const updated = updateChatRow(root, 0, { result: '成交', stage: '成交' })
+    assert.equal(updated[0].result, '成交')
+    assert.equal(updated[0].stage, '成交')
+    assert.match(chatLessons(root, '微信'), /真实对话（成交）/)
+    // 非法值不写脏
+    const bad = updateChatRow(root, 0, { result: '瞎写', stage: '瞎写' })
+    assert.equal(bad[0].result, '成交')
+    assert.equal(updateChatRow(root, 99, { result: '成交' }), null)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

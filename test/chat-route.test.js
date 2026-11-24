@@ -64,6 +64,12 @@ test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
     assert.equal(records.body.rows.length, 1)
     assert.equal(records.body.rows[0].channel, '微信')
 
+    // 标结果：成交 / 流失
+    const updated = await call('POST', 'chat/update', { index: 0, patch: { result: '成交' } })
+    assert.equal(updated.status, 200)
+    assert.equal(updated.body.rows[0].result, '成交')
+    assert.equal((await call('POST', 'chat/update', { index: 9, patch: { result: '成交' } })).status, 404)
+
     assert.equal((await call('POST', 'chat/cases', { channel: '微信', scene: '问价格', result: '成交', text: '家长：多少钱？老师：先别报数字。' })).status, 200)
     assert.equal((await call('POST', 'chat/cases', { channel: '微信', text: '   ' })).status, 400)
     const after = await call('GET', 'chat/records')

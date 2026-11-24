@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, draftDm, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, revealDir, setDesk, toast, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, revealDir, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -37,6 +37,9 @@ export function DmView() {
   const [query, setQuery] = React.useState('')
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
+  const [chats, setChats] = React.useState([])
+  const [chatFilter, setChatFilter] = React.useState('all')
+  const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
@@ -44,6 +47,11 @@ export function DmView() {
     fetchLeadsWithLessons().then(({ leads: rows, lessons: hints }) => { setLeads(rows); setLessons(hints) }).catch(() => {})
   }, [])
   React.useEffect(() => { reload() }, [reload])
+
+  const reloadChats = React.useCallback(() => {
+    fetchChatRecords().then(data => setChats(data.rows ?? [])).catch(() => {})
+  }, [])
+  React.useEffect(() => { reloadChats() }, [reloadChats])
 
   const run = async () => {
     if (!raw.trim()) return
@@ -200,6 +208,7 @@ export function DmView() {
                         outgoing: draft.text, stage: result.stage || (channel === '微信' ? '成交' : '引流'), result: '未定',
                       })
                       toast(t('记进对话记录了'))
+                      reloadChats()
                     } catch (err) { toast(err.message, { error: true }) }
                   }}>{t('我发了，记一笔')}</button>
                 </div>
@@ -335,6 +344,53 @@ export function DmView() {
                       <span className="md-grow" />
                       <button type="button" className="md-pill is-small" onClick={() => mark(lead, { draft: draftEdit })}>{t('保存话术')}</button>
                     </div>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="md-tile md-chat-log">
+        <header className="md-tile-head">
+          <h2>{t('最近对话')}</h2>
+          <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chats.length })}</span>
+          <span className="md-grow" />
+          <div className="md-lead-tabs">
+            {[['all', '全部'], ['平台私信', '平台私信'], ['微信', '微信']].map(([id, label]) => (
+              <button type="button" key={id} className={chatFilter === id ? 'is-on' : ''} onClick={() => setChatFilter(id)}>{t(label)}</button>
+            ))}
+          </div>
+        </header>
+        {chats.length === 0 ? (
+          <p className="md-muted md-dm-empty">{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
+        ) : (
+          <ul className="md-chat-list">
+            {chats.slice().reverse().filter(row => chatFilter === 'all' || row.channel === chatFilter).slice(0, 20).map(row => (
+              <li key={row.rowIndex} className="md-chat-row">
+                <header>
+                  <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
+                  {row.name ? <b>{row.name}</b> : null}
+                  <span className="md-muted">{row.date} {row.stage ? `· ${t(row.stage)}` : ''}</span>
+                  <span className="md-grow" />
+                  <select value={row.result || '未定'} onChange={event => {
+                    updateChatLog(row.rowIndex, { result: event.target.value })
+                      .then(data => setChats(data.rows ?? []))
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>
+                    {['未定', '加微', '约试听', '成交', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}
+                  </select>
+                  <button type="button" className="md-inline-link" onClick={() => setOpenChat(openChat === row.rowIndex ? -1 : row.rowIndex)}>
+                    {openChat === row.rowIndex ? t('收起') : t('看全文')}
+                  </button>
+                </header>
+                <p className="md-chat-preview">{openChat === row.rowIndex ? null : `${row.incoming.slice(0, 40)} → ${row.outgoing.slice(0, 40)}`}</p>
+                {openChat === row.rowIndex ? (
+                  <div className="md-chat-full">
+                    <p><b>{t('对方')}</b>{row.incoming}</p>
+                    <p><b>{t('我方')}</b>{row.outgoing}</p>
+                    <button type="button" className="md-inline-link" onClick={() => copy(row.outgoing)}>{t('复制我方这句')}</button>
                   </div>
                 ) : null}
               </li>

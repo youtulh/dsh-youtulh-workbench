@@ -17,7 +17,7 @@ const text = (value, max = 2000) => String(value ?? '').trim().slice(0, max)
 const oneLine = value => text(value).replace(/\s+/g, ' ')
 
 const toChat = row => ({
-  date: row['日期'] ?? '', channel: row['渠道'] ?? '', name: row['姓名'] ?? '',
+  rowIndex: row.rowIndex, date: row['日期'] ?? '', channel: row['渠道'] ?? '', name: row['姓名'] ?? '',
   incoming: row['对方说'] ?? '', outgoing: row['我方回'] ?? '', stage: row['阶段'] ?? '',
   result: row['结果'] ?? '', note: row['备注'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
@@ -41,6 +41,21 @@ export function appendChat(root, input = {}) {
   return readChats(root)
 }
 
+/** 给某一轮对话补结果 / 阶段 / 备注（成交、流失、约试听）。 */
+export function updateChatRow(root, index, patch = {}) {
+  const rows = readTable(root, LAYOUT.chats).rows
+  const at = Number(index)
+  if (!Number.isInteger(at) || at < 0 || at >= rows.length) return null
+  const row = { ...rows[at] }
+  if (CHAT_STAGES.includes(patch.stage)) row['阶段'] = patch.stage
+  if (CHAT_RESULTS.includes(patch.result)) row['结果'] = patch.result
+  if (typeof patch.note === 'string') row['备注'] = text(patch.note, 200)
+  row['更新时间'] = nowStamp()
+  rows[at] = row
+  writeTable(root, LAYOUT.chats, CHAT_COLUMNS, rows)
+  return readChats(root)
+}
+
 export function readCases(root) {
   return readTable(root, LAYOUT.cases).rows.map(toCase).filter(row => row.text)
 }
@@ -57,11 +72,12 @@ export function appendCase(root, input = {}) {
 /** 聊成的案例，按渠道取最近的几条，拼给模型当口气参考。 */
 export function chatLessons(root, channel, limit = 3) {
   const won = new Set(['加微', '约试听', '成交'])
-  const all = readCases(root).filter(row => row.result === '' || won.has(row.result))
-  const pick = all.filter(row => row.channel === channel)
-  return (pick.length ? pick : all).slice(-limit).reverse()
-    .map(row => `- ${row.scene || row.channel}（${row.result || '聊成了'}）：${oneLine(row.text).slice(0, 180)}`)
-    .join('\n')
+  const cases = readCases(root).filter(row => row.result === '' || won.has(row.result))
+  const chats = readChats(root).filter(row => row.channel === channel && won.has(row.result))
+  const own = cases.filter(row => row.channel === channel)
+  const fromCases = (own.length ? own : cases).map(row => `- ${row.scene || row.channel}（${row.result || '聊成了'}）：${oneLine(row.text).slice(0, 180)}`)
+  const fromChats = chats.map(row => `- 真实对话（${row.result}）：对方「${oneLine(row.incoming).slice(0, 50)}」→ 我们「${oneLine(row.outgoing).slice(0, 120)}」`)
+  return [...fromChats.slice(-limit), ...fromCases].slice(-limit).reverse().join('\n')
 }
 
 const channelName = channel => (channel === '微信' ? '微信私聊' : '平台私信（小红书 / 抖音 / B站）')

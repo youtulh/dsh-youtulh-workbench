@@ -1666,3 +1666,17 @@ body[data-ds-dark-theme] .md-root {
 .md-channel-tabs > button:not(.md-inline-link) { padding: 4px 12px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-size: 12.5px; line-height: 20px; transition: color .15s, background .15s; }
 .md-channel-tabs > button.is-on:not(.md-inline-link) { background: var(--primary); color: var(--on-primary); }
 .md-dm-judge { flex-basis: 100%; margin-top: 2px; color: var(--ink2); font-size: 12px; line-height: 18px; }
+
+/* 聊天台：最近对话 */
+.md-chat-list { display: flex; flex-direction: column; gap: 6px; max-height: 460px; overflow-y: auto; }
+.md-chat-row { padding: 8px 10px; border-radius: var(--r-md); transition: background .15s; }
+.md-chat-row:hover { background: var(--hover); }
+.md-chat-row > header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.md-chat-channel { padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-size: 11px; line-height: 18px; }
+.md-chat-channel.is-wechat { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+.md-chat-row > header select { padding: 2px 6px; border: .5px solid var(--line); border-radius: var(--r-xs); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 11.5px; }
+.md-chat-preview { margin-top: 4px; color: var(--ink3); font-size: 12px; line-height: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-chat-full { display: grid; gap: 6px; margin-top: 6px; padding: 8px 10px; border-radius: var(--r-md); background: color-mix(in srgb, var(--hover) 70%, transparent); }
+.md-chat-full p { display: flex; gap: 8px; font-size: 12.5px; line-height: 20px; color: var(--ink2); }
+.md-chat-full p b { flex: none; color: var(--ink3); font-weight: 400; }
+.md-chat-full .md-inline-link { justify-self: start; }

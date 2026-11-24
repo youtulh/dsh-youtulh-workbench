@@ -222,6 +222,16 @@ export async function addChatCase(payload) {
   return request('chat/cases', payload)
 }
 
+/** 读最近对话和案例。 */
+export async function fetchChatRecords() {
+  return request('chat/records')
+}
+
+/** 给某一轮对话标结果（成交 / 流失 / 约试听）。 */
+export async function updateChatLog(index, patch) {
+  return request('chat/update', { index, patch })
+}
+
 /** 话术定了，连同台账一起写进线索表。 */
 export async function appendLeadRow(payload) {
   return request('lead/append', payload)

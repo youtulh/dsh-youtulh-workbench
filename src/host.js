@@ -11,7 +11,7 @@ import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
-import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats } from './chat.js'
+import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats, updateChatRow } from './chat.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -628,6 +628,13 @@ async function route(ctx, store, desk, req, res) {
       } catch { /* 没模型就本地兜底 */ }
       if (!result) result = localChat(state, { channel, raw })
       return json(res, 200, { ...result, source: from, channel })
+    }
+    case 'chat/update': {
+      // 给一轮对话标结果：成交 / 流失 / 约试听，后面的建议会参考
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const rows = updateChatRow(root, body.index, body.patch ?? {})
+      if (!rows) return json(res, 404, { error: tr('没找到这一轮对话') })
+      return json(res, 200, { rows })
     }
     case 'chat/log': {
       // 这句我发出去了：记进 对话记录.csv，后面用来复盘和给建议
