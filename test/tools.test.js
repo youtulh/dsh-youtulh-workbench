@@ -31,3 +31,18 @@ test('工具：save_output 把稿子写进工作区，append_lead 往线索表�
     await rm(root, { recursive: true, force: true })
   }
 })
+
+test('工具：对话里写口播也会登记进内容库', async () => {
+  const { readContent } = await import('../src/workspace.js')
+  const root = await mkdtemp(join(tmpdir(), 'workbench-tools-lib-'))
+  try {
+    const [save] = createTools({ settings: { read: async () => ({ saveRoot: root }) } })
+    const saved = await save.execute({ kind: 'content', title: '偏科的孩子卡在哪', text: '第一句\n第二句' })
+    const rows = readContent(root)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0]['目录'], saved.dir)
+    assert.equal(rows[0]['采用'], '未定')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

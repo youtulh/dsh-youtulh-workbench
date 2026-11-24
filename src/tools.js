@@ -1,7 +1,7 @@
 // 注册给对话里 agent 的工具：产出落盘、线索入表。
 // agent 在聊天里写好东西后调用这两个工具，文件就真的写到工作区，聊天里也留一份。
 import { join } from 'node:path'
-import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, resolveRoot } from './workspace.js'
+import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, recordContent, resolveRoot } from './workspace.js'
 import { savePiece } from './export.js'
 
 const str = (description, extra = {}) => ({ type: 'string', description, ...extra })
@@ -43,6 +43,16 @@ export function createTools({ settings }) {
       ensureLayout(base)
       const title = `${dayStamp()} ${folderName(args.title)}`
       const saved = await savePiece({ dir: join(base, SUBDIR[args.kind] ?? LAYOUT.content), title, text: content, formats: args.formats?.length ? args.formats : ['docx', 'md'] })
+      // 助手在对话里写的稿子也登记进内容库，别让数据断链
+      if (args.kind === 'content') {
+        try {
+          recordContent(base, {
+            '日期': dayStamp(), '批次': '', '选题': args.title, '标题': args.title,
+            '标签': '', '采用': '未定', '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '',
+            '爆款': '', '分数': '', '目录': saved.dir, '备注': '',
+          })
+        } catch { /* 登记失败不影响写文件 */ }
+      }
       return { dir: saved.dir, files: saved.files }
     },
   }
