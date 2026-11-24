@@ -47,6 +47,7 @@ export function SetupView() {
   const [backups, setBackups] = React.useState([])
   const [root, setRoot] = React.useState('')
   const [stats, setStats] = React.useState(null)
+  const [upgradeResult, setUpgradeResult] = React.useState(null)
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
@@ -313,6 +314,21 @@ export function SetupView() {
             {t('线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons} · 反馈 {feedback} · 备份 {backups}', stats)}
           </p>
         ) : null}
+        {upgradeResult ? (
+          <div className="md-upgrade-result">
+            <p className="md-muted">{t('升级后：线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons}', upgradeResult.after)}</p>
+            {upgradeResult.backupDir ? (
+              <div className="md-setup-path">
+                <code>{t('升级前的备份：{dir}', { dir: upgradeResult.backupDir })}</code>
+                <button type="button" className="md-inline-link" onClick={() => revealDir(upgradeResult.backupDir).catch(err => toast(err.message, { error: true }))}>{t('打开')}</button>
+                <button type="button" className="md-inline-link" onClick={() => {
+                  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(upgradeResult.backupDir).then(() => toast(t('复制了路径'))).catch(() => toast(t('复制失败'), { error: true }))
+                  else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
+                }}>{t('复制路径')}</button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {stats?.legacy?.length ? (
           <div className="md-legacy-row">
             <span className="md-legacy-note">{t('旧版表头：{tables}。读取已经兼容，下次保存会自动升级成新列。', { tables: stats.legacy.join('、') })}</span>
@@ -331,6 +347,7 @@ export function SetupView() {
                     return
                   }
                   const base = data.upgraded?.length ? t('升级好了：{tables}', { tables: data.upgraded.join('、') }) : t('没有需要升级的表')
+                  setUpgradeResult({ backupDir: data.backupDir || '', before: data.before, after: data.after })
                   toast(data.backupDir ? t('{base} · 已自动备份一份', { base }) : base)
                 })
                 .catch(err => toast(err.message, { error: true }))
