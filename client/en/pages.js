@@ -360,6 +360,7 @@ export const PAGES = {
   ' · 已跟 {n} 次': ' · {n} follow-ups',
   '已跟 {n} 次': '{n} follow-ups done',
   记一次跟进: 'Log a follow-up',
+  跟进记了一次: 'Follow-up logged',
   个班: 'classes',
   个学生: 'students',
   条课次记录: 'lesson records',

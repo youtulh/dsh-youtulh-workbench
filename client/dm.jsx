@@ -5,7 +5,7 @@ import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLe
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
-import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS } from './util.js'
+import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS, dayKey } from './util.js'
 
 const FILTERS = [
   { id: 'all', label: '全部', test: () => true },
@@ -427,7 +427,9 @@ export function DmView() {
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.nextAt || lead.followUps ? (
-                    <span className="md-lead-follow">{lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}{lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}</span>
+                    <span className={`md-lead-follow ${lead.nextAt && lead.nextAt < dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
+                      {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}{lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}
+                    </span>
                   ) : null}
                   <span className="md-grow" />
                   <span className={`md-lead-next ${lead.next === '待跟进' || lead.next === '待加微' ? 'is-todo' : ''}`}>{lead.next}</span>
@@ -469,6 +471,11 @@ export function DmView() {
                     {openDraft === lead.rowIndex ? t('收起话术') : t('看话术')}
                   </button>
                   <button type="button" className="md-inline-link" onClick={() => copy(lead.raw)}>{t('复制原文')}</button>
+                  <button type="button" className="md-inline-link" onClick={() => {
+                    updateLead(lead.rowIndex, { followUps: (lead.followUps || 0) + 1 })
+                      .then(data => { if (data.leads) setLeads(data.leads); toast(t('跟进记了一次')) })
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>{t('记一次跟进')}</button>
                 </div>
                 {openDraft === lead.rowIndex ? (
                   <div className="md-lead-draft">

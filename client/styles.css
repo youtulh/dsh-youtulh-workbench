@@ -1784,3 +1784,7 @@ body[data-ds-dark-theme] .md-root {
   .md-lead-search { width: 100%; }
   .md-lead-tabs { flex-wrap: wrap; }
 }
+
+/* 线索卡：下次跟进 */
+.md-lead-follow { color: var(--ink3); font-size: 11px; }
+.md-lead-follow.is-overdue { color: var(--accent); }
