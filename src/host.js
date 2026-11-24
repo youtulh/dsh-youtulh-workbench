@@ -676,12 +676,18 @@ async function route(ctx, store, desk, req, res) {
       let leads = null
       let studentCreated = false
       if (toStage && row?.name) {
-        const match = readLeads(root).find(item => item.name === row.name && !['已报课', '流失'].includes(item.stage))
+        const sameName = readLeads(root).find(item => item.name === row.name)
+        const match = sameName && !['已报课', '流失'].includes(sameName.stage) ? sameName : null
         if (match) leads = updateLeadRow(root, match.rowIndex, { stage: toStage })
-        // 成交顺手建学生档案，省得再回学生页转一次
+        // 成交顺手建学生档案：年级/学校能从句索里拿到就一起带上，不填空
         if (result === '成交' && !readStudents(root).some(item => item.name === row.name)) {
           saveStudent(root, {
-            name: row.name, grade: '', source: '聊天成交', enrolledAt: dayStamp(), note: '聊天台标成交时自动建档',
+            name: row.name,
+            grade: sameName?.grade || '',
+            school: sameName?.school || '',
+            source: '聊天成交',
+            enrolledAt: dayStamp(),
+            note: '聊天台标成交时自动建档',
           })
           studentCreated = true
         }

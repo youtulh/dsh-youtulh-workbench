@@ -114,6 +114,7 @@ test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
     assert.equal(synced.body.studentCreated, true)
     const students = await call('GET', 'students')
     assert.deepEqual(students.body.students.map(row => row.name), ['王'])
+    assert.equal(students.body.students[0].grade, '高二')
     // 再标一次不重复建
     const again = await call('POST', 'chat/update', { index: last.rowIndex, patch: { result: '成交' } })
     assert.equal(again.body.studentCreated, false)
