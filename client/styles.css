@@ -1951,3 +1951,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-student-last { margin-top: 4px; color: var(--ink3); font-size: 11.5px; }
 
 .md-legacy-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+
+.md-form-hint { font-size: 11px; }
+@media (max-width: 640px) { .md-form-hint { display: none; } }

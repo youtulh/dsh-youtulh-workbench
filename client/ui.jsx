@@ -122,8 +122,14 @@ export function FormDialog() {
   }
   return (
     <Dialog title={dialog.title} onClose={close}>
-      <form onSubmit={submit} className="md-form">
-        {dialog.fields.map((field) => {
+      <form onSubmit={submit} className="md-form" onKeyDown={event => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+          event.preventDefault()
+          dialog.onSubmit(values)
+          close()
+        }
+      }}>
+        {dialog.fields.map((field, index) => {
           if (field.type === 'hidden') return <p key={field.name} className="md-muted">{field.label}</p>
           if (field.type === 'checkbox') {
             return (
@@ -137,13 +143,13 @@ export function FormDialog() {
             <label key={field.name} className="md-field">
               <span>{field.label}</span>
               {field.type === 'textarea' ? (
-                <textarea rows={field.rows ?? 3} value={values[field.name] ?? ''} placeholder={field.placeholder} required={field.required} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))} />
+                <textarea autoFocus={index === 0} rows={field.rows ?? 3} value={values[field.name] ?? ''} placeholder={field.placeholder} required={field.required} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))} />
               ) : field.type === 'select' ? (
                 <select value={values[field.name] ?? ''} required={field.required} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))}>
                   {field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               ) : (
-                <input type={field.type ?? 'text'} value={values[field.name] ?? ''} placeholder={field.placeholder} required={field.required} list={field.list} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))} />
+                <input autoFocus={index === 0} type={field.type ?? 'text'} value={values[field.name] ?? ''} placeholder={field.placeholder} required={field.required} list={field.list} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))} />
               )}
               {field.hint ? <small>{field.hint}</small> : null}
             </label>
@@ -155,6 +161,7 @@ export function FormDialog() {
           </datalist>
         ))}
         <div className="md-form-foot">
+          <span className="md-muted md-form-hint">{t('⌘ + Enter 保存')}</span>
           {dialog.onDelete ? <button type="button" className="md-btn is-danger" onClick={() => { dialog.onDelete(); close() }}>{t('删除')}</button> : null}
           <span style={{ flex: 1 }} />
           <button type="button" className="md-btn" onClick={close}>{t('取消')}</button>

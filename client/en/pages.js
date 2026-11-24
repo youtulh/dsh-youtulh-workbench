@@ -679,4 +679,5 @@ export const PAGES = {
   '升级过程有异常，已自动还原；数据还是升级前的样子': 'Upgrade went wrong and was rolled back automatically; your data is unchanged.',
   '升级后：线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons}': 'After upgrade: leads {leads} · students {students} · classes {classes} · lessons {lessons}',
   '升级前的备份：{dir}': 'Pre-upgrade backup: {dir}',
+  '⌘ + Enter 保存': '⌘ + Enter to save',
 }
