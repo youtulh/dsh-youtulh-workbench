@@ -390,6 +390,10 @@ export const PAGES = {
   '第 {n} 次课还没记人': 'Lesson {n} has nobody recorded',
   '先补上家长称呼或孩子年级，再转成学生': 'Add a parent name or grade before making a student',
   我的原话样本: 'My own words',
+  还没填设定: 'No setup yet',
+  去填设定: 'Set up now',
+  '先告诉我科目和年级，下一句才像你说的话，不是通用话术。': 'Tell me the subject and grade first — suggestions should sound like you, not generic copy.',
+
   '一行一句，写你平时怎么跟家长说话，3 到 5 句就够。口播、按提示改、回私信都照这个口气；不填也不会套用别人的科目和例子。': 'One line per sentence, 3–5 lines of how you actually talk to parents. Scripts, revisions and DM replies follow this voice; leave it empty and nothing is borrowed from someone else.',
   '比如：孩子这块不是笨，是前面那一章没接上。': 'e.g. It’s not that the kid is slow — the earlier chapter never clicked.',
   '存进工作区的 说话样本.md；改这个文件也一样生效。': 'Saved to 说话样本.md in your workspace; editing that file works too.',
