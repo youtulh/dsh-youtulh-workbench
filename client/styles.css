@@ -1954,3 +1954,7 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 .md-form-hint { font-size: 11px; }
 @media (max-width: 640px) { .md-form-hint { display: none; } }
+
+/* 升级结果卡 */
+.md-upgrade-result { position: relative; margin: 8px 0; padding: 10px 12px; border-radius: var(--r-md); background: color-mix(in srgb, var(--hover) 60%, transparent); }
+.md-upgrade-result > .md-inline-link { position: absolute; top: 8px; right: 10px; }

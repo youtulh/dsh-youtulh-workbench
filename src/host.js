@@ -129,6 +129,16 @@ function leadImportColumn(cell) {
   return ''
 }
 
+/** 导入的日期：认 2026-11-26 / 2026/11/26 / 11/26（当年），认不出就留空。 */
+export function normalizeImportDate(value) {
+  const raw = String(value ?? '').trim()
+  let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(raw)
+  if (m) return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`
+  m = /^(\d{1,2})[-/.](\d{1,2})$/.exec(raw)
+  if (m) return `${new Date().getFullYear()}-${String(m[1]).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`
+  return ''
+}
+
 export function parseLeadTable(raw) {
   const table = parsePastedTable(raw)
   if (table.length < 2) return { cols: [], rows: [] }
@@ -887,20 +897,22 @@ async function route(ctx, store, desk, req, res) {
       if (!cols.includes('name')) return json(res, 400, { error: tr('第一行要有「姓名」列') })
       let imported = 0
       let skipped = 0
+      let undated = 0
       const seen = new Set(readLeads(root).map(lead => `${lead.name ?? ''}\u0000${lead.raw ?? ''}`))
       for (const row of rows) {
         const key = `${row.name ?? ''}\u0000${row.raw ?? ''}`
         if (seen.has(key)) { skipped += 1; continue }
         seen.add(key)
-        const createdAt = row.date ? `${row.date}T12:00:00` : undefined
+        const date = normalizeImportDate(row.date)
+        if (!date) undated += 1
         appendLead(root, {
           ...row,
           followUps: Number(row.followUps) || 0,
-          createdAt,
+          createdAt: date ? `${date}T12:00:00` : undefined,
         })
         imported += 1
       }
-      return json(res, 200, { leads: readLeads(root), imported, skipped })
+      return json(res, 200, { leads: readLeads(root), imported, skipped, undated })
     }
     case 'students/import': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

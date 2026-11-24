@@ -77,9 +77,10 @@ export function FunnelPanel({ students = [], onChanged }) {
         importLeads(values.raw)
           .then(data => {
             setLeads(data.leads ?? [])
-            toast(data.skipped
-              ? t('导入了 {n} 条线索，跳过 {m} 条重复', { n: data.imported, m: data.skipped })
-              : t('导入了 {n} 条线索', { n: data.imported }))
+            const bits = [t('导入了 {n} 条线索', { n: data.imported })]
+            if (data.skipped) bits.push(t('跳过 {n} 条重复', { n: data.skipped }))
+            if (data.undated) bits.push(t('{n} 条没写日期，按今天记', { n: data.undated }))
+            toast(bits.join('；'))
           })
           .catch(err => toast(err.message, { error: true }))
       },

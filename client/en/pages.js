@@ -687,4 +687,6 @@ export const PAGES = {
   '导入了 {n} 条线索': 'Imported {n} leads',
   '导入了 {n} 条线索，跳过 {m} 条重复': 'Imported {n} leads; skipped {m} duplicates',
   '跳过 {n} 行（没写姓名）': 'Skipped {n} rows (no name)',
+  '跳过 {n} 条重复': 'skipped {n} duplicates',
+  '{n} 条没写日期，按今天记': '{n} without a date — recorded today',
 }

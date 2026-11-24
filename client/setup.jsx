@@ -47,7 +47,17 @@ export function SetupView() {
   const [backups, setBackups] = React.useState([])
   const [root, setRoot] = React.useState('')
   const [stats, setStats] = React.useState(null)
-  const [upgradeResult, setUpgradeResult] = React.useState(null)
+  const UPGRADE_KEY = 'youtulh:upgrade-result'
+  const [upgradeResult, setUpgradeResultState] = React.useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(UPGRADE_KEY) || 'null') } catch { return null }
+  })
+  const setUpgradeResult = (value) => {
+    setUpgradeResultState(value)
+    try {
+      if (value) sessionStorage.setItem(UPGRADE_KEY, JSON.stringify(value))
+      else sessionStorage.removeItem(UPGRADE_KEY)
+    } catch { /* 隐私模式就算了 */ }
+  }
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
@@ -316,6 +326,7 @@ export function SetupView() {
         ) : null}
         {upgradeResult ? (
           <div className="md-upgrade-result">
+            <button type="button" className="md-inline-link" onClick={() => setUpgradeResult(null)}>{t('关闭')}</button>
             <p className="md-muted">{t('升级后：线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons}', upgradeResult.after)}</p>
             {upgradeResult.backupDir ? (
               <div className="md-setup-path">
