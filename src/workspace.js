@@ -17,6 +17,12 @@ export const LAYOUT = {
 
 export const defaultRoot = () => join(homedir(), 'Documents', 'Youtulh 工作台')
 
+// 写 CSV 一律带 BOM：Excel（尤其 Windows）打开中文才不会乱码
+const CSV_BOM = '\uFEFF'
+function writeCsvFile(file, text) {
+  writeFileSync(file, String(text).startsWith(CSV_BOM) ? text : `${CSV_BOM}${text}`)
+}
+
 export function resolveRoot(value) {
   const raw = String(value ?? '').trim()
   if (!raw) return defaultRoot()
@@ -134,7 +140,7 @@ export function ensureLeadColumns(root) {
   const missing = LEAD_COLUMNS.filter(name => !head.includes(name))
   if (!missing.length) return false
   const next = [[...head, ...missing], ...lines.slice(1).map(line => [...parseCsvLine(line), ...missing.map(() => '')])]
-  writeFileSync(file, `${next.map(cells => cells.map(csvCell).join(',')).join('\n')}\n`)
+  writeCsvFile(file, `${next.map(cells => cells.map(csvCell).join(',')).join('\n')}\n`)
   return true
 }
 
@@ -164,9 +170,9 @@ export function appendLead(root, lead) {
   const row = header.map(name => csvCell(values[name] ?? '')).join(',')
   if (exists) {
     const current = readFileSync(file, 'utf8')
-    writeFileSync(file, `${current.replace(/\n*$/, '\n')}${row}\n`)
+    writeCsvFile(file, `${current.replace(/\n*$/, '\n')}${row}\n`)
   } else {
-    writeFileSync(file, `${LEAD_COLUMNS.map(csvCell).join(',')}\n${row}\n`)
+    writeCsvFile(file, `${LEAD_COLUMNS.map(csvCell).join(',')}\n${row}\n`)
   }
   return file
 }
@@ -261,7 +267,7 @@ export function writeAccounts(root, accounts = []) {
   const rows = accounts.map(account => [
     account.platform, account.handle, account.followers, account.url, account.note, account.fetchedAt ?? account.updatedAt,
   ].map(csvCell2).join(','))
-  writeFileSync(file, [ACCOUNT_COLUMNS.map(csvCell2).join(','), ...rows].join('\n') + '\n')
+  writeCsvFile(file, [ACCOUNT_COLUMNS.map(csvCell2).join(','), ...rows].join('\n') + '\n')
   return file
 }
 
@@ -314,7 +320,7 @@ export function removeLeadRow(root, index) {
   const row = 1 + at
   if (row >= lines.length || !lines[row]) return null
   lines.splice(row, 1)
-  writeFileSync(file, lines.join('\n'))
+  writeCsvFile(file, lines.join('\n'))
   return readLeads(root)
 }
 
@@ -362,7 +368,7 @@ export function updateLeadRow(root, index, patch = {}) {
   }
   set('更新时间', new Date().toISOString().slice(0, 16).replace('T', ' '))
   lines[at] = cells.map(csvCell).join(',')
-  writeFileSync(file, lines.join('\n'))
+  writeCsvFile(file, lines.join('\n'))
   return readLeads(root)
 }
 
@@ -475,7 +481,7 @@ export function writeTable(root, file, columns, rows) {
   const abs = join(root, file)
   const head = columns.map(csvCell).join(',')
   const body = rows.map(row => columns.map(name => csvCell(row[name])).join(',')).join('\n')
-  writeFileSync(abs, `${head}\n${body}${body ? '\n' : ''}`)
+  writeCsvFile(abs, `${head}\n${body}${body ? '\n' : ''}`)
   return abs
 }
 
@@ -487,10 +493,10 @@ export function appendRows(root, file, columns, rows) {
   const body = rows.map(row => columns.map(name => csvCell(row[name])).join(',')).join('\n')
   if (exists) {
     const current = readFileSync(abs, 'utf8')
-    if (current.trim()) writeFileSync(abs, `${current.replace(/\n*$/, '\n')}${body}\n`)
-    else writeFileSync(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
+    if (current.trim()) writeCsvFile(abs, `${current.replace(/\n*$/, '\n')}${body}\n`)
+    else writeCsvFile(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
   } else {
-    writeFileSync(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
+    writeCsvFile(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
   }
   return abs
 }

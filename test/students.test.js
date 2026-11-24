@@ -203,3 +203,15 @@ test('Excel CSV 带 BOM：学生和班仍能读出来', async () => {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('写出来的 CSV 带 BOM，Excel 打开中文不乱码', async () => {
+  const root = await temp()
+  try {
+    saveStudent(root, { name: '王', grade: '高一' })
+    const raw = await readFile(join(root, '学生档案.csv'), 'utf8')
+    assert.equal(raw.charCodeAt(0), 0xFEFF)
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
