@@ -388,6 +388,8 @@ export const PAGES = {
   '这一节还没记人，保存会把原来的记录清掉，继续吗？': 'Nobody recorded for this lesson. Saving will clear the existing record. Continue?',
   '第 {n} 次课记好了 {m} 人': 'Lesson {n} saved for {m} students',
   '第 {n} 次课还没记人': 'Lesson {n} has nobody recorded',
+  '第 {n} 次课更新了 {m} 人': 'Lesson {n} updated for {m} students',
+  ' · 这一节已记过，保存会更新': ' · already recorded — saving updates it',
   '先补上家长称呼或孩子年级，再转成学生': 'Add a parent name or grade before making a student',
   我的原话样本: 'My own words',
   还没填设定: 'No setup yet',
@@ -590,4 +592,5 @@ export const PAGES = {
   '还没填上课时间': 'No class time yet',
   '还没有学生进班。': 'No students in this class yet.',
   '把人加进来就能记课了。': 'Add students to start recording lessons.',
+  '还没有学生。聊天台标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。': 'No students yet. Marking “enrolled” in the chat desk creates one; you can also convert a lead in the pipeline or add one directly.',
 }

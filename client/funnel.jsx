@@ -17,7 +17,7 @@ export function FunnelPanel({ students = [], onChanged }) {
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
 
-  const load = () => Promise.all([fetchLeadsWithLessons(), fetchChatRecords(), fetchContent()])
+  const load = () => Promise.all([fetchLeadsWithLessons(), fetchChatRecords().catch(() => ({ rows: [] })), fetchContent().catch(() => ({ rows: [] }))])
     .then(([{ leads: rows }, chatData, content]) => {
       setLeads(rows)
       setContentTitles((content.rows ?? []).map(row => row['标题']).filter(Boolean).slice(0, 60))

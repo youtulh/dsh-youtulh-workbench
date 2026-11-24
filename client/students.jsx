@@ -20,7 +20,7 @@ export function StudentsView() {
   const [lessons, setLessons] = React.useState([])
   const studentFocus = useDesk(s => s.studentFocus)
 
-  const load = () => Promise.all([fetchStudents(), fetchLessons('')])
+  const load = () => Promise.all([fetchStudents(), fetchLessons('').catch(() => [])])
     .then(([data, rows]) => {
       setStudents(data.students ?? [])
       setClasses(data.classes ?? [])
@@ -153,7 +153,7 @@ function RosterPanel({ students, classes, onChanged, focusName = '' }) {
 
       {students.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('还没有学生。报课的家长在「线索漏斗」里转成学生，也可以直接加一个。')}</p>
+          <p>{t('还没有学生。聊天台标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。')}</p>
           <button type="button" className="md-pill is-primary" onClick={() => open(null)}>{t('加第一个学生')}</button>
         </div>
       ) : list.length === 0 ? (
