@@ -427,6 +427,10 @@ export const PAGES = {
   存进案例库: 'Save to cases',
   '案例存好了，以后给建议会参考': 'Case saved — future suggestions will learn from it',
   '我发了，记一笔': 'Sent it — log it',
+  改一下: 'Edit',
+  保存这句: 'Save this line',
+  '改完这句，记一笔时存的就是改过的': 'Edits are what get logged',
+
   记进对话记录了: 'Logged in conversation history',
   最近对话: 'Recent chats',
   '案例库（{n}）· 聊成的会参考': 'Case library ({n}) · successful ones guide suggestions',
