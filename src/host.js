@@ -5,18 +5,13 @@ import { readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
-import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
+import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, writeAccounts, writeSettingsMarkdown } from './workspace.js'
-import { harvest, harvestText } from './harvest.js'
-import { localIntent } from './intents.js'
-import { exportSkill, proposeRules } from './learn.js'
-import { createMonidRunner, fetchAccount, importPosts, monidStatus, postsToMaterial, resolveAccount, saveCovers } from './monid.js'
 import { applyOps, newId } from './ops.js'
-import { publicSettings, Settings, imageReady } from './settings.js'
-import { normalizeStyle, referenceExcerpt, stylePrompts } from './style.js'
-import { dshHome, Store } from './store.js'
+import { publicSettings, Settings } from './settings.js'
+import { Store } from './store.js'
 import { currentLang, platformName, tr, withLang } from './i18n.js'
 import { localizeSamples, samplesNeedLocale } from './seed.js'
 import { createVersionCheck } from './version.js'
@@ -98,105 +93,6 @@ function engineLabel(ctx) {
 function outageNotice(ctx, wasDown, fallback) {
   if (wasDown) return null
   return modelInfo(ctx) ? tr('模型暂时用不了，{fallback}。可以到设置里检查账号或密钥。', { fallback }) : tr('当前没有连接模型，{fallback}。', { fallback })
-}
-
-async function extractStyle(ctx, store, body) {
-  const urls = (Array.isArray(body.urls) ? body.urls : []).map(row => String(row).trim()).filter(Boolean).slice(0, 5)
-  const parts = [String(body.text ?? '').trim()].filter(Boolean)
-  const failures = []
-  for (const url of urls) {
-    try {
-      const page = await harvestText(url)
-      if (page.text.length >= 80) parts.push(`${page.title ?? ''}\n${page.text}`)
-      else failures.push(tr('{url}：页面上几乎没有文字，可能需要登录', { url }))
-    } catch (err) {
-      failures.push(tr('{url}：{error}', { url, error: err.message }))
-    }
-  }
-  const material = parts.join('\n\n---\n\n')
-  if (material.length < 80) {
-    throw Object.assign(new Error(failures.length ? tr('抓不到内容。{reason}。可以把内容直接贴进来。', { reason: failures[0] }) : tr('内容太少了，至少贴一段完整的文字')), { status: 400 })
-  }
-  const name = typeof body.name === 'string' ? body.name.trim().slice(0, 20) : ''
-  const source = urls.length && parts.length === urls.length ? tr('链接') : urls.length ? tr('内容和链接') : tr('内容')
-  return styleFromMaterial(ctx, store, { material, name, source, sourceUrls: urls, failures })
-}
-
-/** 提炼一张风格卡并设为当前风格。同一个账号再抓一次时更新原来那张。 */
-async function styleFromMaterial(ctx, store, { material, name, source, sourceUrls = [], failures = [], accountKey = null }) {
-  let style
-  try {
-    const { system, user } = stylePrompts(material, name)
-    const { text } = await callModel(ctx, { system, user, maxTokens: 1500, light: true, signal: AbortSignal.timeout(120_000) })
-    style = normalizeStyle(extractJson(text), name)
-  } catch (err) {
-    throw Object.assign(new Error(tr('提炼风格需要文字模型：{error}', { error: err.message })), { status: 502 })
-  }
-  return store.mutate(tr('提炼风格「{name}」', { name: style.name }), (draft) => {
-    const existing = accountKey ? (draft.styles ?? []).find(row => row.accountKey === accountKey) : null
-    const id = existing?.id ?? newId('st')
-    const row = { id, ...style, reference: referenceExcerpt(material), source, sourceUrls, ...(accountKey ? { accountKey } : {}), createdAt: existing?.createdAt ?? new Date().toISOString() }
-    draft.styles = existing ? draft.styles.map(entry => (entry.id === id ? row : entry)) : [row, ...(draft.styles ?? [])]
-    draft.activeStyleId = id
-    return { id, failures, state: draft }
-  })
-}
-
-/** 导入用户自己的账号。钱花在 Monid 上，所以先把内容存好，提炼失败也不会白花。 */
-async function importAccountRoute(ctx, store, desk, body) {
-  if (desk.importing) throw Object.assign(new Error(tr('上一个账号还在导入，等它结束再试')), { status: 409 })
-  desk.importing = true
-  try {
-    const account = await resolveAccount(body.text)
-    const { posts, profile, cost } = await fetchAccount(account, desk.monid)
-    const covers = await saveCovers(posts, account.platform, await store.read(), store.filesDir)
-    const added = await store.mutate(tr('导入{platform}账号', { platform: platformName(account.platform) }), draft => importPosts(draft, { account, profile, posts, covers }).added)
-    const nickname = profile.nickname || platformName(account.platform)
-    let styleError = null
-    const material = postsToMaterial(posts)
-    if (material.length >= 80) {
-      try {
-        await styleFromMaterial(ctx, store, { material, name: nickname, source: tr('{platform}账号', { platform: platformName(account.platform) }), sourceUrls: [account.url], accountKey: `${account.platform}:${account.id}` })
-      } catch (err) {
-        styleError = err.message
-      }
-    } else {
-      styleError = tr('这个账号的文字太少，提炼不出风格')
-    }
-    return { platform: account.platform, nickname, count: posts.length, added, cost, styleName: styleError ? null : nickname, styleError, state: await store.read() }
-  } finally {
-    desk.importing = false
-  }
-}
-
-async function addFromUrl(ctx, store, body) {
-  const url = String(body.url || '').trim()
-  const info = await harvest(url)
-  const op = {
-    op: 'add_item', kind: 'web', title: body.title || info.title || url, body: body.note || info.description || '', url: info.url, source: info.siteName, tags: Array.isArray(body.tags) ? body.tags : [],
-    media: info.image ? { src: info.image } : null,
-  }
-  return store.mutate(tr('收藏《{title}》', { title: op.title.slice(0, 12) }), (draft) => {
-    const { receipts, errors } = applyOps(draft, [op])
-    return { receipts, errors, id: receipts[0]?.target, state: draft }
-  })
-}
-
-async function refreshAccount(store, body) {
-  const url = String(body.url || '').trim()
-  const now = new Date().toISOString()
-  let patch
-  try {
-    const info = await harvest(url)
-    patch = { url: info.url, title: info.title ?? undefined, description: info.description ?? undefined, avatar: info.image ?? undefined, fetchedAt: now, fetchError: '', ...(info.followers ? { followers: info.followers } : {}) }
-  } catch (err) {
-    patch = { url, fetchedAt: now, fetchError: err.message }
-  }
-  return store.mutate(tr('更新账号档案'), (draft) => {
-    const op = body.id ? { op: 'update_account', id: body.id, ...patch } : { op: 'add_account', platform: body.platform ?? '', handle: body.handle ?? '', ...patch }
-    const { errors } = applyOps(draft, [op])
-    return { state: draft, errors, fetchError: patch.fetchError || null }
-  })
 }
 
 async function handleUpload(req, store, res) {
@@ -321,7 +217,6 @@ async function route(ctx, store, desk, req, res) {
       ensureLayout(root)
       return json(res, 200, { root, settingsFile: join(root, LAYOUT.settings), leadsFile: join(root, LAYOUT.leads), contentDir: join(root, LAYOUT.content), dmDir: join(root, LAYOUT.dm) })
     }
-    if (path === 'monid/status') return json(res, 200, await monidStatus(desk.monid))
     if (path === 'version') return json(res, 200, await desk.versionCheck.read())
     return json(res, 404, { error: tr('接口不存在') })
   }
@@ -415,8 +310,6 @@ async function route(ctx, store, desk, req, res) {
       execFile(command, [dir], () => {})
       return json(res, 200, { path: dir })
     }
-    case 'style/extract': return json(res, 200, await extractStyle(ctx, store, body))
-    case 'monid/import': return json(res, 200, await importAccountRoute(ctx, store, desk, body))
     case 'settings': {
       const before = modelInfo(ctx)
       const updated = await desk.settings.update(body)
@@ -425,29 +318,6 @@ async function route(ctx, store, desk, req, res) {
       // 换了模型，上一个模型的失败状态不再算数
       if (before?.provider !== after?.provider || before?.model !== after?.model) Object.assign(modelStatus, { ok: null, error: null })
       return json(res, 200, { ...publicSettings(updated, false), defaultExportDir: defaultExportDir(), assistantEffective: modelInfo(ctx)?.label ?? null })
-    }
-    case 'capture-url': return json(res, 200, await addFromUrl(ctx, store, body))
-    case 'account/refresh': return json(res, 200, await refreshAccount(store, body))
-    case 'skills/learn': {
-      const proposals = proposeRules(await store.read())
-      if (!proposals.length) return json(res, 200, { added: 0, state: await store.read() })
-      const state = await store.mutate(tr('从数据中学习'), (draft) => {
-        // 只用示例数据算出来的建议也算示例，清空示例时一起清掉，也不会被导出
-        const fromSamples = !draft.metrics.some(metric => !metric.sample)
-        const { receipts } = applyOps(draft, proposals.map(row => ({ op: 'add_skill', ...row, status: 'proposed' })))
-        if (fromSamples) for (const receipt of receipts) { const skill = draft.skills.find(row => row.id === receipt?.target); if (skill) skill.sample = true }
-        return draft
-      })
-      return json(res, 200, { added: proposals.length, state })
-    }
-    case 'skills/export': {
-      const state = await store.read()
-      const result = await exportSkill(state, dshHome())
-      const next = await store.mutate('导出 Skill', (draft) => {
-        applyOps(draft, draft.skills.filter(s => !s.sample && s.status === 'active').map(s => ({ op: 'update_skill', id: s.id, status: 'exported' })))
-        return draft
-      }, { undoable: false })
-      return json(res, 200, { ...result, state: next })
     }
     default: return json(res, 404, { error: tr('接口不存在') })
   }
@@ -473,8 +343,7 @@ export default {
   apply(ctx) {
     const store = new Store()
     const settings = new Settings(store.root)
-    const monid = createMonidRunner()
-    const desk = { settings, monid, versionCheck: createVersionCheck() }
+    const desk = { settings, versionCheck: createVersionCheck() }
     // 案例提示词的缓存：设定没变就直接给上次那五条
     let suggestCache = { key: '', at: 0, list: [] }
     // 对话里的 agent 用这两个工具把产出写进工作区

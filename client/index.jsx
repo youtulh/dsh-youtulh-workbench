@@ -1,7 +1,7 @@
 // dsh-youtulh-workbench 浏览器半片：侧栏入口 + main 全局面板。
 import React from 'react'
 import { CreateView } from './create.jsx'
-import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
+import { dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { DataView } from './data.jsx'
 import { DmView } from './dm.jsx'
 import { setAppCtx } from './launch.js'
@@ -27,74 +27,6 @@ const NAV = [
 ]
 
 const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: DataView, works: WorksView, setup: SetupView }
-
-function CaptureDialog() {
-  const capture = useDesk(s => s.capture)
-  const [tab, setTab] = React.useState('text')
-  const [text, setText] = React.useState('')
-  const [url, setUrl] = React.useState('')
-  const [busy, setBusy] = React.useState(false)
-  const fileInput = React.useRef(null)
-  React.useEffect(() => {
-    if (!capture) return
-    setTab(capture.tab ?? 'text')
-    setText('')
-    setUrl('')
-  }, [capture])
-  if (!capture) return null
-  const close = () => setDesk({ capture: null })
-  const save = async (event) => {
-    event.preventDefault()
-    setBusy(true)
-    if (tab === 'link' && url.trim()) {
-      const id = await captureUrl(url.trim())
-      if (id) close()
-    } else if (tab === 'quote' || tab === 'text') {
-      const value = text.trim()
-      if (value) {
-        await dispatchOps([{ op: 'add_item', kind: tab === 'quote' ? 'quote' : 'note', title: tab === 'quote' ? value : value.split(/[。！？\n]|[.!?](?=\s|$)/)[0].slice(0, 40), body: tab === 'quote' ? '' : value }], { label: t('记下灵感') })
-        close()
-      }
-    }
-    setBusy(false)
-  }
-  const tabs = [['text', t('笔记')], ['quote', t('金句')], ['link', t('链接')], ['file', t('图片/视频')]]
-  return (
-    <Dialog title={t('记下一个灵感')} onClose={close} width={480}>
-      <div className="md-capture-tabs" role="tablist">
-        {tabs.map(([id, label]) => <button type="button" role="tab" key={id} aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>)}
-      </div>
-      <form className="md-form" onSubmit={save}>
-        {tab === 'link' ? (
-          <label className="md-field">
-            <span>{t('链接')}</span>
-            <input type="url" required value={url} onChange={e => setUrl(e.target.value)} placeholder="https://" />
-            <small>{t('会自动读取页面的标题、简介和封面。')}</small>
-          </label>
-        ) : tab === 'file' ? (
-          <button type="button" className="md-dropzone" onClick={() => fileInput.current?.click()}>
-            <Icon name="upload" size={22} />
-            <span>{t('选择图片或视频')}</span>
-            <small>{t('也可以直接把文件拖到灵感墙上')}</small>
-            <input ref={fileInput} type="file" hidden multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" onChange={async (e) => { const files = [...e.target.files]; close(); await captureFiles(files) }} />
-          </button>
-        ) : (
-          <label className="md-field">
-            <span>{tab === 'quote' ? t('这句话') : t('想法')}</span>
-            <textarea rows={4} required value={text} onChange={e => setText(e.target.value)} placeholder={tab === 'quote' ? t('好的选题不是想出来的……') : t('想到什么就写什么，之后再让助手补全。')} />
-          </label>
-        )}
-        {tab === 'file' ? null : (
-          <div className="md-form-foot">
-            <span style={{ flex: 1 }} />
-            <button type="button" className="md-btn" onClick={close}>{t('取消')}</button>
-            <button type="submit" className="md-btn is-primary" disabled={busy}>{busy ? t('保存中…') : t('放到灵感墙')}</button>
-          </div>
-        )}
-      </form>
-    </Dialog>
-  )
-}
 
 function UpdateBadge() {
   const info = useVersionInfo()
@@ -185,7 +117,6 @@ function Desk() {
           ) : ready ? <Active /> : <div className="md-loading"><span className="md-shimmer">{t('正在铺开灵感…')}</span></div>}
         </main>
       </div>
-      {ready ? <CaptureDialog /> : null}
       <FormDialog />
       {ready ? <SettingsDialog /> : null}
       <Toast />
