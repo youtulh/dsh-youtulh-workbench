@@ -145,6 +145,27 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
     })
   }
 
+  const openImport = () => setDesk({
+    dialog: {
+      title: t('从表格导入学生'),
+      submitLabel: t('导入'),
+      fields: [{
+        name: 'raw', label: t('把 Excel / 表格里的名单粘进来'), type: 'textarea', rows: 8,
+        placeholder: t('第一行是表头：姓名、年级、学校、微信、卡点层、班、来源、备注'), required: true,
+      }],
+      onSubmit: values => {
+        importStudents(values.raw)
+          .then(data => {
+            onChanged?.(data)
+            toast(data.createdClasses
+              ? t('导入了 {n} 个学生，顺手建了 {m} 个班', { n: data.imported, m: data.createdClasses })
+              : t('导入了 {n} 个学生', { n: data.imported }))
+          })
+          .catch(err => toast(err.message, { error: true }))
+      },
+    },
+  })
+
   const writeFeedback = (student, limit = 4) => {
     setFeedback({ student, name: student.name, text: '', busy: true, lessons: 0, limit, source: '', history: [] })
     Promise.all([
@@ -176,27 +197,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           {classes.map(row => <option key={row.name} value={row.name}>{row.name}</option>)}
         </select>
         <span className="md-grow" />
-        <button type="button" className="md-pill is-small" onClick={() => setDesk({
-          dialog: {
-            title: t('从表格导入学生'),
-            submitLabel: t('导入'),
-            wide: true,
-            fields: [{
-              name: 'raw', label: t('把 Excel / 表格里的名单粘进来'), type: 'textarea', rows: 8,
-              placeholder: t('第一行是表头：姓名、年级、学校、微信、卡点层、班、来源、备注'), required: true,
-            }],
-            onSubmit: values => {
-              importStudents(values.raw)
-                .then(data => {
-                  onChanged?.(data)
-                  toast(data.createdClasses
-                    ? t('导入了 {n} 个学生，顺手建了 {m} 个班', { n: data.imported, m: data.createdClasses })
-                    : t('导入了 {n} 个学生', { n: data.imported }))
-                })
-                .catch(err => toast(err.message, { error: true }))
-            },
-          },
-        })}>{t('导入名单')}</button>
+        <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入名单')}</button>
         <button type="button" className="md-pill is-small is-primary" onClick={() => open(null)}><Icon name="plus" size={13} />{t('加学生')}</button>
       </div>
 
@@ -204,6 +205,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         <div className="md-works-empty">
           <p>{t('还没有学生。聊天台标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。')}</p>
           <button type="button" className="md-pill is-primary" onClick={() => open(null)}>{t('加第一个学生')}</button>
+          <button type="button" className="md-pill" onClick={openImport}>{t('导入名单')}</button>
         </div>
       ) : list.length === 0 ? (
         <p className="md-muted md-dm-empty">{t('这个筛选下没有学生。')}</p>
