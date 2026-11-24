@@ -92,6 +92,7 @@ export function DmView() {
   const dmFilter = useDesk(s => s.dmFilter)
   const dmCases = useDesk(s => s.dmCases)
   const [openChat, setOpenChat] = React.useState(-1)
+  const [chatShown, setChatShown] = React.useState(30)
 
   React.useEffect(() => {
     Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, caseQuery, caseFilter })
@@ -269,7 +270,8 @@ export function DmView() {
       && (!chatPerson || row.name === chatPerson))
   // 只看一个人时按时间正序，读起来像一条时间线
   if (chatPerson) chatRows.reverse()
-  const chatLimit = chatPerson ? 50 : 20
+  React.useEffect(() => { setChatShown(30) }, [chatFilter, chatResult, chatPerson])
+  const chatLimit = chatPerson ? 50 : chatShown
 
   const filtered = leads.filter(lead => {
     const pass = (FILTERS.find(row => row.id === filter) ?? FILTERS[0]).test(lead)
@@ -754,6 +756,13 @@ export function DmView() {
                 ) : null}
               </li>
             ))}
+            {!chatPerson && chatRows.length > chatShown ? (
+              <li className="md-chat-more">
+                <button type="button" className="md-inline-link" onClick={() => setChatShown(n => n + 30)}>
+                  {t('显示更多（还有 {n} 轮）', { n: chatRows.length - chatShown })}
+                </button>
+              </li>
+            ) : null}
           </ul>
           )
         )}

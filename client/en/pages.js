@@ -439,6 +439,7 @@ export const PAGES = {
   最近对话: 'Recent chats',
   复制整段: 'Copy thread',
   看表格: 'Open CSV',
+  '显示更多（还有 {n} 轮）': 'Show more ({n} left)',
   '案例库（{n}）· 聊成的会参考': 'Case library ({n}) · successful ones guide suggestions',
   '还没有导入案例。点上面「导入案例」，粘一段真实对话进来。': 'No cases yet. Use “Import case” above to paste a real chat.',
   没写场景: 'No scene',

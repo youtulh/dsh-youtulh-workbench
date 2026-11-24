@@ -1833,3 +1833,6 @@ body[data-ds-dark-theme] .md-root {
 
 /* 最近对话：发出前改过 */
 .md-chat-edited { font-style: normal; padding: 0 6px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-size: 10.5px; line-height: 17px; }
+
+/* 最近对话：分批显示 */
+.md-chat-more { padding: 6px 10px; text-align: center; }
