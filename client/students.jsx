@@ -156,7 +156,9 @@ function RosterPanel({ students, classes, onChanged }) {
               </header>
               <div className="md-student-tags">
                 {student.layer ? <em>{t('卡在：{layer}', { layer: student.layer })}</em> : <span className="md-muted">{t('还没标卡点层')}</span>}
-                {student.source ? <span className="md-muted">{t('来源：{source}', { source: student.source })}</span> : null}
+                {student.source?.includes('聊天')
+                  ? <span className="md-student-from">{t('来自聊天成交')}</span>
+                  : student.source ? <span className="md-muted">{t('来源：{source}', { source: student.source })}</span> : null}
               </div>
               {student.note ? <p className="md-student-note">{student.note}</p> : null}
               <footer>

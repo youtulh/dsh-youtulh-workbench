@@ -410,6 +410,8 @@ export const PAGES = {
   '我发了，记一笔': 'Sent it — log it',
   记进对话记录了: 'Logged in conversation history',
   最近对话: 'Recent chats',
+  来自聊天成交: 'From chat close',
+  去写第一句: 'Write the first line',
   '只看 {name}': 'Only {name}',
   '成交，顺手建了学生档案': 'Enrolled — student profile created too',
   接着聊: 'Continue',

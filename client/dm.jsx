@@ -105,6 +105,9 @@ export function DmView() {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
   }
 
+  const chatStats = ['成交', '约试听', '加微', '流失']
+    .map(result => ({ result, n: chats.filter(row => row.result === result).length }))
+    .filter(item => item.n > 0)
   const chatRows = chats.slice().reverse()
     .filter(row => (chatFilter === 'all' || row.channel === chatFilter) && (!chatPerson || row.name === chatPerson))
   // 只看一个人时按时间正序，读起来像一条时间线
@@ -371,6 +374,11 @@ export function DmView() {
         <header className="md-tile-head">
           <h2>{t('最近对话')}</h2>
           <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chats.length })}</span>
+          {chatStats.length ? (
+            <span className="md-chat-stats">
+              {chatStats.map(item => <em key={item.result} className={`is-${item.result === '流失' ? 'lost' : 'won'}`}>{t(item.result)} {item.n}</em>)}
+            </span>
+          ) : null}
           <span className="md-grow" />
           <div className="md-lead-tabs">
             {[['all', '全部'], ['平台私信', '平台私信'], ['微信', '微信']].map(([id, label]) => (
@@ -384,7 +392,10 @@ export function DmView() {
           ) : null}
         </header>
         {chats.length === 0 ? (
-          <p className="md-muted md-dm-empty">{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
+          <div className="md-works-empty">
+            <p>{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
+            <button type="button" className="md-pill" onClick={() => document.querySelector('.md-dm-input textarea')?.focus()}>{t('去写第一句')}</button>
+          </div>
         ) : (
           <ul className="md-chat-list">
             {chatRows.slice(0, chatLimit).map(row => (

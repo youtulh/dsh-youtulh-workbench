@@ -1695,3 +1695,10 @@ body[data-ds-dark-theme] .md-root {
 /* 我的设定：平台话术词表 */
 .md-setup-words { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 700px) { .md-setup-words { grid-template-columns: minmax(0, 1fr); } }
+
+/* 学生来源 / 聊天统计 */
+.md-student-from { padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-size: 11px; line-height: 18px; }
+.md-chat-stats { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.md-chat-stats em { padding: 1px 7px; border-radius: 999px; font-style: normal; font-size: 11px; line-height: 18px; }
+.md-chat-stats em.is-won { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+.md-chat-stats em.is-lost { background: var(--hover); color: var(--ink3); }
