@@ -91,6 +91,7 @@ export function DmView() {
   const dmPerson = useDesk(s => s.dmPerson)
   const dmFilter = useDesk(s => s.dmFilter)
   const dmCases = useDesk(s => s.dmCases)
+  const prefilledPerson = React.useRef('')
   const [openChat, setOpenChat] = React.useState(-1)
   const [chatShown, setChatShown] = React.useState(30)
 
@@ -122,6 +123,14 @@ export function DmView() {
   }, [])
   React.useEffect(() => { reloadChats() }, [reloadChats])
 
+  // 从线索进来看某个人时，把上一轮对话带进上下文，接着聊不用重讲背景
+  React.useEffect(() => {
+    if (!chatPerson || history) return
+    const mine = chats.filter(row => row.name === chatPerson)
+    const last = mine[mine.length - 1]
+    if (last) setHistory(`${t('对方')}：${last.incoming}\n${t('我方')}：${last.outgoing}`)
+  }, [chatPerson, chats.length])
+
   // 从线索漏斗点「聊过 n 轮」过来：直接只看这个人，并滚到最近对话
   React.useEffect(() => {
     if (!dmCases) return
@@ -144,6 +153,15 @@ export function DmView() {
     // 从线索/漏斗过来时，顺手把名字填进台账；换了人就覆盖，别把记录挂到上一个人名下
     setFields(prev => ({ ...prev, name: dmPerson }))
     setHistory('')
+    if (prefilledPerson.current !== dmPerson) {
+      prefilledPerson.current = dmPerson
+      // 换了人：上一批建议、选中项、改稿都不再属于这个人
+      setResult(null)
+      setEditedDrafts({})
+      setChosen(0)
+      setReviseNote('')
+      setRaw('')
+    }
     setDesk({ dmPerson: '' })
     requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }, [dmPerson])
