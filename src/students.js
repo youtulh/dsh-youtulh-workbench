@@ -106,7 +106,7 @@ export function saveStudent(root, input = {}, original = null) {
 /** 改名：同班的课次记录跟着换姓名，历史不丢。 */
 function renameLessonRows(root, from, nextName) {
   if (!from.name || !nextName || from.name === nextName) return
-  const rows = readTable(root, LAYOUT.lessons).rows.map(toLesson)
+  const rows = readLessonRows(root)
   if (!rows.some(row => row.name === from.name)) return
   writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, rows.map(row => toLessonRow(row.name === from.name ? { ...row, name: nextName } : row)))
 }
@@ -154,7 +154,7 @@ export function saveClass(root, input = {}, original = null) {
 function renameClassInFiles(root, from, nextName) {
   const students = readStudents(root).map(row => (row.className === from ? { ...row, className: nextName } : row))
   writeTable(root, LAYOUT.students, STUDENT_COLUMNS, students.map(toStudentRow))
-  const lessons = readTable(root, LAYOUT.lessons).rows.map(toLesson).map(row => (row.className === from ? { ...row, className: nextName } : row))
+  const lessons = readLessonRows(root).map(row => (row.className === from ? { ...row, className: nextName } : row))
   writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, lessons.map(toLessonRow))
 }
 
@@ -164,7 +164,7 @@ export function removeClass(root, name) {
   if (!classes.some(row => row.name === target)) return classes
   const roster = readStudents(root).filter(row => row.className === target)
   if (roster.length) throw new Error('这个班还有学生，先把他们移出班再删')
-  const lessons = readTable(root, LAYOUT.lessons).rows.map(toLesson).filter(row => row.className !== target)
+  const lessons = readLessonRows(root).filter(row => row.className !== target)
   writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, lessons.map(toLessonRow))
   const left = classes.filter(row => row.name !== target)
   writeTable(root, LAYOUT.classes, CLASS_COLUMNS, left.map(toClassRow))
@@ -180,9 +180,30 @@ export function rosterOf(students, className) {
 
 // ---- 课次记录 ----
 
+/** 老表没有「课次」列时，按班内日期从早到晚补出 1..n，先让历史记录能看见。 */
+function readLessonRows(root) {
+  const table = readTable(root, LAYOUT.lessons)
+  const rows = table.rows.map(toLesson)
+  if (table.header.includes('课次')) return rows
+  const dates = new Map()
+  for (const row of rows) {
+    if (!row.className || !row.date) continue
+    const set = dates.get(row.className) ?? new Set()
+    set.add(row.date)
+    dates.set(row.className, set)
+  }
+  const order = new Map([...dates].map(([name, set]) => [name, [...set].sort()]))
+  return rows.map(row => {
+    if (row.no) return row
+    const list = order.get(row.className) ?? []
+    const index = list.indexOf(row.date)
+    return index >= 0 ? { ...row, no: index + 1 } : row
+  })
+}
+
 export function readLessons(root, className) {
   const target = text(className, 60)
-  const rows = readTable(root, LAYOUT.lessons).rows.map(toLesson)
+  const rows = readLessonRows(root)
   return target ? rows.filter(row => row.className === target) : rows
 }
 
@@ -197,7 +218,7 @@ export function saveLessonRows(root, { className, no, date, rows = [] } = {}) {
   const at = Number(no)
   if (!Number.isInteger(at) || at < 1 || at > klass.total) throw new Error(`课次要在 1 到 ${klass.total} 之间`)
   const roster = new Set(rosterOf(readStudents(root), target).map(row => row.name))
-  const all = readTable(root, LAYOUT.lessons).rows.map(toLesson)
+  const all = readLessonRows(root)
   const stamp = nowStamp()
   const day = text(date, 20) || dayStamp()
   for (const row of rows) {

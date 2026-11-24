@@ -184,7 +184,7 @@ test('老版本表格兼容：班课的班名列叫「期次」，课次的列�
     assert.equal(classes[0].name, '高一补漏一期')
     assert.equal(classes[0].status, '在读')
     const lessons = readLessons(root, '高一补漏一期')
-    assert.equal(lessons[0].no, 0) // 老表没有课次列，先读成 0，不丢记录
+    assert.equal(lessons[0].no, 1) // 老表没有课次列，按日期补成第 1 次
     assert.equal(lessons[0].name, '赵培源')
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
@@ -246,6 +246,24 @@ test('老学生表没有微信列：保存后补列，原数据不丢', async ()
     assert.equal(rows.length, 1)
     assert.equal(rows[0].school, '某中学')
     assert.equal(rows[0].contact, 'wx-li')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
+
+
+test('老课次表没有课次列：按日期补 1、2，保存后写成新列', async () => {
+  const root = await temp()
+  try {
+    saveClass(root, { name: 'A 班', total: 8 })
+    saveStudent(root, { name: '王', grade: '高一', className: 'A 班' })
+    await writeFile(join(root, '课次记录.csv'), '\uFEFF"日期","班","姓名","出勤","掌握","作业","备注"\n"2026-11-08","A 班","王","到","会","交",""\n"2026-11-15","A 班","王","到","半会","交",""\n')
+    const derived = readLessons(root, 'A 班')
+    assert.deepEqual(derived.map(row => row.no), [1, 2])
+    saveLessonRows(root, { className: 'A 班', no: 1, date: '2026-11-08', rows: [{ name: '王', attend: '到', mastery: '会', homework: '交' }] })
+    const raw = await readFile(join(root, '课次记录.csv'), 'utf8')
+    assert.match(raw, /课次/)
+    assert.deepEqual(readLessons(root, 'A 班').map(row => row.no).sort(), [1, 2])
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
