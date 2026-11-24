@@ -49,6 +49,7 @@ export function DmView() {
   const [draftText, setDraftText] = React.useState(DM_DRAFT.draftText)
   const [stage, setStage] = React.useState(DM_DRAFT.stage)
   const [leads, setLeads] = React.useState([])
+  const [leadsReady, setLeadsReady] = React.useState(false)
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState('all')
   const [query, setQuery] = React.useState('')
@@ -75,7 +76,10 @@ export function DmView() {
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
   const reload = React.useCallback(() => {
-    fetchLeadsWithLessons().then(({ leads: rows, lessons: hints }) => { setLeads(rows); setLessons(hints) }).catch(() => {})
+    fetchLeadsWithLessons()
+      .then(({ leads: rows, lessons: hints }) => { setLeads(rows); setLessons(hints) })
+      .catch(() => {})
+      .finally(() => setLeadsReady(true))
   }, [])
   React.useEffect(() => { reload() }, [reload])
 
@@ -170,6 +174,11 @@ export function DmView() {
     .map(result => ({ result, n: chats.filter(row => row.result === result).length }))
     .filter(item => item.n > 0)
   const leadOf = name => (name ? leads.find(row => row.name === name) : null)
+  const leadChatCounts = (() => {
+    const counts = {}
+    for (const row of chats) if (row.name) counts[row.name] = (counts[row.name] ?? 0) + 1
+    return counts
+  })()
   const people = (() => {
     const map = new Map()
     for (const row of chats) {
@@ -396,7 +405,9 @@ export function DmView() {
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜家长、卡点、原话')} />
         </div>
 
-        {leads.length === 0 ? (
+        {!leadsReady ? (
+          <p className="md-muted md-dm-empty">{t('读取中…')}</p>
+        ) : leads.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('还没有线索。粘第一条私信，判断完记进线索表，这里就会多一行。')}</p>
         ) : filtered.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('这个筛选下没有线索。')}</p>
@@ -406,6 +417,13 @@ export function DmView() {
               <li className="md-lead" key={`${lead.rowIndex}-${lead.date}-${lead.raw.slice(0, 8)}`}>
                 <div className="md-lead-head">
                   <b>{lead.name || lead.grade || t('未填')}</b>
+                  {lead.name && leadChatCounts[lead.name] ? (
+                    <button type="button" className="md-lead-chat" onClick={() => {
+                      setChatView('turns')
+                      setChatPerson(lead.name)
+                      requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+                    }}>{t('聊过 {n} 轮', { n: leadChatCounts[lead.name] })}</button>
+                  ) : null}
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.nextAt || lead.followUps ? (
