@@ -1,6 +1,6 @@
 // 我的设定：三个问题，喂给回私信、做内容、看数据三处。
 import React from 'react'
-import { dispatchOps, toast, useDesk } from './desk.js'
+import { dispatchOps, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 
@@ -85,6 +85,18 @@ export function SetupView() {
         <label className="md-field">
           <textarea rows={3} defaultValue={positioning.voice ?? ''} placeholder={t('比如：先接住家长的焦虑，再用一个具体数字说清楚，不喊口号')} onBlur={event => save('voice', event.target.value)} />
         </label>
+      </section>
+
+      <section className="md-setup-card md-setup-reset">
+        <h2>{t('想从头再来')}</h2>
+        <p className="md-setup-hint">{t('清空设定和家长痛点，重新做一遍问卷。线索表、账号数据和已经做出来的内容都不会动。')}</p>
+        <button type="button" className="md-pill" onClick={() => {
+          dispatchOps([
+            { op: 'update_positioning', subject: '', grade: '', city: '', only: '', notDo: '', voice: '', redline: '' },
+            { op: 'set_pain_points', points: [] },
+          ], { label: t('重做问卷') })
+          setDesk({ view: 'home', focusId: null })
+        }}>{t('重新做一遍问卷')}</button>
       </section>
 
       <details className="md-setup-card md-setup-more">
