@@ -215,3 +215,21 @@ test('写出来的 CSV 带 BOM，Excel 打开中文不乱码', async () => {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('老班课「期次」列：改一次班之后迁成「班名 / 状态」', async () => {
+  const root = await temp()
+  try {
+    await writeFile(join(root, '班课.csv'), '\uFEFF"期次","上课时间","总次数","分层","备注"\n"高一补漏一期","周日",10,"配平","腾讯会议"\n')
+    saveClass(root, { name: '高一补漏一期', time: '周日', total: 10, layers: ['配平'], note: '腾讯会议', status: '结课' }, '高一补漏一期')
+    const raw = await readFile(join(root, '班课.csv'), 'utf8')
+    assert.match(raw, /班名/)
+    assert.match(raw, /状态/)
+    const classes = readClasses(root)
+    assert.equal(classes[0].name, '高一补漏一期')
+    assert.equal(classes[0].status, '结课')
+    assert.equal(classes[0].note, '腾讯会议')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
