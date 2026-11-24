@@ -245,6 +245,10 @@ export function DmView() {
     const q = query.trim()
     const hit = !q || [lead.name, lead.grade, lead.painPoint, lead.raw].some(value => String(value ?? '').includes(q))
     return pass && hit
+  }).sort((a, b) => {
+    // 看「该跟进」时按日期从早到晚，越拖越久的人排前面
+    if (filter !== 'due') return 0
+    return String(a.nextAt || '9999').localeCompare(String(b.nextAt || '9999'))
   })
   const countOf = (id) => leads.filter(lead => (FILTERS.find(row => row.id === id) ?? FILTERS[0]).test(lead)).length
 
@@ -458,7 +462,7 @@ export function DmView() {
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.nextAt || lead.followUps ? (
-                    <span className={`md-lead-follow ${lead.nextAt && lead.nextAt < dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
+                    <span className={`md-lead-follow ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
                       {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}{lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}
                     </span>
                   ) : null}

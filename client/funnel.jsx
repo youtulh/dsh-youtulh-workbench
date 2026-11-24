@@ -124,7 +124,7 @@ export function FunnelPanel({ students = [], onChanged }) {
                 {rows.map(lead => (
                   <article
                     key={lead.rowIndex}
-                    className={`md-pipeline-card ${open === lead.rowIndex ? 'is-open' : ''} ${lead.nextAt && lead.nextAt < dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}
+                    className={`md-pipeline-card ${open === lead.rowIndex ? 'is-open' : ''} ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}
                     draggable
                     onDragStart={event => event.dataTransfer.setData('text/lead-index', String(lead.rowIndex))}
                     onClick={() => setOpen(current => (current === lead.rowIndex ? -1 : lead.rowIndex))}
@@ -143,7 +143,7 @@ export function FunnelPanel({ students = [], onChanged }) {
                       <time>{lead.updatedAt || lead.date}</time>
                     </footer>
                     {lead.nextAt || lead.followUps ? (
-                      <p className={`md-pipeline-follow ${lead.nextAt && lead.nextAt < dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
+                      <p className={`md-pipeline-follow ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
                         {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}
                         {lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}
                       </p>
