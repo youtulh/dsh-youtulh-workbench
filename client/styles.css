@@ -1090,3 +1090,11 @@ body[data-ds-dark-theme] .md-root {
 .md-lessons ul { display: grid; gap: 4px; }
 .md-lessons small { display: block; margin-top: 6px; color: var(--ink3); }
 .md-dm-leads select { padding: 3px 6px; border: .5px solid var(--line); border-radius: var(--r-xs); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12px; }
+
+/* 内容库表格 */
+.md-content-table td { vertical-align: middle; }
+.md-content-title small { display: block; color: var(--ink3); font-size: 11.5px; font-weight: 400; }
+.md-case-input, .md-cell-input { width: 56px; padding: 3px 6px; border: .5px solid var(--line); border-radius: var(--r-xs); background: transparent; color: var(--ink); font: inherit; font-size: 12.5px; text-align: right; }
+.md-content-table select { padding: 3px 6px; border: .5px solid var(--line); border-radius: var(--r-xs); background: transparent; color: var(--ink); font: inherit; font-size: 12px; }
+.md-hit { padding: 0 6px; border-radius: var(--r-xs); color: #fff; background: var(--accent); font-size: 11.5px; font-weight: 500; }
+.md-lessons-pre { margin: 0; white-space: pre-wrap; font: inherit; font-size: 12.5px; line-height: 19px; }

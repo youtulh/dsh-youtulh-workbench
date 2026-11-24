@@ -25,7 +25,7 @@ export function localSuggestions(state) {
   return [...new Set(pool.filter(Boolean))].slice(0, 5)
 }
 
-export function suggestPrompts(state) {
+export function suggestPrompts(state, lessons = '') {
   if (currentLang() === 'en') {
     return ['A student fell behind in the first month — where do I start?', 'They understand in class but fail the homework, why?', 'What do parents in this grade ask you most?']
   }
@@ -46,7 +46,7 @@ ${pains.length ? `- 家长常愁的：${pains.join('、')}` : ''}
 - 要圈住具体的人（偏科、掉队、只差一分、艺考、转学…），不要写成人人都能说的空题
 ${STYLE_RULES.split('\n').slice(8, 12).join('\n')}
 - 5 个角度不要重复：一个讲基础薄弱、一个讲分数焦虑、一个讲方法、一个讲时间/形式、一个讲具体知识点
-- 不承诺提分、不报价
+- 不承诺提分、不报价${lessons}
 
 只输出 JSON：{"prompts":["…","…","…","…","…"]}`
 }

@@ -15,7 +15,7 @@ function settingBlock(state) {
 
 // ---- 选题 ----
 
-export function topicsPrompt(state, count = 30) {
+export function topicsPrompt(state, count = 30, lessons = '') {
   const pains = (state?.painPoints ?? []).slice(0, 20)
   const system = `你是给补课老师排选题的编辑。老师要做短视频（口播），你帮他列出 ${count} 个能直接拍成视频的选题。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的（都要用上，别浪费）：${pains.join('、')}` : ''}
@@ -25,7 +25,7 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的（都要用上，别�
 - 选题要圈住具体的人：偏科生、开学掉队、只差最后一章、艺考生、转学生……越具体越好
 - 最好的选题来自家长的原话：私信里怎么说、评论区怎么问，就照着那个句子改
 - 角度要散开：基础薄弱、分数焦虑、方法、时间形式、具体知识点、家长误区、老师视角，各占一部分
-- 不重复、不换皮同一个意思
+- 不重复、不换皮同一个意思${lessons}
 - 不承诺提分、不报价
 
 ${STYLE_RULES.split('\n').slice(1, 5).join('\n')}
@@ -77,7 +77,7 @@ export function localTopics(state, count = 30) {
 
 // ---- 口播 ----
 
-export function scriptPrompt(state, topic) {
+export function scriptPrompt(state, topic, lessons = '') {
   const pains = (state?.painPoints ?? []).slice(0, 8)
   const system = `你是给补课老师写短视频口播的编辑。老师给了你一个选题，你写一条能直接拍的口播视频。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
@@ -88,7 +88,7 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}
 - 标签 5 个，不带 # 号，中文，含科目、年级、家长关心的词
 - 不承诺提分、不说包过、不报价格、不编造孩子的情况
 ${styleBlock()}
-${SCRIPT_STRUCTURE.split('\n')[0]}: 严格按上面这个五段结构写，五段都要有。
+${SCRIPT_STRUCTURE.split('\n')[0]}: 严格按上面这个五段结构写，五段都要有。${lessons}
 
 只输出 JSON：{"title":"标题","script":"一句话一行","tags":["标签1","标签2","标签3","标签4","标签5"]}`
   return { system, user: `选题：${topic}` }

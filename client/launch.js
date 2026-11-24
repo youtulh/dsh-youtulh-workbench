@@ -56,6 +56,7 @@ export function buildPrompt(kind, payload = {}) {
       '',
       '口气照「说话样本.md」来（先读它）：用「您」直接对家长说，一句一个意思、平均 20 到 25 字，多用「其实、所以、但是、你看」这类口语连接词；不喊口号、不堆排比、不用「首先其次总之」、不用「赋能闭环底层逻辑」。',
       payload.lessons?.length ? `\n以前成功加到微信的例子（照着这种感觉写）：\n${payload.lessons.map(row => `- ${row}`).join('\n')}` : '',
+      payload.contentLessons ? `\n${payload.contentLessons}` : '',
       '',
       '私信原文：',
       payload.raw || '（还没粘，请先问我）',

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, leadLessons, readAccounts, readLeads, readSettingsMarkdown, settingsMarkdown, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -109,4 +109,63 @@ test('线索表：记录话术、反应、结果；改了反应自动推下一�
   } finally {
     await rm(root, { recursive: true, force: true })
   }
+})
+
+test('内容库：记录一条口播、按目录更新不重复、未知列不影响', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-content-'))
+  try {
+    const row = {
+      '日期': '2026-11-24', '批次': '20261124-1800', '选题': '偏科的孩子卡在哪', '标题': '偏科的孩子，多半卡在物质的量',
+      '标签': '#化学 #高一', '采用': '未定', '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '',
+      '爆款': '', '分数': '', '目录': join(root, '内容', '2026-11-24 偏科的孩子，多半卡在物质的量'), '备注': '',
+    }
+    recordContent(root, row)
+    recordContent(root, row)                       // 同目录再记一次 → 仍然只有一行
+    let rows = readContent(root)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0]['标题'], '偏科的孩子，多半卡在物质的量')
+
+    const updated = updateContent(root, row['目录'], { '私信': '6', '涨粉': '12' })
+    assert.equal(updated['私信'], '6')
+    rows = readContent(root)
+    assert.equal(rows[0]['涨粉'], '12')
+    assert.equal(updateContent(root, join(root, '不存在'), {}), null)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('选题库：记一批、勾选回写，只影响这一批', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-topics-'))
+  try {
+    appendTopics(root, 'B1', ['选题甲', '选题乙', '选题丙'])
+    appendTopics(root, 'B2', ['选题丁'])
+    const after = markTopicsPicked(root, 'B1', ['选题甲', '选题丙'])
+    assert.equal(after.length, 3)
+    assert.deepEqual(after.filter(row => row['勾选'] === '是').map(row => row['选题']).sort(), ['选题甲', '选题丙'].sort())
+    const { rows } = readTable(root, '选题库.csv')
+    assert.equal(rows.find(row => row['批次'] === 'B2')['勾选'], '否')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('爆款：分数按 私信×3 + 涨粉×1 + 播放×0.001 算，够 3 条才自动判', async () => {
+  const { scoreOf, scoreRows, quantile, topContent } = await import('../src/lessons.js')
+  assert.equal(scoreOf({ '私信': '2', '涨粉': '10', '播放': '5000' }), 2 * 3 + 10 * 1 + 5000 * 0.001)
+  assert.equal(quantile([1, 2, 3, 4], 0.75), 3.25)
+
+  // 只有 2 条时不自动判「是」
+  const two = scoreRows([{ '私信': '5', '爆款': '' }, { '私信': '0', '爆款': '' }])
+  assert.equal(two.rows.some(row => row['爆款'] === '是'), false)
+
+  // 4 条时，最高那条超过 p75 → 是；手动标「否」的不改
+  const four = scoreRows([
+    { '私信': '0', '爆款': '' }, { '私信': '1', '爆款': '' },
+    { '私信': '2', '爆款': '' }, { '私信': '9', '爆款': '' },
+  ])
+  const hits = four.rows.filter(row => row['爆款'] === '是').length
+  assert.equal(hits >= 1, true)
+  const manual = scoreRows([{ '私信': '9', '爆款': '否' }, { '私信': '0', '爆款': '' }, { '私信': '0', '爆款': '' }])
+  assert.equal(manual.rows[0]['爆款'], '否')
 })

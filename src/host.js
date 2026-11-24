@@ -8,9 +8,10 @@ import { assistantModelOverride, callModel, defaultSelection, extractJson, model
 import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
 import { styleMarkdown } from './style-guide.js'
+import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { creativeText, localScript, localTopics, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt } from './topics.js'
-import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, leadLessons, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
@@ -182,7 +183,7 @@ async function route(ctx, store, desk, req, res) {
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
-      return json(res, 200, { leads: readLeads(root), lessons: leadLessons(root) })
+      return json(res, 200, { leads: readLeads(root), lessons: leadLessons(root), contentLessons: buildLessonBlock(root) })
     }
     if (path === 'workspace/file') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -202,8 +203,18 @@ async function route(ctx, store, desk, req, res) {
       ensureLayout(root)
       return json(res, 200, { tree: listTree(root) })
     }
+    if (path === 'content') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      rescore(root)
+      writeLessonMarkdown(root)
+      const rows = readContent(root).slice().reverse()
+      const hits = rows.filter(row => row['爆款'] === '是').length
+      const sum = key => rows.reduce((total, row) => total + (Number(row[key]) || 0), 0)
+      return json(res, 200, { rows, stats: { count: rows.length, hits, views: sum('播放'), follows: sum('涨粉'), dms: sum('私信') }, lessons: buildLessonBlock(root) })
+    }
     if (path === 'suggest') {
       const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
       const key = JSON.stringify([state.positioning ?? {}, state.painPoints ?? []])
       if (suggestCache.key === key && Date.now() - suggestCache.at < 5 * 60 * 1000) {
         return json(res, 200, { prompts: suggestCache.list, source: 'cache' })
@@ -211,7 +222,7 @@ async function route(ctx, store, desk, req, res) {
       let list = []
       let source = 'local'
       try {
-        const { text: raw } = await callModel(ctx, { system: suggestPrompts(state), user: '请给出这 5 个问题。', maxTokens: 600, light: true })
+        const { text: raw } = await callModel(ctx, { system: suggestPrompts(state, buildLessonBlock(root)), user: '请给出这 5 个问题。', maxTokens: 600, light: true })
         list = normalizeSuggestions(extractJson(raw))
         if (list.length) source = 'model'
       } catch { /* 没有模型就用本地拼的 */ }
@@ -299,15 +310,29 @@ async function route(ctx, store, desk, req, res) {
       // 一次给 30 个选题草稿，页面里直接勾选，不跳对话
       const count = Math.min(40, Math.max(5, Number(body.count) || 30))
       const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
       let topics = []
       let source = 'local'
       try {
-        const { text: raw } = await callModel(ctx, { ...topicsPrompt(state, count), maxTokens: 1600, light: true })
+        const lessons = buildLessonBlock(root)
+        const { text: raw } = await callModel(ctx, { ...topicsPrompt(state, count, lessons), maxTokens: 1600, light: true })
         topics = normalizeTopics(extractJson(raw), count)
         if (topics.length) source = 'model'
       } catch { /* 没模型就用本地模板 */ }
       if (!topics.length) topics = localTopics(state, count)
-      return json(res, 200, { topics, source })
+      // 记下这一批，后面才能算「哪些选题被勾中」
+      const batch = batchId()
+      appendTopics(root, batch, topics)
+      writeLessonMarkdown(root)
+      return json(res, 200, { topics, source, batch })
+    }
+    case 'topics/pick': {
+      // 记录勾了哪些选题：这是学习「哪类选题被采纳」的信号
+      const batch = String(body.batch ?? '')
+      const picked = (Array.isArray(body.picked) ? body.picked : []).map(row => String(row ?? '').trim()).filter(Boolean)
+      if (!batch) return json(res, 400, { error: tr('缺少批次号') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { topics: markTopicsPicked(root, batch, picked) })
     }
     case 'scripts': {
       // 给勾中的选题逐条生成口播：标题 + 稿子 + 标签
@@ -320,7 +345,8 @@ async function route(ctx, store, desk, req, res) {
         const chunk = topics.slice(i, i + 3)
         const rows = await Promise.all(chunk.map(async (topic) => {
           try {
-            const { text: raw } = await callModel(ctx, { ...scriptPrompt(state, topic), maxTokens: 1200, light: true })
+            const lessonsForScript = buildLessonBlock(resolveRoot((await desk.settings.read()).saveRoot))
+            const { text: raw } = await callModel(ctx, { ...scriptPrompt(state, topic, lessonsForScript), maxTokens: 1200, light: true })
             const one = normalizeScript(extractJson(raw))
             if (one.title && one.script) {
               usedModel = true
@@ -330,6 +356,24 @@ async function route(ctx, store, desk, req, res) {
           return { topic, ...localScript(state, topic) }
         }))
         results.push(...rows)
+      }
+      // 生成的口播直接落盘并登记，用户不用再点一次保存
+      const settings = await desk.settings.read()
+      const root = resolveRoot(settings.saveRoot)
+      ensureLayout(root)
+      const batch = String(body.batch ?? '')
+      for (const row of results) {
+        try {
+          const title = `${dayStamp()} ${folderName(row.title)}`
+          const saved = await savePiece({ dir: join(root, LAYOUT.content), title, text: creativeText(row), formats: ['md', 'docx'] })
+          row.dir = saved.dir
+          recordContent(root, {
+            '日期': dayStamp(), '批次': batch, '选题': row.topic, '标题': row.title,
+            '标签': (row.tags ?? []).map(tag => `#${tag}`).join(' '), '采用': '未定',
+            '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '', '爆款': '', '分数': '',
+            '目录': saved.dir, '备注': '',
+          })
+        } catch { /* 单条落盘失败不影响其它条 */ }
       }
       return json(res, 200, { scripts: results, source: usedModel ? 'model' : 'local' })
     }
@@ -347,6 +391,46 @@ async function route(ctx, store, desk, req, res) {
       const formats = Array.isArray(body.formats) && body.formats.length ? body.formats : (kind === 'data' ? ['csv'] : ['docx', 'md'])
       const saved = await savePiece({ dir: join(root, sub), title, text: content, formats })
       return json(res, 200, { dir: saved.dir, files: saved.files, summary: String(body.summary ?? '').slice(0, 120) })
+    }
+    case 'data/import': {
+      // 粘平台导出的数据：按标题匹配内容库，更新播放/涨粉/私信
+      const raw = String(body.text ?? '').trim()
+      if (!raw) return json(res, 400, { error: tr('还没有数据') })
+      const lines = raw.split(/\r?\n/).filter(line => line.trim())
+      const cells = lines.map(line => line.split(/\t|,/).map(cell => cell.trim().replace(/^"|"$/g, '')))
+      const head = cells[0].map(cell => cell.trim())
+      const hasHead = head.some(cell => /标题|播放|涨粉|私信/.test(cell))
+      const cols = hasHead ? head : ['标题', '播放', '涨粉', '私信']
+      const data = (hasHead ? cells.slice(1) : cells).map(row => Object.fromEntries(cols.map((col, i) => [col, row[i] ?? ''])))
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const content = readContent(root)
+      let matched = 0
+      const unmatched = []
+      for (const item of data) {
+        const title = String(item['标题'] ?? '').trim()
+        if (!title) continue
+        const hit = content.find(row => row['标题'] && (row['标题'] === title || row['标题'].includes(title) || title.includes(row['标题'])))
+        if (!hit) { unmatched.push(title); continue }
+        const patch = {}
+        for (const key of ['播放', '涨粉', '私信', '加微', '平台', '发布日']) if (item[key]) patch[key] = item[key]
+        updateContent(root, hit['目录'], patch)
+        matched++
+      }
+      rescore(root)
+      writeLessonMarkdown(root)
+      return json(res, 200, { matched, unmatched })
+    }
+    case 'content/update': {
+      // 内容库：改采用/平台/发布日/播放/涨粉/私信/爆款
+      const dir = String(body.dir ?? '')
+      if (!dir) return json(res, 400, { error: tr('缺少目录') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const row = updateContent(root, dir, body.patch ?? {})
+      if (!row) return json(res, 404, { error: tr('没找到这一条') })
+      rescore(root)
+      writeLessonMarkdown(root)
+      const fresh = readContent(root).find(item => item['目录'] === dir) ?? row
+      return json(res, 200, { row: fresh })
     }
     case 'workspace/lead/update': {
       // 家长有反应了：按行号改这一条的「反应 / 结果 / 下一步 / 话术」

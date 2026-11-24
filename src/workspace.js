@@ -282,3 +282,121 @@ export function leadLessons(root, limit = 3) {
     .slice(0, limit)
     .map(row => `${row.type || '家长'} · ${row.category || '未分类'}｜家长说「${(row.raw || '').slice(0, 24)}」｜我们回「${(row.draft || '').slice(0, 40)}」→ 加了微信`)
 }
+
+// ---- 内容库 / 选题库 ----
+// 这两张表是「越用越好」的底账：内容库记每条口播的结果，选题库记哪些选题被勾中。
+
+export const CONTENT_COLUMNS = ['日期', '批次', '选题', '标题', '标签', '采用', '平台', '发布日', '播放', '涨粉', '私信', '加微', '爆款', '分数', '目录', '备注']
+export const TOPICS_COLUMNS = ['日期', '批次', '选题', '勾选', '生成条数']
+
+export const contentPath = root => join(root, '内容库.csv')
+export const topicsPath = root => join(root, '选题库.csv')
+
+/** 读一张表：返回 { header, rows }，rows 是对象数组（按表头名取值），带 rowIndex。 */
+export function readTable(root, file) {
+  const abs = join(root, file)
+  if (!existsSync(abs)) return { header: [], rows: [] }
+  const lines = readFileSync(abs, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  if (!lines.length) return { header: [], rows: [] }
+  const header = parseCsvLine(lines[0])
+  const rows = lines.slice(1).map((line, rowIndex) => {
+    const cells = parseCsvLine(line)
+    const row = { rowIndex }
+    header.forEach((name, i) => { row[name] = cells[i] ?? '' })
+    return row
+  })
+  return { header, rows }
+}
+
+/** 写一张表：只重写已知列，表里多出来的列忽略（避免手改的列被抹掉）。 */
+export function writeTable(root, file, columns, rows) {
+  ensureLayout(root)
+  const abs = join(root, file)
+  const head = columns.map(csvCell).join(',')
+  const body = rows.map(row => columns.map(name => csvCell(row[name])).join(',')).join('\n')
+  writeFileSync(abs, `${head}\n${body}${body ? '\n' : ''}`)
+  return abs
+}
+
+/** 追加若干行；文件不存在时先写表头。 */
+export function appendRows(root, file, columns, rows) {
+  ensureLayout(root)
+  const abs = join(root, file)
+  const exists = existsSync(abs)
+  const body = rows.map(row => columns.map(name => csvCell(row[name])).join(',')).join('\n')
+  if (exists) {
+    const current = readFileSync(abs, 'utf8')
+    if (current.trim()) writeFileSync(abs, `${current.replace(/\n*$/, '\n')}${body}\n`)
+    else writeFileSync(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
+  } else {
+    writeFileSync(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
+  }
+  return abs
+}
+
+/** 按某一列的值改一行；找不到返回 false。 */
+export function updateRowsByKey(root, file, columns, keyCol, key, patch) {
+  const { rows } = readTable(root, file)
+  let hit = false
+  const next = rows.map(row => {
+    if (row[keyCol] !== key) return { ...row }
+    hit = true
+    return { ...row, ...patch }
+  })
+  if (hit) writeTable(root, file, columns, next)
+  return hit
+}
+
+const nowStamp = () => new Date().toISOString().slice(0, 16).replace('T', ' ')
+export const batchId = () => {
+  const d = new Date()
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`
+}
+
+export function readContent(root) {
+  return readTable(root, '内容库.csv').rows
+}
+
+/** 记一条口播。目录相同的行会被更新，不会重复。 */
+export function recordContent(root, row) {
+  const { rows } = readTable(root, '内容库.csv')
+  const clean = {}
+  for (const name of CONTENT_COLUMNS) clean[name] = row[name] ?? ''
+  const existing = rows.findIndex(item => item['目录'] && item['目录'] === clean['目录'])
+  if (existing >= 0) {
+    const merged = { ...rows[existing], ...clean }
+    rows[existing] = merged
+    writeTable(root, '内容库.csv', CONTENT_COLUMNS, rows)
+    return merged
+  }
+  rows.push(clean)
+  writeTable(root, '内容库.csv', CONTENT_COLUMNS, rows)
+  return clean
+}
+
+export function updateContent(root, dir, patch) {
+  const { rows } = readTable(root, '内容库.csv')
+  const index = rows.findIndex(row => row['目录'] === dir)
+  if (index < 0) return null
+  rows[index] = { ...rows[index], ...patch }
+  writeTable(root, '内容库.csv', CONTENT_COLUMNS, rows)
+  return rows[index]
+}
+
+export function appendTopics(root, batch, topics) {
+  appendRows(root, '选题库.csv', TOPICS_COLUMNS, topics.map(topic => ({
+    '日期': dayStamp(), '批次': batch, '选题': topic, '勾选': '否', '生成条数': 0,
+  })))
+  return batch
+}
+
+export function markTopicsPicked(root, batch, picked) {
+  const { rows } = readTable(root, '选题库.csv')
+  const set = new Set(picked)
+  const next = rows.map(row => (row['批次'] === batch ? { ...row, '勾选': set.has(row['选题']) ? '是' : '否' } : row))
+  writeTable(root, '选题库.csv', TOPICS_COLUMNS, next)
+  return next.filter(row => row['批次'] === batch)
+}
+
+export { nowStamp }

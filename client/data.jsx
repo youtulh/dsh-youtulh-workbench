@@ -1,51 +1,51 @@
-// 看数据：直接看工作区里的 数据/ 文件夹，有多少份、什么时候更新的，然后交给对话里的助教分析。
+// 看数据 = 内容库：每一条口播的真实结果（播放/涨粉/私信），自动打分、自动标爆款。
 import React from 'react'
-import { fetchTree, revealDir, saveOutput, toast } from './desk.js'
+import { fetchContent, importData, revealDir, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
+import { ADOPT_OPTIONS } from './util.js'
 import { Icon } from './ui.jsx'
-import { fmtWhen } from './util.js'
 
-const size = bytes => (bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`)
+const num = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0
 
 export function DataView() {
   useLang()
-  const [files, setFiles] = React.useState(null)
+  const positioning = useDesk(s => s.state?.positioning) ?? {}
+  const [rows, setRows] = React.useState(null)
+  const [stats, setStats] = React.useState({ count: 0, hits: 0, views: 0, follows: 0, dms: 0 })
+  const [lessons, setLessons] = React.useState('')
   const [paste, setPaste] = React.useState('')
-  const [saving, setSaving] = React.useState(false)
+  const [busy, setBusy] = React.useState('')
 
   const load = React.useCallback(() => {
-    fetchTree()
-      .then(tree => {
-        const rows = tree.filter(row => row.kind === 'data')
-        // 把文件夹摊平成文件行：一份复盘就是一个文件
-        setFiles(rows.flatMap(row => row.files.map(file => ({ ...file, dir: row.dir, folder: row.name }))))
-      })
+    fetchContent()
+      .then(data => { setRows(data.rows ?? []); setStats(data.stats ?? {}); setLessons(data.lessons ?? '') })
       .catch(err => toast(err.message, { error: true }))
   }, [])
   React.useEffect(() => { load() }, [load])
 
-  // 把粘贴的后台数据存成 数据/<日期>.csv，之后就能让助教读
-  const save = async () => {
-    const text = paste.trim()
-    if (!text || saving) return
-    setSaving(true)
+  const patch = async (row, key, value) => {
     try {
-      const title = `数据 ${new Date().toLocaleDateString('zh-CN')}`
-      const result = await saveOutput({ kind: 'data', title, content: text, formats: ['csv'] })
-      toast(t('已存到 {dir}', { dir: result.dir }))
-      setPaste('')
+      await updateContentRow(row['目录'], { [key]: value })
       load()
-    } catch (err) {
-      toast(err.message, { error: true })
-    }
-    setSaving(false)
+    } catch (err) { toast(err.message, { error: true }) }
   }
 
-  const total = (files ?? []).reduce((sum, file) => sum + (file.size || 0), 0)
-  const latest = files?.[0]
   const analyze = () => {
-    if (!startChat('data', { files: (files ?? []).map(file => file.name) })) launchFailedToast(toast)
+    const hint = rows?.filter(row => row['私信'] || row['爆款'] === '是').slice(0, 5).map(row => row['标题']).join('、')
+    if (!startChat('data', { files: hint ? [hint] : [], profile: t('内容库：{n} 条，爆款 {h} 条', { n: stats.count ?? 0, h: stats.hits ?? 0 }) })) launchFailedToast(toast)
+  }
+
+  const doImport = async () => {
+    if (!paste.trim()) return
+    setBusy('import')
+    try {
+      const result = await importData(paste)
+      toast(t('匹配 {n} 条，没对上 {m} 条', { n: result.matched ?? 0, m: (result.unmatched ?? []).length }))
+      setPaste('')
+      load()
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
   }
 
   return (
@@ -53,7 +53,7 @@ export function DataView() {
       <header className="md-page-head">
         <div>
           <h1>{t('看数据')}</h1>
-          <p className="md-page-sub">{t('这里列的是工作区 数据/ 文件夹里的文件。把后台数据存成一份进去，交给助教分析。')}</p>
+          <p className="md-page-sub">{t('每发一条就回来填一次：播放、涨粉、私信。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
         </div>
         <span style={{ flex: 1 }} />
         <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
@@ -62,62 +62,88 @@ export function DataView() {
       </header>
 
       <section className="md-data-summary">
-        <div><b>{files === null ? '—' : files.length}</b><span>{t('份数据')}</span></div>
-        <div><b>{files === null ? '—' : size(total)}</b><span>{t('一共')}</span></div>
-        <div><b>{latest ? fmtWhen(latest.updatedAt) : '—'}</b><span>{t('最近更新')}</span></div>
+        <div><b>{stats.count ?? 0}</b><span>{t('条内容')}</span></div>
+        <div><b>{stats.hits ?? 0}</b><span>{t('条爆款')}</span></div>
+        <div><b>{stats.follows || '—'}</b><span>{t('总涨粉')}</span></div>
+        <div><b>{stats.dms || '—'}</b><span>{t('总私信')}</span></div>
       </section>
+
+      {lessons ? (
+        <div className="md-lessons">
+          <b>{t('现在的经验')}</b>
+          <pre className="md-lessons-pre">{lessons.trim()}</pre>
+        </div>
+      ) : null}
 
       <section className="md-create-input">
         <label className="md-field">
-          <span>{t('把后台数据粘进来（一行一条也行，随便什么格式）')}</span>
-          <textarea rows={4} value={paste} onChange={event => setPaste(event.target.value)} placeholder={t('日期,平台,播放,私信,加微,约试听\n2026-11-24,抖音,5000,6,4,1')} />
+          <span>{t('粘贴平台数据（第一行可以是表头：标题,播放,涨粉,私信）')}</span>
+          <textarea rows={4} value={paste} onChange={event => setPaste(event.target.value)} placeholder={'标题,播放,涨粉,私信\n期中 58 分还能补吗,5200,18,6'} />
         </label>
         <div className="md-create-actions">
-          <span className="md-muted">{t('存成 数据/<日期>.csv，助教下次分析就能读到它。')}</span>
+          <span className="md-muted">{t('按标题对上内容库里的那一条；对不上的会告诉你。')}</span>
           <span className="md-grow" />
-          <button type="button" className="md-pill" onClick={save} disabled={!paste.trim() || saving}>
-            <Icon name="save" size={14} />{saving ? t('保存中…') : t('存成数据文件')}
+          <button type="button" className="md-pill" onClick={doImport} disabled={!paste.trim() || busy === 'import'}>
+            {busy === 'import' ? t('匹配中…') : t('导入数据')}
           </button>
-        </div>
-      </section>
-
-      <section className="md-create-input">
-        <div className="md-create-actions">
-          <span className="md-muted">{t('点「分析」会跳到对话，让助教读 数据/ 文件夹里的文件，回答哪条真带人、哪条白拍了、下一步该改什么。')}</span>
-          <span className="md-grow" />
           <button type="button" className="md-pill is-primary" onClick={analyze}>
-            <Icon name="chat" size={14} />{t('开始分析')}
+            <Icon name="chat" size={14} />{t('让助教分析')}
           </button>
         </div>
       </section>
 
-      {files === null ? <p className="md-muted">{t('读取中…')}</p> : null}
+      {rows === null ? <p className="md-muted">{t('读取中…')}</p> : null}
 
-      {files?.length === 0 ? (
+      {rows?.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('数据文件夹还是空的。把平台后台的数据复制成一份 CSV，存到 数据/ 里，或者直接粘给对话里的助教。')}</p>
+          <p>{t('内容库还是空的。先去「做内容」生成几条口播，发出去以后再回来填结果。')}</p>
         </div>
       ) : null}
 
-      {files?.length ? (
-        <ul className="md-works-list">
-          {files.map((file, index) => (
-            <li key={`${file.dir}-${file.name}-${index}`} className="md-work">
-              <div className="md-work-head">
-                <b>{file.name}</b>
-                <span className="md-grow" />
-                <small>{fmtWhen(file.updatedAt)}</small>
-              </div>
-              <div className="md-work-files"><code>{file.folder}</code><code>{size(file.size)}</code></div>
-              <div className="md-work-actions">
-                <button type="button" className="md-inline-link" onClick={() => revealDir(file.dir).catch(err => toast(err.message, { error: true }))}>{t('在文件夹里打开')}</button>
-              </div>
-            </li>
-          ))}
-        </ul>
+      {rows?.length ? (
+        <div className="md-i-table">
+          <table className="md-table is-plain md-content-table">
+            <thead>
+              <tr>
+                <th>{t('标题')}</th>
+                <th>{t('采用')}</th>
+                <th>{t('播放')}</th>
+                <th>{t('涨粉')}</th>
+                <th>{t('私信')}</th>
+                <th>{t('分数')}</th>
+                <th>{t('爆款')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => (
+                <tr key={row['目录'] || row['标题']}>
+                  <td className="md-content-title">{row['标题']}<small>{row['选题']}</small></td>
+                  <td>
+                    <select value={row['采用'] || '未定'} onChange={event => patch(row, '采用', event.target.value)}>
+                      {ADOPT_OPTIONS.map(option => <option key={option} value={option}>{t(option)}</option>)}
+                    </select>
+                  </td>
+                  {['播放', '涨粉', '私信'].map(key => (
+                    <td key={key} className="is-num">
+                      <input
+                        className="md-cell-input"
+                        defaultValue={row[key] ?? ''}
+                        placeholder="—"
+                        onBlur={event => { if (event.target.value !== (row[key] ?? '')) patch(row, key, event.target.value) }}
+                      />
+                    </td>
+                  ))}
+                  <td className="is-num">{row['分数'] || '—'}</td>
+                  <td>{row['爆款'] === '是' ? <b className="md-hit">{t('爆款')}</b> : row['爆款'] === '否' ? <span className="md-muted">{t('否')}</span> : <span className="md-muted">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
 
-      <p className="md-works-path">{t('文件位置：~/Documents/Youtulh 工作台/数据/')}</p>
+      <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: '~/Documents/Youtulh 工作台' })}</p>
+      {!positioning.subject ? <p className="md-muted">{t('还没填设定，先去「我的设定」把科目和年级填上。')}</p> : null}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 // 做内容：先在这里出 30 个选题草稿，勾选后一次性生成口播（标题 + 稿子 + 标签），全程不跳页。
 import React from 'react'
-import { fetchSuggestions, profileSummary, saveOutput, toast, useDesk } from './desk.js'
+import { fetchSuggestions, pickTopics, profileSummary, saveOutput, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
@@ -29,6 +29,8 @@ export function CreateView() {
   const [examples, setExamples] = React.useState([])
   const [busy, setBusy] = React.useState('')
   const [saving, setSaving] = React.useState('')
+  const [batch, setBatch] = React.useState('')
+  const [adopted, setAdopted] = React.useState({})
 
   React.useEffect(() => {
     fetchSuggestions().then(result => setExamples(result.prompts)).catch(() => {})
@@ -41,8 +43,10 @@ export function CreateView() {
     try {
       const data = await post('topics', { count: 30 })
       setTopics(data.topics ?? [])
+      setBatch(data.batch ?? '')
       setPicked({})
       setScripts([])
+      setAdopted({})
     } catch (err) {
       toast(err.message, { error: true })
     }
@@ -53,8 +57,11 @@ export function CreateView() {
     if (!selected.length) return toast(t('先勾几个选题'), { error: true })
     setBusy('scripts')
     try {
-      const data = await post('scripts', { topics: selected })
+      // 先记勾选（学习信号），再生口播
+      if (batch) await pickTopics(batch, selected).catch(() => {})
+      const data = await post('scripts', { topics: selected, batch })
       setScripts(data.scripts ?? [])
+      toast(t('已生成 {n} 条，并记进内容库', { n: (data.scripts ?? []).length }))
     } catch (err) {
       toast(err.message, { error: true })
     }
@@ -146,8 +153,20 @@ export function CreateView() {
                 <div className="md-script-lines">{row.script.split('\n').map((line, i) => <p key={i}>{line || '\u00a0'}</p>)}</div>
                 <div className="md-script-tags">{(row.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
                 <div className="md-script-actions">
+                  <button
+                    type="button"
+                    className={`md-pill is-small ${adopted[row.title] ? 'is-primary' : ''}`}
+                    onClick={async () => {
+                      if (!row.dir) return
+                      try {
+                        await updateContentRow(row.dir, { '采用': '采用' })
+                        setAdopted({ ...adopted, [row.title]: true })
+                        toast(t('已标记为采用'))
+                      } catch (err) { toast(err.message, { error: true }) }
+                    }}
+                  >{adopted[row.title] ? t('已采用') : t('采用这条')}</button>
                   <button type="button" className="md-inline-link" onClick={() => copy(`【标题】${row.title}\n\n【口播文案】\n${row.script}\n\n【标签】${(row.tags ?? []).map(tag => `#${tag}`).join(' ')}`)}>{t('复制')}</button>
-                  <button type="button" className="md-inline-link" onClick={() => save(row, index)} disabled={saving === String(index)}>{saving === String(index) ? t('保存中…') : t('保存成 Word')}</button>
+                  <button type="button" className="md-inline-link" onClick={() => save(row, index)} disabled={saving === String(index)}>{saving === String(index) ? t('保存中…') : t('再存一份 Word')}</button>
                 </div>
               </li>
             ))}

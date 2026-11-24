@@ -127,6 +127,26 @@ export async function fetchSuggestions() {
   return { prompts: data.prompts ?? [], source: data.source }
 }
 
+/** 内容库：每条口播和它的结果。 */
+export async function fetchContent() {
+  return request('content')
+}
+
+/** 内容库：改某一条的采用/平台/播放/私信等。 */
+export async function updateContentRow(dir, patch) {
+  return request('content/update', { dir, patch })
+}
+
+/** 粘平台数据，按标题匹配内容库。 */
+export async function importData(text) {
+  return request('data/import', { text })
+}
+
+/** 记录这一批里勾了哪些选题。 */
+export async function pickTopics(batch, picked) {
+  return request('topics/pick', { batch, picked })
+}
+
 /** 人设摘要：科目 · 年级 · 城市（+ 前两条家长痛点），给页面和提示词用。 */
 export function profileSummary(state) {
   const p = state?.positioning ?? {}
