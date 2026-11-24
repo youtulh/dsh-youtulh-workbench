@@ -625,4 +625,11 @@ export const PAGES = {
   '还没有课次记录，这条是按学生档案写的': 'No lesson records yet; this is based on the student profile',
   复制反馈: 'Copy update',
   复制了反馈: 'Update copied',
+  '最近 {n} 次': 'Last {n} lessons',
+  '模型按你的设定写的': 'Model wrote this from your setup',
+  '没连模型，按记录拼的': 'No model connected — built from records',
+  '依据最近 {n} 次课': 'based on the last {n} lessons',
+  '还没有课次记录，按学生档案写的': 'no lessons yet — built from the student profile',
+  '发之前自己看一眼': 'read it before sending',
+  '换一版': 'Regenerate',
 }

@@ -145,10 +145,10 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
     })
   }
 
-  const writeFeedback = (student) => {
-    setFeedback({ name: student.name, text: '', busy: true, lessons: 0 })
-    fetchStudentFeedback({ name: student.name, grade: student.grade, className: student.className }).then(data => {
-      setFeedback({ name: student.name, text: data.text || '', busy: false, lessons: data.lessons ?? 0 })
+  const writeFeedback = (student, limit = 4) => {
+    setFeedback({ student, name: student.name, text: '', busy: true, lessons: 0, limit, source: '' })
+    fetchStudentFeedback({ name: student.name, grade: student.grade, className: student.className, limit }).then(data => {
+      setFeedback({ student, name: student.name, text: data.text || '', busy: false, lessons: data.lessons ?? 0, limit, source: data.source || 'local' })
       requestAnimationFrame(() => document.getElementById('student-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
     }).catch(err => { setFeedback(null); toast(err.message, { error: true }) })
   }
@@ -241,6 +241,13 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         <section className="md-tile md-feedback" id="student-feedback">
           <header className="md-tile-head">
             <h2>{t('给 {name} 家长的反馈', { name: feedback.name })}</h2>
+            <select className="md-case-result" value={feedback.limit} onChange={event => {
+              const limit = Number(event.target.value)
+              if (feedback.busy) return
+              writeFeedback(feedback.student, limit)
+            }}>
+              {[2, 4].map(n => <option key={n} value={n}>{t('最近 {n} 次', { n })}</option>)}
+            </select>
             <span className="md-grow" />
             <button type="button" className="md-inline-link" onClick={() => setFeedback(null)}>{t('关闭')}</button>
           </header>
@@ -248,8 +255,11 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
             <>
               <textarea rows={6} value={feedback.text} onChange={event => setFeedback(prev => ({ ...prev, text: event.target.value }))} />
               <div className="md-feedback-actions">
-                <span className="md-muted">{feedback.lessons ? t('依据最近 {n} 次课记录写的，发之前自己看一眼', { n: feedback.lessons }) : t('还没有课次记录，这条是按学生档案写的')}</span>
+                <span className="md-muted">
+                  {feedback.source === 'model' ? t('模型按你的设定写的') : t('没连模型，按记录拼的')} · {feedback.lessons ? t('依据最近 {n} 次课', { n: feedback.lessons }) : t('还没有课次记录，按学生档案写的')} · {t('发之前自己看一眼')}
+                </span>
                 <span className="md-grow" />
+                <button type="button" className="md-inline-link" disabled={feedback.busy} onClick={() => writeFeedback(feedback.student, feedback.limit)}>{t('换一版')}</button>
                 <button type="button" className="md-pill is-small" onClick={() => {
                   if (navigator.clipboard?.writeText) {
                     navigator.clipboard.writeText(feedback.text).then(() => toast(t('复制了反馈'))).catch(() => toast(t('复制失败'), { error: true }))

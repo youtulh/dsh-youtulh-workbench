@@ -811,7 +811,8 @@ async function route(ctx, store, desk, req, res) {
       let rows = readLessons(root, body.className ?? '').filter(row => row.name === name)
       if (!rows.length) rows = readLessons(root).filter(row => row.name === name)
       rows.sort((a, b) => b.no - a.no || String(b.date).localeCompare(String(a.date)))
-      const recent = rows.slice(0, 4)
+      const limit = Number(body.limit) === 2 ? 2 : 4
+      const recent = rows.slice(0, limit)
       const state = await store.read()
       let text = ''
       let from = 'local'
