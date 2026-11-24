@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -56,6 +56,7 @@ export function DmView() {
   const [stage, setStage] = React.useState(DM_DRAFT.stage)
   const [leads, setLeads] = React.useState([])
   const [leadsReady, setLeadsReady] = React.useState(false)
+  const [converted, setConverted] = React.useState({})
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState(DM_DRAFT.filter)
   const [query, setQuery] = React.useState(DM_DRAFT.query)
@@ -517,6 +518,13 @@ export function DmView() {
                   }}>{t('记一次跟进')}</button>
                   <button type="button" className="md-inline-link" onClick={() => postpone(lead, 1)}>{t('明天再跟')}</button>
                   <button type="button" className="md-inline-link" onClick={() => postpone(lead, 3)}>{t('3 天后')}</button>
+                  {lead.stage === '已报课' && lead.name && !converted[lead.rowIndex] ? (
+                    <button type="button" className="md-inline-link" onClick={() => {
+                      convertLead(lead.rowIndex)
+                        .then(data => { if (data.leads) setLeads(data.leads); setConverted(prev => ({ ...prev, [lead.rowIndex]: true })); toast(t('已转成学生，去学生档案补卡点层')) })
+                        .catch(err => toast(err.message, { error: true }))
+                    }}>{t('转成学生')}</button>
+                  ) : null}
                 </div>
                 {openDraft === lead.rowIndex ? (
                   <div className="md-lead-draft">
