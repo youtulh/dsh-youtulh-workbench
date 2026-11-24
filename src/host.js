@@ -7,12 +7,12 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
-import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
+import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { dmPrompt, localDm, normalizeDm } from './dm.js'
-import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, recordPickedTopics, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -169,12 +169,19 @@ async function route(ctx, store, desk, req, res) {
         // 老用户升级上来时 md 可能还不存在：先补写一份，agent 读到才有依据
         if (!existsSync(join(root, LAYOUT.settings))) writeSettingsMarkdown(root, state.positioning ?? {}, state.painPoints ?? [])
         // 说话样本也落成文件：用户想换成自己的口气，直接改这个 md
-        const styleFile = join(root, '说话样本.md')
+        const styleFile = join(root, LAYOUT.style)
         const styleText = existsSync(styleFile) ? readFileSync(styleFile, 'utf8') : ''
-        if (!styleText || !styleText.startsWith(`<!-- ${STYLE_VERSION} -->`)) {
-          // 旧版本生成的样本自动升级；用户自己改过（没有版本标记）的不动
+        const marked = /^<!--\s*v(\d+)\s*-->/.exec(styleText)
+        if (!styleText) {
+          // 第一次用：生成一份空的模板，让用户填自己的话
           ensureLayout(root)
           writeFile(styleFile, styleMarkdown()).catch(() => {})
+        } else if (marked && Number(marked[1]) < Number(String(STYLE_VERSION).slice(1))) {
+          // 旧版本生成的：规则升到新版，原话样本保留（只保留用户自己的，老硬编码的数学样本清掉）
+          const old = parseVoiceSamples(styleText)
+          const own = old.filter(row => !LEGACY_SAMPLES.some(legacy => legacy.includes(row) || row.includes(legacy)))
+          ensureLayout(root)
+          writeFile(styleFile, styleMarkdown(own)).catch(() => {})
         }
         const fromFile = readSettingsMarkdown(root)
         if (fromFile) {
@@ -374,7 +381,8 @@ async function route(ctx, store, desk, req, res) {
       let source = 'local'
       try {
         const lessons = buildLessonBlock(root)
-        const { text: raw } = await callModel(ctx, { ...topicsPrompt(state, count, lessons), maxTokens: 1600, light: true })
+        const voice = readVoiceSamples(root)
+        const { text: raw } = await callModel(ctx, { ...topicsPrompt(state, count, lessons, voice), maxTokens: 1600, light: true })
         entries = normalizeTopicEntries(extractJson(raw), count)
         if (entries.length) source = 'model'
       } catch { /* 没模型就用本地模板 */ }
@@ -409,6 +417,7 @@ async function route(ctx, store, desk, req, res) {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const lessons = buildLessonBlock(root)
+      const voice = readVoiceSamples(root)
       const groups = []
       let usedModel = false
       for (let i = 0; i < topics.length; i += 3) {
@@ -416,7 +425,7 @@ async function route(ctx, store, desk, req, res) {
         const rows = await Promise.all(chunk.map(async (topic) => {
           let variants = []
           try {
-            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic, lessons, brief), maxTokens: 2800, light: true })
+            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic, lessons, brief, voice), maxTokens: 2800, light: true })
             variants = normalizeVariants(extractJson(raw))
             if (variants.length) usedModel = true
           } catch { /* 单条失败就退回本地模板 */ }
@@ -435,9 +444,10 @@ async function route(ctx, store, desk, req, res) {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const lessons = buildLessonBlock(root)
+      const voice = readVoiceSamples(root)
       let variants = []
       try {
-        const { text: raw } = await callModel(ctx, { ...improvePrompt(state, topic, before, note, lessons), maxTokens: 2800, light: true })
+        const { text: raw } = await callModel(ctx, { ...improvePrompt(state, topic, before, note, lessons, voice), maxTokens: 2800, light: true })
         variants = normalizeVariants(extractJson(raw))
       } catch { /* 没模型就保持原样，交给页面提示 */ }
       return json(res, 200, { variants, source: variants.length ? 'model' : 'local' })
@@ -578,10 +588,11 @@ async function route(ctx, store, desk, req, res) {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const lessons = leadLessons(root).map(row => `- ${row}`).join('\n')
+      const voice = readVoiceSamples(root)
       let result = null
       let from = 'local'
       try {
-        const { text: out } = await callModel(ctx, { ...dmPrompt(state, raw, { lessons, contentLessons: buildLessonBlock(root) }), maxTokens: 1200, light: true })
+        const { text: out } = await callModel(ctx, { ...dmPrompt(state, raw, { lessons, contentLessons: buildLessonBlock(root), samples: voice }), maxTokens: 1200, light: true })
         const normalized = normalizeDm(extractJson(out))
         if (normalized.drafts.length) { result = normalized; from = 'model' }
       } catch { /* 没模型就本地兜底 */ }

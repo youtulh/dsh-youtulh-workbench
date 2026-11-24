@@ -21,10 +21,11 @@ function settingBlock(state) {
 
 // ---- 选题 ----
 
-export function topicsPrompt(state, count = 10, lessons = '') {
+export function topicsPrompt(state, count = 10, lessons = '', samples = []) {
   const pains = (state?.painPoints ?? []).slice(0, 20)
   const system = `你是给补课老师排选题的编辑。老师要做短视频（口播），你帮他列出 ${count} 个能直接拍成视频的选题。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的（都要用上，别浪费）：${pains.join('、')}` : ''}
+${samples.length ? `\n他的原话（口气参考，别照抄内容）：\n${samples.slice(0, 3).map(row => `- ${row}`).join('\n')}` : ''}
 
 先想清楚人，再出题。家长不是一个群体，至少分这五类，每类的痛点完全不同：
 - 差生家长：孩子已经放弃、家长也快放弃了，最怕「花钱也没用」
@@ -223,7 +224,7 @@ export function fillTopicAngles(entries, state, count = 10) {
 
 // ---- 口播 ----
 
-export function scriptPrompt(state, topic, lessons = '') {
+export function scriptPrompt(state, topic, lessons = '', samples = []) {
   const pains = (state?.painPoints ?? []).slice(0, 8)
   const system = `你是给补课老师写短视频口播的编辑。老师给了你一个选题，你写一条能直接拍的口播视频。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
@@ -235,7 +236,7 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}
 - 口播稿 45 到 60 秒，一句话一行、按气口断句
 - 标签 5 个，不带 # 号，中文，含科目、年级，再加一个地区词或考试词
 ${cityRule(state)}
-${styleBlock()}
+${styleBlock(samples)}
 严格按上面那个六段结构写，六段都要有，顺序不要换。${lessons}
 
 只输出 JSON：{"title":"标题","script":"一句话一行","tags":["标签1","标签2","标签3","标签4","标签5"]}`
@@ -314,8 +315,8 @@ export function normalizeBrief(value, max = 120) {
   return raw.slice(0, max)
 }
 
-export function variantsPrompt(state, topic, lessons = '', brief = '') {
-  const base = scriptPrompt(state, topic, lessons)
+export function variantsPrompt(state, topic, lessons = '', brief = '', samples = []) {
+  const base = scriptPrompt(state, topic, lessons, samples)
   const ask = brief
     ? `我的要求：${brief}
 照这个要求写，不要另起别的选题；没写到的地方按我的设定补足。`
@@ -380,14 +381,14 @@ export function normalizeImprove(body) {
   return { topic, note, variants }
 }
 
-export function improvePrompt(state, topic, variants, note, lessons = '') {
+export function improvePrompt(state, topic, variants, note, lessons = '', samples = []) {
   const pains = (state?.painPoints ?? []).slice(0, 8)
   const drafts = variants
     .map((row, index) => `[${VARIANT_KEYS[index]}] ${row.title}\n${row.script}`)
     .join('\n\n')
   const system = `你是给补课老师改短视频口播的编辑。老师已经看过三版，现在按他的一句要求改，不要推翻重写、不要换选题。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
-${styleBlock()}
+${styleBlock(samples)}
 
 改稿规则：
 - 三版各自保留原来的切入角度（A 分数/焦虑、B 知识点/场景、C 家长误区），只改他不满意的地方

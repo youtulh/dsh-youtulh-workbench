@@ -1613,3 +1613,11 @@ body[data-ds-dark-theme] .md-root {
   .md-student-list { grid-template-columns: minmax(0, 1fr); }
   .md-lesson-row { align-items: flex-start; }
 }
+
+.md-pipeline-follow { margin-top: 6px; color: var(--ink3); font-size: 11px; line-height: 16px; }
+.md-pipeline-follow.is-overdue { color: var(--accent); }
+.md-pipeline-card.is-overdue { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), var(--dsw-elevation-soft); }
+.md-pipeline-follow-edit { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--ink3); font-size: 11.5px; }
+.md-pipeline-follow-edit input { padding: 2px 5px; border: .5px solid var(--line); border-radius: var(--r-xs); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 11.5px; }
+.md-pipeline-follow-edit em { font-style: normal; color: var(--ink2); }
+.md-lead-follow { color: var(--accent); font-size: 11px; }

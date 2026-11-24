@@ -1,4 +1,5 @@
-// 牟老师的说话方式：规则和样本都从他自己 13 万字的课程稿里抽出来的。
+// 说话方式和口播结构是从牟老师的课程稿里抽出来的规则；
+// 原话样本不再写死，改由工作区的 说话样本.md 提供（也就是用户自己的话）。
 // 用途：所有生成（选题、口播、私信话术）都要照这个来，不然一眼 AI。
 // 抽样统计：平均句长 24 字（中位 20），「你」出现 2600 次、「我」2500 次，
 // 而「首先/其次/总之/综上所述」加起来不到 25 次，「赋能/闭环/底层逻辑」几乎没有。
@@ -14,8 +15,8 @@ export const STYLE_RULES = `说话方式（照这个来，做不到就是 AI 味
 - 不用互联网黑话：赋能、闭环、底层逻辑、抓手、颗粒度
 - 不喊口号、不堆排比、不用感叹号堆情绪；标题里不用「干货」「秘籍」「必看」`
 
-/** 他自己的原话（短摘录），给模型当口气参考。 */
-export const STYLE_SAMPLES = [
+// 老版本自动写进 说话样本.md 的数学样本：升级时用来识别「这其实不是用户自己改的」，好清掉。
+export const LEGACY_SAMPLES = [
   '我不知道咱们家里边有没有这样的初中孩子：其他科目成绩都还可以，就数学感觉怎么补课、怎么刷题，成绩都提升不起来。这类孩子的问题该怎么解决？',
   '为什么我要反复给家长强调这一点？因为很多孩子数学学得不好，他老是会去找借口，认为自己没有学习天赋，结果导致孩子对数学的负面看法特别重。',
   '像这类孩子，我的建议是一定要学会去做三个事情。',
@@ -23,11 +24,11 @@ export const STYLE_SAMPLES = [
   '这个时候我们再去练习难题，去争取一个高分，而这个才是行之有效的、孩子能够操作的学数学的办法。',
 ]
 
-/** 他常用的开头句式（从稿子里抽的），写口播时照着这种感觉起头。 */
-export const HOOK_SAMPLES = [
-  '我不知道咱们家里边有没有这样的孩子：其他科目成绩都还可以，就化学怎么补课、怎么刷题，成绩都提不起来。',
-  '很多家长来找我的时候，他甚至不说自己孩子多大，你知道吗。',
-  '你看人家这个孩子就确定得很明白：上次期末化学 85，这次 95。',
+/** 没有说话样本时的通用开头句式：只给句式，不带任何科目或老师的具体内容。 */
+export const GENERIC_HOOKS = [
+  '我不知道咱们家里边有没有这样的情况：……',
+  '这两天有三个家长问我同一个问题：……',
+  '很多家长一上来就问：怎么给孩子补？……',
 ]
 
 /** 口播文案的结构，也是他自己讲的：场景提问 → 破旧认知 → 立新说法 → 三条动作 → 再强调一次。 */
@@ -53,14 +54,18 @@ export const RED_LINES = [
   '把「提分」换成「提升」，把「保证」「一定」换成「大概率」「通常」',
 ]
 
-export const STYLE_VERSION = 'v2'
+export const STYLE_VERSION = 'v3'
 
-export function styleMarkdown() {
+export function styleMarkdown(samples = []) {
+  const own = Array.isArray(samples) ? samples.filter(Boolean).slice(0, 6) : []
+  const body = own.length
+    ? own.map(row => `- ${row}`).join('\n')
+    : '- （把你的原话放这里，一行一句。没填之前，生成只按上面的规则来，不会假装成别人的口气。）'
   return `<!-- ${STYLE_VERSION} -->
 # 说话样本
 
-> 这个文件是给助手看的口气参考。想让他更像你说话，可以把下面换成你自己的原话。
-> 规则和样本都来自牟老师的课程文字稿。
+> 这个文件是给助手看的口气参考。想让他更像你说话，就把下面「原话样本」换成你自己的原话。
+> 你不填也没关系：生成会按上面的规则走，不会套用别人的科目和例子。
 
 ## 规则
 
@@ -72,11 +77,15 @@ ${SCRIPT_STRUCTURE.split('\n').slice(1).join('\n')}
 
 ## 原话样本
 
-${STYLE_SAMPLES.map(row => `- ${row}`).join('\n')}
+${body}
 `
 }
 
-/** 拼进 prompt 的完整风格块。 */
-export function styleBlock() {
-  return `\n${STYLE_RULES}\n\n${SCRIPT_STRUCTURE}\n\n平台红线（一条都不能碰）：\n${RED_LINES.map(row => `- ${row}`).join('\n')}\n\n他本人说过的原话（口气参考，不要照抄内容）：\n${STYLE_SAMPLES.map(row => `- ${row}`).join('\n')}\n\n他常用的开头句式（换成你的科目，别照抄）：\n${HOOK_SAMPLES.map(row => `- ${row}`).join('\n')}\n`
+/** 拼进 prompt 的完整风格块；samples 是用户自己的原话（来自 说话样本.md）。 */
+export function styleBlock(samples = []) {
+  const own = Array.isArray(samples) ? samples.filter(Boolean).slice(0, 6) : []
+  const voice = own.length
+    ? `他本人说过的原话（口气参考，不要照抄内容）：\n${own.map(row => `- ${row}`).join('\n')}`
+    : '他还没填自己的原话样本：口气按上面的规则来，别套用别人的科目和例子。'
+  return `\n${STYLE_RULES}\n\n${SCRIPT_STRUCTURE}\n\n平台红线（一条都不能碰）：\n${RED_LINES.map(row => `- ${row}`).join('\n')}\n\n${voice}\n\n他常用的开头句式（换成你的科目，别照抄）：\n${GENERIC_HOOKS.map(row => `- ${row}`).join('\n')}\n`
 }

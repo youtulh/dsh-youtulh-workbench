@@ -246,6 +246,9 @@ export function DmView() {
                   <b>{lead.name || lead.grade || t('未填')}</b>
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
+                  {lead.nextAt || lead.followUps ? (
+                    <span className="md-lead-follow">{lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}{lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}</span>
+                  ) : null}
                   <span className="md-grow" />
                   <span className={`md-lead-next ${lead.next === '待跟进' || lead.next === '待加微' ? 'is-todo' : ''}`}>{lead.next}</span>
                 </div>

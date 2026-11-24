@@ -25,7 +25,7 @@ function settingBlock(state) {
 }
 
 /** 分诊一条私信的提示词。lessons 是加到过微信的历史例子，contentLessons 是内容库的经验块。 */
-export function dmPrompt(state, raw, { lessons = '', contentLessons = '' } = {}) {
+export function dmPrompt(state, raw, { lessons = '', contentLessons = '', samples = [] } = {}) {
   const pains = (state?.painPoints ?? []).slice(0, 6)
   const system = `你是给补课老师回家长私信的助手。先判断，再写话术，最后抽台账。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
@@ -40,6 +40,7 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}
 - 第二条：落到一个具体动作，优先引导加微信。还是不报价、不说课程安排、不给完整方案
 - 两条都要像人说话：不用「首先/其次/总之/综上所述」，不用「赋能/闭环/底层逻辑」，不堆排比、不喊口号
 - 碰到「不做」的范围，礼貌收住，别硬接
+${samples.length ? `- 口气参考他本人说话的样子（别照抄内容）：\n${samples.slice(0, 3).map(row => `  · ${row}`).join('\n')}` : ''}
 
 最后抽台账，私信里没提到的一律留空，一个字都不许编：
 name 姓名 / grade 年级 / school 学校 / painPoint 卡点 / source 来源

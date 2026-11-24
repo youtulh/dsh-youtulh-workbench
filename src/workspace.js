@@ -10,7 +10,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 export const LAYOUT = {
-  settings: '我的设定.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv',
+  settings: '我的设定.md', style: '说话样本.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv',
   students: '学生档案.csv', classes: '班课.csv', lessons: '课次记录.csv',
 }
 
@@ -95,7 +95,7 @@ export function readSettingsMarkdown(root) {
 
 // 话术 = 实际发给家长的那段；反应 = 家长怎么回的；结果 = 加微成功 / 失败 / 待定
 // 阶段 = 漏斗上的位置；下一步 = 具体要做的那件事（自由文本），两者分开记
-const LEAD_COLUMNS = ['日期', '姓名', '年级', '学校', '卡点', '来源', '类型', '分类', '原文', '话术', '反应', '结果', '下一步', '更新时间', '阶段']
+const LEAD_COLUMNS = ['日期', '姓名', '年级', '学校', '卡点', '来源', '类型', '分类', '原文', '话术', '反应', '结果', '下一步', '更新时间', '阶段', '下次跟进', '跟进次数']
 
 /** 线索漏斗的六个阶段：从私信到报课，最后是流失。 */
 export const LEAD_STAGES = ['私信', '已加微信', '已进群', '约试听', '已报课', '流失']
@@ -121,38 +121,44 @@ export function leadsCsvPath(root) {
 }
 
 /**
- * 老线索表没有「阶段」列：补在最后一列，给每行补一个空值。
+ * 老线索表缺新列（阶段 / 下次跟进 / 跟进次数）：补在最后，给每行补空值。
  * 只在写之前调用；读的时候按「结果 / 下一步」推导，不动用户的文件。
  */
-export function ensureLeadStageColumn(root) {
+export function ensureLeadColumns(root) {
   const file = leadsCsvPath(root)
   if (!existsSync(file)) return false
   const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
   if (!lines.length) return false
   const head = parseCsvLine(lines[0])
-  if (head.includes('阶段')) return false
-  const next = [head.concat('阶段'), ...lines.slice(1).map(line => parseCsvLine(line).concat(''))]
+  const missing = LEAD_COLUMNS.filter(name => !head.includes(name))
+  if (!missing.length) return false
+  const next = [[...head, ...missing], ...lines.slice(1).map(line => [...parseCsvLine(line), ...missing.map(() => '')])]
   writeFileSync(file, `${next.map(cells => cells.map(csvCell).join(',')).join('\n')}\n`)
   return true
 }
+
+/** 旧名字：只补「阶段」那一版留下的调用点。 */
+export const ensureLeadStageColumn = ensureLeadColumns
 
 /** 追加一行线索；文件不存在就先写表头。按表头名字填，老文件加过列也不会错位。 */
 export function appendLead(root, lead) {
   ensureLayout(root)
   const file = leadsCsvPath(root)
   const exists = existsSync(file)
-  if (exists) ensureLeadStageColumn(root)
+  if (exists) ensureLeadColumns(root)
   let header = LEAD_COLUMNS
   if (exists) {
     const first = parseCsvLine(readFileSync(file, 'utf8').split(/\r?\n/)[0])
     if (first.length) header = first
   }
-  const stage = LEAD_STAGES.includes(String(lead.stage ?? '').trim()) ? String(lead.stage).trim() : '私信'
+  // 显式给了阶段就用它；老调用方只给「下一步」时，按老字段折成阶段，别一律写私信
+  const stage = stageOfLead({ stage: lead.stage, result: lead.result, next: lead.next })
   const values = {
     '日期': dayStamp(new Date(lead.createdAt ?? Date.now())), '姓名': lead.name, '年级': lead.grade, '学校': lead.school,
     '卡点': lead.painPoint, '来源': lead.source, '类型': lead.type, '分类': lead.category, '原文': lead.raw,
     '话术': lead.draft, '反应': lead.reaction ?? '', '结果': lead.result ?? '待定', '下一步': lead.next ?? '',
     '更新时间': new Date().toISOString().slice(0, 16).replace('T', ' '), '阶段': stage,
+    '下次跟进': String(lead.nextAt ?? '').slice(0, 20), '跟进次数': String(Math.max(0, Math.floor(Number(lead.followUps) || 0))),
   }
   const row = header.map(name => csvCell(values[name] ?? '')).join(',')
   if (exists) {
@@ -202,6 +208,7 @@ export function readLeads(root) {
       source: at('来源'), type: at('类型'), category: at('分类'), raw: at('原文'), draft: at('话术'),
       reaction: at('反应'), result, next, updatedAt: at('更新时间'), rowIndex,
       stage: stageOfLead({ stage: at('阶段'), result, next }),
+      nextAt: at('下次跟进'), followUps: Math.max(0, Math.floor(Number(at('跟进次数')) || 0)),
     }
   })
   return rows.reverse()
@@ -297,13 +304,13 @@ export const RESULTS = ['待定', '加微成功', '失败']
 /** 按行号改一条线索（行号从 0 开始，按文件里的数据行算）。 */
 const LEAD_PATCH_COLUMN = {
   name: '姓名', grade: '年级', school: '学校', painPoint: '卡点', source: '来源',
-  result: '结果', next: '下一步', stage: '阶段', draft: '话术',
+  result: '结果', next: '下一步', stage: '阶段', draft: '话术', nextAt: '下次跟进',
 }
 
 export function updateLeadRow(root, index, patch = {}) {
   const file = leadsCsvPath(root)
   if (!existsSync(file)) return null
-  ensureLeadStageColumn(root)
+  ensureLeadColumns(root)
   const lines = readFileSync(file, 'utf8').split(/\r?\n/)
   const head = lines[0]
   const dataStart = 1
@@ -330,6 +337,8 @@ export function updateLeadRow(root, index, patch = {}) {
     } else if (key === 'result') {
       set('结果', value)
       if (value === '失败') set('阶段', '流失')
+    } else if (key === 'followUps') {
+      set('跟进次数', String(Math.max(0, Math.floor(Number(value) || 0))))
     } else if (LEAD_PATCH_COLUMN[key]) {
       set(LEAD_PATCH_COLUMN[key], value)
     }
@@ -348,6 +357,31 @@ export function leadLessons(root, limit = 3) {
     .filter(row => row.result !== '失败' && (row.result === '加微成功' || win.has(row.stage)))
     .slice(0, limit)
     .map(row => `${row.type || '家长'} · ${row.category || '未分类'}｜家长说「${(row.raw || '').slice(0, 24)}」｜我们回「${(row.draft || '').slice(0, 40)}」→ 加了微信`)
+}
+
+// ---- 说话样本.md ----
+
+/**
+ * 从 说话样本.md 里取「## 原话样本」下面的条目。
+ * 吃掉升级时的占位句（以「（」开头），一行一条，最多 6 条。
+ */
+export function parseVoiceSamples(markdown) {
+  const text = String(markdown ?? '')
+  const at = text.search(/^##\s*原话样本\s*$/m)
+  if (at < 0) return []
+  const section = text.slice(at).split(/\n##\s+/)[0]
+  return section.split('\n')
+    .map(line => line.replace(/^\s*-\s*/, '').trim())
+    .filter(line => line && !line.startsWith('（') && !line.startsWith('>') && !line.startsWith('#'))
+    .filter(line => line.length <= 300)
+    .slice(0, 6)
+}
+
+/** 读用户自己的说话样本；文件不在或没有样本就是空数组。 */
+export function readVoiceSamples(root) {
+  const file = join(root, LAYOUT.style)
+  if (!existsSync(file)) return []
+  try { return parseVoiceSamples(readFileSync(file, 'utf8')) } catch { return [] }
 }
 
 // ---- 内容库 / 选题库 ----

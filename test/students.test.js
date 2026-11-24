@@ -37,7 +37,13 @@ test('老线索表没有「阶段」列：读的时候推导，写的时候补�
     const after = updateLeadRow(root, 0, { stage: '已报课' })
     assert.equal(after.find(row => row.name === '王').stage, '已报课')
     const head = (await readFile(file, 'utf8')).split('\n')[0]
-    assert.match(head, /"阶段"$/)
+    assert.match(head, /"阶段","下次跟进","跟进次数"$/)
+
+    // 跟进：下次跟进时间 + 跟进次数
+    const followed = updateLeadRow(root, 0, { nextAt: '2026-11-30', followUps: 2 })
+    const wangRow = followed.find(row => row.name === '王')
+    assert.equal(wangRow.nextAt, '2026-11-30')
+    assert.equal(wangRow.followUps, 2)
 
     // 补过列以后再追加一行，必须按表头对齐
     appendLead(root, { name: '赵', painPoint: '氧化还原', stage: '私信' })
@@ -45,6 +51,11 @@ test('老线索表没有「阶段」列：读的时候推导，写的时候补�
     const zhao = rows.find(row => row.name === '赵')
     assert.equal(zhao.stage, '私信')
     assert.equal(zhao.painPoint, '氧化还原')
+    assert.equal(zhao.followUps, 0)
+
+    // 只给老的「下一步」时，阶段要折过去，不能一律写「私信」
+    appendLead(root, { name: '钱', next: '已加微' })
+    assert.equal(readLeads(root).find(row => row.name === '钱').stage, '已加微信')
     assert.equal(rows.length, 3)
   } finally {
     await rm(root, { recursive: true, force: true })

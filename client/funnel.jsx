@@ -1,9 +1,9 @@
 // 线索漏斗：一条线索从私信走到报课，拖一下就换个阶段。
 // 数据就是工作区里的 线索表.csv，页面只是换个看法。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchLeadsWithLessons, setDesk, setLeadStage, toast } from './desk.js'
+import { appendLeadRow, convertLead, fetchLeadsWithLessons, setDesk, setLeadStage, toast, updateLead } from './desk.js'
 import { t, useLang } from './i18n.js'
-import { LEAD_CATEGORIES, LEAD_STAGES } from './util.js'
+import { LEAD_CATEGORIES, LEAD_STAGES, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
 
 const stageIndex = stage => (LEAD_STAGES.includes(stage) ? LEAD_STAGES.indexOf(stage) : 0)
@@ -27,6 +27,15 @@ export function FunnelPanel({ students = [], onChanged }) {
       const data = await setLeadStage(lead.rowIndex, stage)
       setLeads(data.leads ?? [])
       toast(t('挪到「{stage}」了', { stage: t(stage) }))
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const save = async (lead, patch) => {
+    setBusy(`save-${lead.rowIndex}`)
+    try {
+      const data = await updateLead(lead.rowIndex, patch)
+      setLeads(data.leads ?? [])
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
@@ -107,7 +116,7 @@ export function FunnelPanel({ students = [], onChanged }) {
                 {rows.map(lead => (
                   <article
                     key={lead.rowIndex}
-                    className={`md-pipeline-card ${open === lead.rowIndex ? 'is-open' : ''}`}
+                    className={`md-pipeline-card ${open === lead.rowIndex ? 'is-open' : ''} ${lead.nextAt && lead.nextAt < dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}
                     draggable
                     onDragStart={event => event.dataTransfer.setData('text/lead-index', String(lead.rowIndex))}
                     onClick={() => setOpen(current => (current === lead.rowIndex ? -1 : lead.rowIndex))}
@@ -119,10 +128,22 @@ export function FunnelPanel({ students = [], onChanged }) {
                       <span className="md-grow" />
                       <time>{lead.updatedAt || lead.date}</time>
                     </footer>
+                    {lead.nextAt || lead.followUps ? (
+                      <p className={`md-pipeline-follow ${lead.nextAt && lead.nextAt < dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
+                        {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}
+                        {lead.followUps ? t(' · 已跟 {n} 次', { n: lead.followUps }) : ''}
+                      </p>
+                    ) : null}
                     {open === lead.rowIndex ? (
                       <div className="md-pipeline-more" onClick={event => event.stopPropagation()}>
                         {lead.raw ? <p className="md-muted">{t('原话：{raw}', { raw: lead.raw })}</p> : null}
                         {lead.next ? <p className="md-muted">{t('下一步：{next}', { next: lead.next })}</p> : null}
+                        <label className="md-pipeline-follow-edit">
+                          <span>{t('下次跟进')}</span>
+                          <input type="date" value={lead.nextAt || ''} onChange={event => save(lead, { nextAt: event.target.value })} />
+                          <em>{t('已跟 {n} 次', { n: lead.followUps || 0 })}</em>
+                          <button type="button" className="md-inline-link" onClick={() => save(lead, { followUps: (lead.followUps || 0) + 1 })}>{t('记一次跟进')}</button>
+                        </label>
                         <label className="md-pipeline-stage">
                           <span>{t('阶段')}</span>
                           <select value={lead.stage} onChange={event => move(lead, event.target.value)} disabled={busy.startsWith(`${lead.rowIndex}-`)}>
