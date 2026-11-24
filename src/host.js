@@ -61,6 +61,54 @@ export function parseImportTable(raw) {
   return { hasHead, keys, data }
 }
 
+/** 从 Excel / 表格里粘进来的名单：认表头、认逗号或 Tab、带引号的单元格不拆列。 */
+export function parsePastedTable(raw) {
+  const text = String(raw ?? '').replace(/\r\n?/g, '\n').trim()
+  if (!text) return []
+  const lines = text.split('\n').filter(line => line.trim())
+  const delimiter = lines[0].includes('\t') ? '\t' : ','
+  return lines.map(line => parseDelimitedLine(line, delimiter))
+}
+
+function parseDelimitedLine(line, delimiter) {
+  const cells = []
+  let cell = ''
+  let quoted = false
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i]
+    if (quoted) {
+      if (char === '"' && line[i + 1] === '"') { cell += '"'; i += 1 }
+      else if (char === '"') quoted = false
+      else cell += char
+    } else if (char === '"') quoted = true
+    else if (char === delimiter) { cells.push(cell.trim()); cell = '' }
+    else cell += char
+  }
+  cells.push(cell.trim())
+  return cells
+}
+
+const STUDENT_IMPORT_ALIAS = {
+  name: ['姓名', '学生', '学生姓名', '名字', '孩子'],
+  grade: ['年级'],
+  school: ['学校', '学校名称'],
+  contact: ['微信', '手机', '电话', '联系方式', '微信手机'],
+  layer: ['卡点层', '卡点', '薄弱点'],
+  className: ['班', '班级', '所在班', '在哪个班'],
+  source: ['来源'],
+  note: ['备注', '情况', '说明'],
+}
+const STUDENT_IMPORT_KEYS = Object.keys(STUDENT_IMPORT_ALIAS)
+
+function studentImportColumn(cell) {
+  const name = String(cell ?? '').trim().replace(/[\s*]/g, '')
+  if (!name) return ''
+  for (const key of STUDENT_IMPORT_KEYS) {
+    if (STUDENT_IMPORT_ALIAS[key].includes(name)) return key
+  }
+  return ''
+}
+
 function json(res, status, body) {
   res.statusCode = status
   res.setHeader('content-type', 'application/json; charset=utf-8')
@@ -773,6 +821,25 @@ async function route(ctx, store, desk, req, res) {
       }
       if (lead.stage !== '流失' && lead.stage !== '已报课') updateLeadRow(root, index, { stage: '已报课' })
       return json(res, 200, { students: readStudents(root), classes: readClasses(root), leads: readLeads(root) })
+    }
+    case 'students/import': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const table = parsePastedTable(body.raw)
+      if (table.length < 2) return json(res, 400, { error: tr('至少要有表头和一行学生') })
+      const cols = table[0].map(studentImportColumn)
+      if (!cols.includes('name')) return json(res, 400, { error: tr('第一行要有「姓名」列') })
+      let imported = 0
+      let skipped = 0
+      for (const row of table.slice(1)) {
+        const input = {}
+        for (let i = 0; i < cols.length; i += 1) {
+          if (cols[i]) input[cols[i]] = row[i] ?? ''
+        }
+        if (!String(input.name ?? '').trim()) { skipped += 1; continue }
+        saveStudent(root, input)
+        imported += 1
+      }
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped })
     }
     case 'students/save': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

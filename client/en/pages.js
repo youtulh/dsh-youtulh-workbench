@@ -638,4 +638,10 @@ export const PAGES = {
   '删掉这条写过的反馈？': 'Delete this saved update?',
   '复制该跟进（{n}）': 'Copy due list ({n})',
   未写名字: 'No name',
+  导入名单: 'Import list',
+  '从表格导入学生': 'Import students from a table',
+  导入: 'Import',
+  '把 Excel / 表格里的名单粘进来': 'Paste your roster from Excel / a table',
+  '第一行是表头：姓名、年级、学校、微信、卡点层、班、来源、备注': 'The first row is the header: name, grade, school, WeChat, weak point, class, source, note',
+  '导入了 {n} 个学生': 'Imported {n} students',
 }

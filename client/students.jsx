@@ -1,6 +1,6 @@
 // 学生：线索漏斗 / 学生档案 / 班课 三个 tab。数据都在工作区的 CSV 里。
 import React from 'react'
-import { fetchFeedbackList, fetchLessons, fetchStudentFeedback, fetchStudents, removeFeedback, removeStudentRow, saveStudentFeedback, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
+import { fetchFeedbackList, fetchLessons, fetchStudentFeedback, fetchStudents, importStudents, removeFeedback, removeStudentRow, saveStudentFeedback, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ClassesPanel } from './classes.jsx'
 import { FunnelPanel } from './funnel.jsx'
@@ -176,6 +176,25 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           {classes.map(row => <option key={row.name} value={row.name}>{row.name}</option>)}
         </select>
         <span className="md-grow" />
+        <button type="button" className="md-pill is-small" onClick={() => setDesk({
+          dialog: {
+            title: t('从表格导入学生'),
+            submitLabel: t('导入'),
+            wide: true,
+            fields: [{
+              name: 'raw', label: t('把 Excel / 表格里的名单粘进来'), type: 'textarea', rows: 8,
+              placeholder: t('第一行是表头：姓名、年级、学校、微信、卡点层、班、来源、备注'), required: true,
+            }],
+            onSubmit: values => {
+              importStudents(values.raw)
+                .then(data => {
+                  onChanged?.(data)
+                  toast(t('导入了 {n} 个学生', { n: data.imported }))
+                })
+                .catch(err => toast(err.message, { error: true }))
+            },
+          },
+        })}>{t('导入名单')}</button>
         <button type="button" className="md-pill is-small is-primary" onClick={() => open(null)}><Icon name="plus" size={13} />{t('加学生')}</button>
       </div>
 

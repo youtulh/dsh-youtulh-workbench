@@ -304,6 +304,10 @@ export async function saveStudentRow(student, original = null) {
   return request('students/save', { student, original })
 }
 
+export async function importStudents(raw) {
+  return request('students/import', { raw })
+}
+
 export async function removeStudentRow(name, grade) {
   return request('students/remove', { name, grade })
 }
