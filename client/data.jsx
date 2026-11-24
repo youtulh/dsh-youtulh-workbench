@@ -28,6 +28,7 @@ export function DataView() {
   const [filter, setFilter] = React.useState('all')
   const [tab, setTab] = React.useState('content')
   const [leads, setLeads] = React.useState([])
+  const [bizRange, setBizRange] = React.useState('all')
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -99,6 +100,8 @@ export function DataView() {
     { id: 'published', label: t('已发布'), test: row => row['状态'] === '已发布' },
     { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
   ]
+  const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
+  const scopedLeads = leads.filter(row => bizRange === 'all' || (row.date && row.date >= weekStart))
   const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row))
   const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
 
@@ -124,13 +127,17 @@ export function DataView() {
 
       <div className="md-biz-head">
         <span>{t('私信漏斗（线索表）')}</span>
-        <em>{t('近 7 天新增 {n}', { n: leads.filter(row => row.date && row.date >= dayKey(new Date(Date.now() - 6 * 86400000))).length })}</em>
+        <div className="md-biz-range">
+          {[['all', t('全部')], ['week', t('近 7 天')]].map(([id, label]) => (
+            <button type="button" key={id} className={bizRange === id ? 'is-on' : ''} onClick={() => setBizRange(id)}>{label}</button>
+          ))}
+        </div>
       </div>
       <section className="md-biz-strip">
-        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.length || '—'}</b><span>{t('私信线索')}</span></button>
-        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.filter(row => ['已加微信', '已进群'].includes(row.stage)).length || '—'}</b><span>{t('已加微')}</span></button>
-        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.filter(row => row.stage === '约试听').length || '—'}</b><span>{t('约试听')}</span></button>
-        <button type="button" onClick={() => setDesk({ view: 'students', focusId: null })}><b>{leads.filter(row => row.stage === '已报课').length || '—'}</b><span>{t('报课')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{scopedLeads.length || '—'}</b><span>{t('私信线索')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{scopedLeads.filter(row => ['已加微信', '已进群'].includes(row.stage)).length || '—'}</b><span>{t('已加微')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{scopedLeads.filter(row => row.stage === '约试听').length || '—'}</b><span>{t('约试听')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'students', focusId: null })}><b>{scopedLeads.filter(row => row.stage === '已报课').length || '—'}</b><span>{t('报课')}</span></button>
       </section>
 
       {tab === 'files' ? <WorksPanel /> : (

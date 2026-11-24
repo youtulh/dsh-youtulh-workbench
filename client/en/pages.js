@@ -610,4 +610,5 @@ export const PAGES = {
   复制了联系方式: 'Contact copied',
   复制失败: 'Copy failed',
   '这个环境不能直接复制，去表格里复制吧': 'Clipboard unavailable here — copy from the CSV.',
+  '近 7 天': 'Last 7 days',
 }
