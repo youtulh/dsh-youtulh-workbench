@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats, updateChatRow } from '../src/chat.js'
+import { appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from '../src/chat.js'
 
 const state = { positioning: { subject: '物理', grade: '高二', city: '北京' }, painPoints: ['期中 58 分还能补吗'] }
 const temp = () => mkdtemp(join(tmpdir(), 'workbench-chat-'))
@@ -26,6 +26,26 @@ test('带上下文：把上一轮喂进去，模型顺着聊', () => {
   assert.match(prompt.user, /孩子高二物理 40 分/)
   assert.match(prompt.user, /那多少钱？/)
   assert.doesNotMatch(chatPrompt(state, { channel: '微信', raw: '多少钱' }).user, /前面聊过的/)
+})
+
+test('平台词表：默认有一份、能存能读、自定义词进提示词', async () => {
+  const root = await temp()
+  try {
+    const defaults = readPlatformWords(root)
+    assert.ok(defaults.allow.includes('vx'))
+    assert.ok(defaults.ban.includes('加微信'))
+
+    const saved = writePlatformWords(root, { allow: ['私信', '主页'], ban: ['价格', '手机号'] })
+    assert.deepEqual(saved, { allow: ['私信', '主页'], ban: ['价格', '手机号'] })
+    assert.deepEqual(readPlatformWords(root), saved)
+    assert.match(platformWordsMarkdown(saved), /## 可以出现/)
+
+    const prompt = chatPrompt(state, { channel: '平台私信', raw: '多少钱', words: saved }).system
+    assert.match(prompt, /可以出现：私信、主页/)
+    assert.match(prompt, /不要出现：价格、手机号/)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
 })
 
 test('聊成的案例会进提示词；没案例时不编', () => {

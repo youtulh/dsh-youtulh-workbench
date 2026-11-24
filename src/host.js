@@ -11,7 +11,7 @@ import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
-import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats, updateChatRow } from './chat.js'
+import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from './chat.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -277,6 +277,10 @@ async function route(ctx, store, desk, req, res) {
         stats: { count: rows.length, hits, views, follows: sum('涨粉'), dms, added, per10k, addRate },
         lessons: buildLessonBlock(root),
       })
+    }
+    if (path === 'platform-words') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { ...readPlatformWords(root), file: join(root, LAYOUT.words) })
     }
     if (path === 'chat/records') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -620,15 +624,22 @@ async function route(ctx, store, desk, req, res) {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const cases = chatLessons(root, channel)
+      const words = readPlatformWords(root)
       let result = null
       let from = 'local'
       try {
-        const { text: out } = await callModel(ctx, { ...chatPrompt(state, { channel, raw, history, cases }), maxTokens: 1200, light: true })
+        const { text: out } = await callModel(ctx, { ...chatPrompt(state, { channel, raw, history, cases, words }), maxTokens: 1200, light: true })
         const normalized = normalizeChat(extractJson(out))
         if (normalized.drafts.length) { result = normalized; from = 'model' }
       } catch { /* 没模型就本地兜底 */ }
       if (!result) result = localChat(state, { channel, raw })
       return json(res, 200, { ...result, source: from, channel })
+    }
+    case 'platform-words': {
+      // 平台阶段能说什么、不能说什么：页面里能改，提示词直接读它
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const next = writePlatformWords(root, { allow: body.allow, ban: body.ban })
+      return json(res, 200, next)
     }
     case 'chat/update': {
       // 给一轮对话标结果：成交 / 流失 / 约试听，后面的建议会参考；顺手把线索阶段推上去

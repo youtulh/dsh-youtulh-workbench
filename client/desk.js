@@ -222,6 +222,15 @@ export async function addChatCase(payload) {
   return request('chat/cases', payload)
 }
 
+/** 平台话术词表（可以出现 / 不要出现）。 */
+export async function fetchPlatformWords() {
+  return request('platform-words')
+}
+
+export async function savePlatformWords(payload) {
+  return request('platform-words', payload)
+}
+
 /** 读最近对话和案例。 */
 export async function fetchChatRecords() {
   return request('chat/records')

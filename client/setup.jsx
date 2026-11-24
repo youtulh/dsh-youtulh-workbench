@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { dispatchOps, fetchVoice, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { dispatchOps, fetchPlatformWords, fetchVoice, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -25,10 +25,30 @@ export function SetupView() {
   const [savedAt, setSavedAt] = React.useState('')
   const [voiceText, setVoiceText] = React.useState('')
   const [voiceBusy, setVoiceBusy] = React.useState(false)
+  const [allowText, setAllowText] = React.useState('')
+  const [banText, setBanText] = React.useState('')
+  const [wordsBusy, setWordsBusy] = React.useState(false)
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
+    fetchPlatformWords().then(data => {
+      setAllowText((data.allow ?? []).join('\n'))
+      setBanText((data.ban ?? []).join('\n'))
+    }).catch(() => {})
   }, [])
+
+  const saveWords = async () => {
+    const split = value => value.split(/\n+/).map(row => row.trim()).filter(Boolean).slice(0, 16)
+    setWordsBusy(true)
+    try {
+      const data = await savePlatformWords({ allow: split(allowText), ban: split(banText) })
+      setAllowText((data.allow ?? []).join('\n'))
+      setBanText((data.ban ?? []).join('\n'))
+      markSaved()
+      toast(t('平台词表存好了，下一句会按这个来'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setWordsBusy(false)
+  }
 
   const saveVoiceSamples = async () => {
     const samples = voiceText.split(/\n+/).map(row => row.trim()).filter(Boolean).slice(0, 8)
@@ -181,6 +201,28 @@ export function SetupView() {
           <span className="md-grow" />
           <button type="button" className="md-pill is-small" onClick={saveVoiceSamples} disabled={voiceBusy}>
             {voiceBusy ? t('保存中…') : t('保存原话')}
+          </button>
+        </div>
+      </section>
+
+      <section className="md-setup-card">
+        <h2><span>6</span>{t('平台话术词表')}</h2>
+        <p className="md-setup-hint">{t('只影响平台私信阶段：小红书 / 抖音 / B站里哪些说法可以用、哪些不要出现。一行一个，存进 平台词表.md。')}</p>
+        <div className="md-setup-words">
+          <label className="md-field">
+            <span>{t('可以出现')}</span>
+            <textarea rows={5} value={allowText} onChange={event => setAllowText(event.target.value)} placeholder={'vx\n威信\n私信\n主页'} />
+          </label>
+          <label className="md-field">
+            <span>{t('不要出现')}</span>
+            <textarea rows={5} value={banText} onChange={event => setBanText(event.target.value)} placeholder={'加微信\n微信号\n手机号\n价格'} />
+          </label>
+        </div>
+        <div className="md-setup-samples-foot">
+          <span className="md-muted">{t('改这个文件也一样生效；微信阶段不受这张表限制。')}</span>
+          <span className="md-grow" />
+          <button type="button" className="md-pill is-small" onClick={saveWords} disabled={wordsBusy}>
+            {wordsBusy ? t('保存中…') : t('保存词表')}
           </button>
         </div>
       </section>

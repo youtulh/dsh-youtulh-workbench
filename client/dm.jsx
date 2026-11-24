@@ -105,6 +105,12 @@ export function DmView() {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
   }
 
+  const chatRows = chats.slice().reverse()
+    .filter(row => (chatFilter === 'all' || row.channel === chatFilter) && (!chatPerson || row.name === chatPerson))
+  // 只看一个人时按时间正序，读起来像一条时间线
+  if (chatPerson) chatRows.reverse()
+  const chatLimit = chatPerson ? 50 : 20
+
   const filtered = leads.filter(lead => {
     const pass = (FILTERS.find(row => row.id === filter) ?? FILTERS[0]).test(lead)
     const q = query.trim()
@@ -381,9 +387,7 @@ export function DmView() {
           <p className="md-muted md-dm-empty">{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
         ) : (
           <ul className="md-chat-list">
-            {chats.slice().reverse()
-              .filter(row => (chatFilter === 'all' || row.channel === chatFilter) && (!chatPerson || row.name === chatPerson))
-              .slice(0, 20).map(row => (
+            {chatRows.slice(0, chatLimit).map(row => (
               <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
                 <header>
                   <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
@@ -408,12 +412,14 @@ export function DmView() {
                   }}>
                     {['未定', '加微', '约试听', '成交', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}
                   </select>
-                  <button type="button" className="md-inline-link" onClick={() => setOpenChat(openChat === row.rowIndex ? -1 : row.rowIndex)}>
-                    {openChat === row.rowIndex ? t('收起') : t('看全文')}
-                  </button>
+                  {!chatPerson ? (
+                    <button type="button" className="md-inline-link" onClick={() => setOpenChat(openChat === row.rowIndex ? -1 : row.rowIndex)}>
+                      {openChat === row.rowIndex ? t('收起') : t('看全文')}
+                    </button>
+                  ) : null}
                 </header>
-                <p className="md-chat-preview">{openChat === row.rowIndex ? null : `${row.incoming.slice(0, 40)} → ${row.outgoing.slice(0, 40)}`}</p>
-                {openChat === row.rowIndex ? (
+                {openChat !== row.rowIndex && !chatPerson ? <p className="md-chat-preview">{`${row.incoming.slice(0, 40)} → ${row.outgoing.slice(0, 40)}`}</p> : null}
+                {openChat === row.rowIndex || chatPerson ? (
                   <div className="md-chat-full">
                     <p><b>{t('对方')}</b>{row.incoming}</p>
                     <p><b>{t('我方')}</b>{row.outgoing}</p>

@@ -56,6 +56,23 @@ test('dm/draft 按渠道给不同建议（没模型时本地兜底也要分渠�
   }
 })
 
+test('platform-words：默认能读，改完能存回来', async () => {
+  const { call, cleanup } = await boot()
+  try {
+    const before = await call('GET', 'platform-words')
+    assert.equal(before.status, 200)
+    assert.ok(before.body.allow.includes('vx'))
+    assert.ok(before.body.ban.includes('加微信'))
+
+    const saved = await call('POST', 'platform-words', { allow: ['私信', '主页', 'vx'], ban: ['价格'] })
+    assert.equal(saved.status, 200)
+    assert.deepEqual(saved.body, { allow: ['私信', '主页', 'vx'], ban: ['价格'] })
+    assert.deepEqual((await call('GET', 'platform-words')).body.allow, ['私信', '主页', 'vx'])
+  } finally {
+    await cleanup()
+  }
+})
+
 test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
   const { call, cleanup } = await boot()
   try {
