@@ -93,7 +93,7 @@ test('班课：同名班不能重复，改班名带上学生和课次，名册�
     saveClass(root, { name: 'A 班', total: 8, layers: '化合价,配平' })
     assert.throws(() => saveClass(root, { name: 'A 班' }), /同名/)
     saveStudent(root, { name: '王', grade: '高一', className: 'A 班' })
-    saveLessonRows(root, { className: 'A 班', no: 1, rows: [{ name: '王' }] })
+    saveLessonRows(root, { className: 'A 班', no: 1, rows: [{ name: '王', attend: '到' }] })
 
     saveClass(root, { name: 'B 班', total: 8 }, 'A 班')
     assert.equal(readClasses(root)[0].name, 'B 班')
@@ -125,6 +125,17 @@ test('课次：同班同课次同姓名是覆盖；非法课次拒绝；三态�
     assert.equal(wang.attend, '缺')
     assert.equal(wang.mastery, '会')
     assert.equal(wang.homework, '交')
+
+    // 只点了一半：没点的那个字段留空，不替他记成「会 / 交」
+    const partial = saveLessonRows(root, { className: 'A 班', no: 2, rows: [{ name: '李', attend: '到' }] })
+    const li = partial.find(row => row.name === '李' && row.no === 2)
+    assert.equal(li.attend, '到')
+    assert.equal(li.mastery, '')
+    assert.equal(li.homework, '')
+
+    // 三个都没点 = 还没记：保存时把这条记录清掉，不写假数据
+    const cleared = saveLessonRows(root, { className: 'A 班', no: 2, rows: [{ name: '李' }] })
+    assert.equal(cleared.some(row => row.name === '李' && row.no === 2), false)
 
     assert.throws(() => saveLessonRows(root, { className: 'A 班', no: 3, rows: [] }), /1 到 2/)
     assert.throws(() => saveLessonRows(root, { className: '没这个班', no: 1, rows: [] }), /先建班/)

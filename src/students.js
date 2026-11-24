@@ -20,7 +20,11 @@ const CLASS_FIELDS = { name: '班名', time: '上课时间', total: '总次数',
 const LESSON_FIELDS = { className: '班', no: '课次', date: '日期', name: '姓名', attend: '出勤', mastery: '掌握', homework: '作业', note: '备注', updatedAt: '更新时间' }
 
 const text = (value, max = 80) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
-const pick = (row, allowed) => (allowed.includes(row) ? row : allowed[0])
+// 空值表示「还没记」：不归一成第一个选项，保存时按「清掉这条记录」处理
+const pick = (row, allowed) => {
+  if (row === '' || row === null || row === undefined) return ''
+  return allowed.includes(row) ? row : allowed[0]
+}
 
 /** 分层存成逗号分隔的一行；空项去掉，去重。 */
 export function parseLayers(value) {
@@ -185,12 +189,16 @@ export function saveLessonRows(root, { className, no, date, rows = [] } = {}) {
   for (const row of rows) {
     const name = text(row?.name, 40)
     if (!name || !roster.has(name)) continue
-    const next = {
-      className: target, no: at, date: day, name,
-      attend: pick(row.attend, ATTEND_OPTIONS), mastery: pick(row.mastery, MASTERY_OPTIONS),
-      homework: pick(row.homework, HOMEWORK_OPTIONS), note: text(row.note, 100), updatedAt: stamp,
-    }
+    const attend = pick(row.attend, ATTEND_OPTIONS)
+    const mastery = pick(row.mastery, MASTERY_OPTIONS)
+    const homework = pick(row.homework, HOMEWORK_OPTIONS)
     const found = all.findIndex(item => item.className === target && item.no === at && item.name === name)
+    // 三个都没点 = 还没记：已存在的记录清掉，不落一条假数据
+    if (!attend && !mastery && !homework) {
+      if (found >= 0) all.splice(found, 1)
+      continue
+    }
+    const next = { className: target, no: at, date: day, name, attend, mastery, homework, note: text(row.note, 100), updatedAt: stamp }
     if (found >= 0) all[found] = next
     else all.push(next)
   }

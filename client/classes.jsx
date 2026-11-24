@@ -18,7 +18,8 @@ function groupsOf(roster, layers = []) {
   return groups
 }
 
-const emptyDraft = name => ({ attend: '到', mastery: '会', homework: '交', note: '' })
+// 没点过就是「还没记」：空字符串不落盘，避免把没点的人记成到齐
+const emptyDraft = () => ({ attend: '', mastery: '', homework: '', note: '' })
 
 export function ClassesPanel({ classes, students, lessons = [], onChanged, onLessons }) {
   useLang()
@@ -147,17 +148,22 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
     }
   }
 
-  const setCell = (name, key, value) => setDraft(prev => ({ ...prev, [name]: { ...(prev[name] ?? emptyDraft(name)), [key]: value } }))
+  const setCell = (name, key, value) => setDraft(prev => {
+    const row = prev[name] ?? emptyDraft()
+    return { ...prev, [name]: { ...row, [key]: row[key] === value ? '' : value } }
+  })
   const fillAll = (key, value) => setDraft(prev => Object.fromEntries(Object.entries(prev).map(([name, row]) => [name, { ...row, [key]: value }])))
 
   const saveLesson = async () => {
+    const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft()) }))
+    const recorded = rows.filter(row => row.attend || row.mastery || row.homework).length
+    if (!recorded && savedCount > 0 && !window.confirm(t('这一节还没记人，保存会把原来的记录清掉，继续吗？'))) return
     setBusy('lesson')
     try {
-      const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft(student.name)) }))
       const data = await saveLessons({ class: klass.name, no, date, rows })
       setLessons(data.rows ?? [])
       onLessons?.(klass.name, data.rows ?? [])
-      toast(t('第 {n} 次课记好了', { n: no }))
+      toast(recorded ? t('第 {n} 次课记好了 {m} 人', { n: no, m: recorded }) : t('第 {n} 次课还没记人', { n: no }))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
@@ -223,6 +229,10 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
 
   const groups = groupsOf(roster, klass.layers)
   const savedCount = (lessons ?? []).filter(row => row.no === no).length
+  const draftRecorded = roster.filter(student => {
+    const row = draft[student.name]
+    return Boolean(row && (row.attend || row.mastery || row.homework))
+  }).length
   const recent = [...new Set((lessons ?? []).map(row => row.no))].sort((a, b) => b - a).slice(0, 3).map((value) => {
     const rows = (lessons ?? []).filter(row => row.no === value)
     return {
@@ -342,7 +352,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
             </label>
           </header>
           <div className="md-lesson-quick">
-            <span className="md-muted">{t('这一节已经记过 {n} 人', { n: savedCount })}</span>
+            <span className="md-muted">{t('已记 {n} 人 · 还有 {m} 人没记', { n: draftRecorded, m: Math.max(0, roster.length - draftRecorded) })}</span>
             <span className="md-grow" />
             <button type="button" className="md-inline-link" onClick={() => fillAll('attend', '到')}>{t('全部到齐')}</button>
             <button type="button" className="md-inline-link" onClick={() => fillAll('homework', '交')}>{t('作业全交')}</button>
@@ -351,7 +361,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
             {roster.map(student => {
               const row = draft[student.name] ?? emptyDraft(student.name)
               return (
-                <div key={student.name} className="md-lesson-row">
+                <div key={student.name} className={`md-lesson-row ${row.attend || row.mastery || row.homework ? '' : 'is-empty'}`}>
                   <b>{student.name}</b>
                   {[['attend', ATTEND_OPTIONS], ['mastery', MASTERY_OPTIONS], ['homework', HOMEWORK_OPTIONS]].map(([key, options]) => (
                     <div key={key} className="md-seg" role="group" aria-label={t(key === 'attend' ? '出勤' : key === 'mastery' ? '掌握' : '作业')}>
@@ -365,7 +375,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
             })}
           </div>
           <div className="md-lesson-foot">
-            <span className="md-muted">{t('点一下就换；改完点保存，下次打开会回填。')}</span>
+            <span className="md-muted">{t('点一下就记上，再点一下取消；没点的人不会记成到齐。')}</span>
             <span className="md-grow" />
             <button type="button" className="md-pill is-primary" onClick={saveLesson} disabled={busy === 'lesson'}>
               {busy === 'lesson' ? t('保存中…') : t('保存这次课')}
