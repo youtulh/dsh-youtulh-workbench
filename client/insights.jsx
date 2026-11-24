@@ -1,6 +1,6 @@
 // 数据复盘。
 import React from 'react'
-import { dispatchOps, fetchInsights, learnSkills, openItem, setDesk, toast, useDesk, useMonidReady } from './desk.js'
+import { dispatchOps, fetchInsights, learnSkills, openItem, saveOutput, setDesk, toast, useDesk, useMonidReady } from './desk.js'
 import { ConnectDialog } from './connect.jsx'
 import { EN } from './en/index.js'
 import { lang, plural, t, useLang } from './i18n.js'
@@ -181,11 +181,24 @@ export function InsightsView() {
   const best = data.top[0]
   const bestItem = best && items.find(i => i.id === best.id)
   const heroPic = bestItem && posterOf(displayItem(bestItem))
+  const exportFunnel = async () => {
+    const head = '内容,播放,私信,加微,约试听'
+    const cell = value => `"${String(value ?? 0).replace(/"/g, '""')}"`
+    const rows = (data?.byLeads ?? []).map(row => [row.title, row.views, row.dms, row.adds, row.trials].map(cell).join(','))
+    try {
+      const result = await saveOutput({ kind: 'data', title: `复盘 ${dayKey(new Date())}`, content: [head, ...rows].join('\n'), formats: ['csv'] })
+      toast(t('已导出到 {dir}', { dir: result.dir }))
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+  }
+
   const actions = (
     <div className="md-hero-actions">
       <button type="button" className="md-pill is-primary" onClick={() => addMetric(items)}><Icon name="plus" size={14} />{t('录入数据')}</button>
       <button type="button" className="md-pill" onClick={importCsv}><Icon name="upload" size={14} />{t('粘贴 CSV')}</button>
       {/* 账号自动导入要有 Monid，没装的人不该看到一条走不通的路 */}
+      <button type="button" className="md-pill" onClick={exportFunnel}><Icon name="save" size={14} />{t('导出数据')}</button>
       {monidReady ? <button type="button" className="md-pill" onClick={() => setConnecting(true)}><Icon name="user" size={14} />{t('导入账号数据')}</button> : null}
     </div>
   )

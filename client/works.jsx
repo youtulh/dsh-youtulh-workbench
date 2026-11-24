@@ -1,6 +1,6 @@
 // 我的产出：直接列工作区里的真实文件，不做二次索引。用户在 Finder 里怎么改，这里就怎么显示。
 import React from 'react'
-import { fetchTree, fetchWorkspace, revealDir, setDesk, toast } from './desk.js'
+import { fetchTree, fetchWorkspace, fetchWorkspaceFile, revealDir, setDesk, toast } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { fmtWhen } from './util.js'
@@ -11,6 +11,18 @@ export function WorksView() {
   useLang()
   const [tree, setTree] = React.useState(null)
   const [info, setInfo] = React.useState(null)
+  const [preview, setPreview] = React.useState(null)
+  const view = async (item) => {
+    if (preview?.dir === item.dir) return setPreview(null)
+    const textFile = item.files.find(file => /\.(md|txt|csv)$/i.test(file.name))
+    if (!textFile) return toast(t('这份只有 Word，点「在文件夹里打开」看'))
+    try {
+      const text = await fetchWorkspaceFile(item.dir, textFile.name)
+      setPreview({ dir: item.dir, name: textFile.name, text })
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+  }
 
   const load = () => Promise.all([fetchTree(), fetchWorkspace()]).then(([nextTree, nextInfo]) => {
     setTree(nextTree)
@@ -60,8 +72,10 @@ export function WorksView() {
                   ))}
                 </div>
                 <div className="md-work-actions">
+                  <button type="button" className="md-inline-link" onClick={() => view(item)}>{preview?.dir === item.dir ? t('收起正文') : t('看正文')}</button>
                   <button type="button" className="md-inline-link" onClick={() => revealDir(item.dir).catch(err => toast(err.message, { error: true }))}>{t('在文件夹里打开')}</button>
                 </div>
+                {preview?.dir === item.dir ? <pre className="md-work-content">{preview.text}</pre> : null}
               </li>
             ))}
           </ul>

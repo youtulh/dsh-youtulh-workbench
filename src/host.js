@@ -1,12 +1,11 @@
 // dsh-youtulh-workbench host 半片：/media-desk/* 接口、文件服务和模型调用。
 import { createReadStream } from 'node:fs'
 import { execFile } from 'node:child_process'
-import { stat, writeFile } from 'node:fs/promises'
+import { readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
-import { addWork, listWorks, removeWork } from './works.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readLeads, readSettingsMarkdown, resolveRoot, writeSettingsMarkdown } from './workspace.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
@@ -347,10 +346,21 @@ async function route(ctx, store, desk, req, res) {
       })
     }
     if (path === 'insights') return json(res, 200, computeInsights(await store.read()))
-    if (path === 'works') return json(res, 200, { works: listWorks() })
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
       return json(res, 200, { leads: readLeads(resolveRoot(settings.saveRoot)) })
+    }
+    if (path === 'workspace/file') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const dir = path_resolve(String(url.searchParams.get('dir') ?? root))
+      const name = String(url.searchParams.get('name') ?? '')
+      if (!dir.startsWith(root) || !/^[\w\u4e00-\u9fa5. -]{1,80}$/.test(name)) return json(res, 400, { error: tr('路径无效') })
+      try {
+        const text = await readFile(join(dir, name), 'utf8')
+        return json(res, 200, { text: text.slice(0, 60000) })
+      } catch {
+        return json(res, 404, { error: tr('读不到这个文件') })
+      }
     }
     if (path === 'workspace/tree') {
       const settings = await desk.settings.read()
@@ -433,16 +443,9 @@ async function route(ctx, store, desk, req, res) {
       const kind = String(body.kind ?? 'script')
       const sub = kind === 'dm' ? LAYOUT.dm : kind === 'data' ? LAYOUT.data : LAYOUT.content
       const title = `${dayStamp()} ${folderName(rawTitle)}`
-      const saved = await savePiece({ dir: join(root, sub), title, text: content })
-      const work = addWork({ kind, title: rawTitle, summary: String(body.summary ?? '').slice(0, 120), dir: saved.dir, files: saved.files, content })
-      return json(res, 200, { work, dir: saved.dir, files: saved.files })
-    }
-    case 'output/reveal': {
-      const work = listWorks().find(row => row.id === body.id)
-      const path = work?.dir ?? resolveRoot((await desk.settings.read()).saveRoot)
-      const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
-      execFile(command, [path], () => {})
-      return json(res, 200, { path })
+      const formats = Array.isArray(body.formats) && body.formats.length ? body.formats : (kind === 'data' ? ['csv'] : ['docx', 'md'])
+      const saved = await savePiece({ dir: join(root, sub), title, text: content, formats })
+      return json(res, 200, { dir: saved.dir, files: saved.files, summary: String(body.summary ?? '').slice(0, 120) })
     }
     case 'workspace/reveal': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -451,10 +454,6 @@ async function route(ctx, store, desk, req, res) {
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
       execFile(command, [dir], () => {})
       return json(res, 200, { path: dir })
-    }
-    case 'works/remove': {
-      const removed = removeWork(String(body.id ?? ''))
-      return json(res, 200, { removed })
     }
     case 'dm': {
       // 回私信分诊：有模型就用模型判断，模型不可用时退回规则兜底，不让按钮转圈

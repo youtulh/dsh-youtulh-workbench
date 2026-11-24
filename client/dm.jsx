@@ -1,7 +1,7 @@
 // 回私信的分诊台：粘一条私信 → 判断是谁、问什么 → 两条草稿 → 台账落表。
 // 这不是聊天窗，是分诊台：先判断，再给话。话术是原句，肖月改两个词就能发。
 import React from 'react'
-import { dispatchOps, fetchLeads, revealDir, toast, triageDm, useDesk } from './desk.js'
+import { dispatchOps, fetchLeads, revealDir, saveOutput, toast, triageDm, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { fmtDate } from './util.js'
@@ -58,6 +58,23 @@ export function DmView() {
       toast(err.message, { error: true })
     }
     setBusy(false)
+  }
+
+  const saveWord = async () => {
+    if (!verdict || !ledger) return
+    const content = [
+      `【私信原文】\n${raw.trim()}`,
+      `【判断】${verdict.type} · ${verdict.category}`,
+      verdict.drafts?.length ? `【两条话术】\n1. ${verdict.drafts[0] ?? ''}${verdict.drafts[1] ? `\n2. ${verdict.drafts[1]}` : ''}` : '',
+      `【台账】\n姓名：${ledger.name || '—'}｜年级：${ledger.grade || '—'}｜学校：${ledger.school || '—'}\n卡点：${ledger.painPoint || '—'}｜来源：${ledger.source || '—'}｜下一步：${ledger.next || '—'}`,
+      verdict.note ? `【提醒】${verdict.note}` : '',
+    ].filter(Boolean).join('\n\n')
+    try {
+      const result = await saveOutput({ kind: 'dm', title: ledger.name || `私信 ${raw.trim().slice(0, 12)}`, content })
+      toast(t('已保存到 {dir}', { dir: result.dir }))
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
   }
 
   const save = () => {
@@ -156,6 +173,7 @@ export function DmView() {
             <div className="md-dm-actions">
               <span className="md-muted">{used ? t('发出去的那条已选') : t('还没选发哪条草稿')}</span>
               <span className="md-grow" />
+              <button type="button" className="md-pill" onClick={saveWord}><Icon name="save" size={14} />{t('保存成 Word')}</button>
               <button type="button" className="md-pill" onClick={() => { setVerdict(null); setLedger(null) }}>{t('丢掉')}</button>
               <button type="button" className="md-pill is-primary" onClick={save}><Icon name="save" size={14} />{t('存进线索表')}</button>
             </div>

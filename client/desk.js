@@ -104,8 +104,17 @@ export async function runProduce(id, { withImages } = {}) {
 }
 
 /** 把一份产出写成本地文件并登记进产出库。 */
-export async function saveOutput({ kind, title, content, summary }) {
-  return request('output/save', { kind, title, content, summary })
+export async function saveOutput({ kind, title, content, summary, formats }) {
+  return request('output/save', { kind, title, content, summary, formats })
+}
+
+/** 读工作区里的一个文本文件（预览正文用）。 */
+export async function fetchWorkspaceFile(dir, name) {
+  const query = `?dir=${encodeURIComponent(dir)}&name=${encodeURIComponent(name)}`
+  const res = await fetch(BASE + 'workspace/file' + query, { headers: { 'x-media-desk-lang': lang() } })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || t('请求失败（{status}）', { status: res.status }))
+  return data.text ?? ''
 }
 
 /** 工作区路径信息（根目录、设定文件、线索表）。 */
@@ -128,22 +137,6 @@ export async function revealDir(dir) {
 export async function fetchTree() {
   const data = await request('workspace/tree')
   return data.tree ?? []
-}
-
-/** 拉产出库列表。 */
-export async function fetchWorks() {
-  const data = await request('works')
-  return data.works ?? []
-}
-
-/** 在 Finder 里打开这份产出（不带 id 就打开导出根目录）。 */
-export async function revealOutput(id) {
-  return request('output/reveal', { id })
-}
-
-/** 从产出库删掉一条登记（不删文件）。 */
-export async function removeOutput(id) {
-  return request('works/remove', { id })
 }
 
 /** 做内容：给一句话，拿回 { creative, engine }。 */
