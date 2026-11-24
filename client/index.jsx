@@ -1,6 +1,5 @@
 // dsh-youtulh-workbench 浏览器半片：侧栏入口 + main 全局面板。
 import React from 'react'
-import { ChatDock } from './chat.jsx'
 import { CreateView } from './create.jsx'
 import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { DataView } from './data.jsx'
@@ -9,9 +8,7 @@ import { setAppCtx } from './launch.js'
 import { SetupView } from './setup.jsx'
 import { WorksView } from './works.jsx'
 import { WelcomeView } from './welcome.jsx'
-import { ModelButton, ModelPicker } from './modelpick.jsx'
 import { SettingsDialog } from './settings.jsx'
-import { Studio } from './studio.jsx'
 import css from './styles.css'
 import { lang, subscribeLang, t, useLang } from './i18n.js'
 import { updateUrl, useVersionInfo } from './version.js'
@@ -179,23 +176,18 @@ function Desk() {
           <span style={{ flex: 1 }} />
           {ready ? <SampleBadge /> : null}
           {canUndo ? <IconButton icon="undo" label={t('撤销上一步')} onClick={undo} /> : null}
-          {ready ? <ModelButton /> : null}
           {ready ? <UpdateBadge /> : null}
           <IconButton icon="gear" label={t('设置')} onClick={() => setDesk({ settingsOpen: true })} />
-          {showDock ? null : <button type="button" className="md-open-dock" onClick={() => setDesk({ dockOpen: true })}><Icon name="chat" size={15} />{t('助手')}</button>}
         </header>
         <main className="md-content" key={view}>
           {error ? (
             <div className="md-page"><p className="md-muted">{t('工作台加载失败：{error}', { error })}</p><button type="button" className="md-btn" onClick={loadDesk}>{t('重试')}</button></div>
           ) : ready ? <Active /> : <div className="md-loading"><span className="md-shimmer">{t('正在铺开灵感…')}</span></div>}
         </main>
-        {ready ? <Studio /> : null}
       </div>
-      {ready && showDock ? <ChatDock /> : null}
       {ready ? <CaptureDialog /> : null}
       <FormDialog />
       {ready ? <SettingsDialog /> : null}
-      {ready ? <ModelPicker /> : null}
       <Toast />
     </div>
   )

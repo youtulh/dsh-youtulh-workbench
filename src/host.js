@@ -1,5 +1,5 @@
 // dsh-youtulh-workbench host 半片：/media-desk/* 接口、文件服务和模型调用。
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve as path_resolve } from 'node:path'
@@ -307,7 +307,10 @@ async function route(ctx, store, desk, req, res) {
       let state = await store.read()
       // 用户可能在编辑器里直接改了「我的设定.md」：文件优先，读进来盖掉状态
       try {
-        const fromFile = readSettingsMarkdown(resolveRoot((await desk.settings.read()).saveRoot))
+        const root = resolveRoot((await desk.settings.read()).saveRoot)
+        // 老用户升级上来时 md 可能还不存在：先补写一份，agent 读到才有依据
+        if (!existsSync(join(root, LAYOUT.settings))) writeSettingsMarkdown(root, state.positioning ?? {}, state.painPoints ?? [])
+        const fromFile = readSettingsMarkdown(root)
         if (fromFile) {
           const same = JSON.stringify(fromFile.positioning) === JSON.stringify(state.positioning)
             && JSON.stringify(fromFile.painPoints) === JSON.stringify(state.painPoints)

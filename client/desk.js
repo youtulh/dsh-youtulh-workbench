@@ -1,6 +1,5 @@
 // 浏览器侧的状态：Host 状态的本地镜像，加上只属于界面的选中、视图等。
 import React from 'react'
-import { coverDataUrl } from './cover.js'
 import { lang, plural, setLanguagePreference, t } from './i18n.js'
 
 const BASE = 'media-desk/'
@@ -276,19 +275,6 @@ export async function sendChat(text) {
     await loadDesk()
   } finally {
     setDesk({ thinking: false })
-  }
-}
-
-export async function saveProduced(id) {
-  try {
-    const production = snapshot.state.items.find(row => row.id === id)?.production
-    // 视频封面在浏览器里合成，一起存进文件夹
-    const videoCover = await coverDataUrl({ src: production.cover?.src, text: production.coverText || production.title }).catch(() => undefined)
-    const data = await request('produce/save', { id, videoCover })
-    setDesk({ state: data.state })
-    toast(data.backups?.length ? t('已保存到 {path}。你在文件夹里改过的稿子另存成了 {names}', { path: data.path, names: data.backups.join(lang() === 'en' ? ', ' : '、') }) : t('已保存到 {path}', { path: data.path }))
-  } catch (err) {
-    report(err)
   }
 }
 
