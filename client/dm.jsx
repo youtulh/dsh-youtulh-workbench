@@ -17,21 +17,28 @@ const FILTERS = [
 
 const EMPTY_FIELDS = { name: '', grade: '', school: '', painPoint: '', source: '' }
 
+// 切到别的页面再回来，粘了一半的消息和建议不要丢（只在当前会话里记得）
+const DM_DRAFT = {
+  raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
+  fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
+  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns',
+}
+
 export function DmView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const summary = profileSummary({ positioning, painPoints: pains })
   const [root, setRoot] = React.useState('')
-  const [raw, setRaw] = React.useState('')
-  const [channel, setChannel] = React.useState('平台私信')
-  const [history, setHistory] = React.useState('')
+  const [raw, setRaw] = React.useState(DM_DRAFT.raw)
+  const [channel, setChannel] = React.useState(DM_DRAFT.channel)
+  const [history, setHistory] = React.useState(DM_DRAFT.history)
   const [busy, setBusy] = React.useState('')
-  const [result, setResult] = React.useState(null)
-  const [chosen, setChosen] = React.useState(0)
-  const [fields, setFields] = React.useState(EMPTY_FIELDS)
-  const [draftText, setDraftText] = React.useState('')
-  const [stage, setStage] = React.useState('私信')
+  const [result, setResult] = React.useState(DM_DRAFT.result)
+  const [chosen, setChosen] = React.useState(DM_DRAFT.chosen)
+  const [fields, setFields] = React.useState(DM_DRAFT.fields)
+  const [draftText, setDraftText] = React.useState(DM_DRAFT.draftText)
+  const [stage, setStage] = React.useState(DM_DRAFT.stage)
   const [leads, setLeads] = React.useState([])
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState('all')
@@ -41,12 +48,16 @@ export function DmView() {
   const [chats, setChats] = React.useState([])
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
-  const [chatFilter, setChatFilter] = React.useState('all')
-  const [chatPerson, setChatPerson] = React.useState('')
-  const [chatResult, setChatResult] = React.useState('all')
-  const [chatView, setChatView] = React.useState('turns')
+  const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
+  const [chatPerson, setChatPerson] = React.useState(DM_DRAFT.chatPerson)
+  const [chatResult, setChatResult] = React.useState(DM_DRAFT.chatResult)
+  const [chatView, setChatView] = React.useState(DM_DRAFT.chatView)
   const dmPerson = useDesk(s => s.dmPerson)
   const [openChat, setOpenChat] = React.useState(-1)
+
+  React.useEffect(() => {
+    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView })
+  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 

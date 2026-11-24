@@ -57,7 +57,14 @@ export function SetupView() {
       if (top) setActiveSection(top.target.id)
     }, { rootMargin: '-90px 0px -60% 0px', threshold: [0, 0.2, 0.5] })
     els.forEach(el => observer.observe(el))
-    return () => observer.disconnect()
+    // 滚到最底部时，最后一节（定位体检）可能进不了观察区，单独兜一下
+    const scroller = document.querySelector('.md-page')
+    const onScroll = () => {
+      if (!scroller) return
+      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 24) setActiveSection(SECTIONS[SECTIONS.length - 1][0])
+    }
+    scroller?.addEventListener('scroll', onScroll, { passive: true })
+    return () => { observer.disconnect(); scroller?.removeEventListener('scroll', onScroll) }
   }, [])
 
   const saveWords = async () => {
