@@ -1,6 +1,6 @@
 // 学生：线索漏斗 / 学生档案 / 班课 三个 tab。数据都在工作区的 CSV 里。
 import React from 'react'
-import { fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast } from './desk.js'
+import { fetchLessons, fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ClassesPanel } from './classes.jsx'
 import { FunnelPanel } from './funnel.jsx'
@@ -17,9 +17,14 @@ export function StudentsView() {
   const [tab, setTab] = React.useState('funnel')
   const [students, setStudents] = React.useState(null)
   const [classes, setClasses] = React.useState([])
+  const [lessons, setLessons] = React.useState([])
 
-  const load = () => fetchStudents()
-    .then(data => { setStudents(data.students ?? []); setClasses(data.classes ?? []) })
+  const load = () => Promise.all([fetchStudents(), fetchLessons('')])
+    .then(([data, rows]) => {
+      setStudents(data.students ?? [])
+      setClasses(data.classes ?? [])
+      setLessons(rows)
+    })
     .catch(err => toast(err.message, { error: true }))
   React.useEffect(() => { load() }, [])
 
@@ -27,6 +32,10 @@ export function StudentsView() {
     if (data?.students) setStudents(data.students)
     if (data?.classes) setClasses(data.classes)
   }
+
+  // 某个班改完课次，只替换这个班的行，别把别的班冲掉
+  const onLessons = (className, rows) => setLessons(prev => [...prev.filter(row => row.className !== className), ...rows])
+  const unassigned = (students ?? []).filter(row => !row.className).length
 
   return (
     <div className="md-page md-students">
@@ -40,6 +49,15 @@ export function StudentsView() {
         </button>
       </header>
 
+      {students ? (
+        <section className="md-student-summary">
+          <div><b>{classes.length}</b><span>{t('个班')}</span></div>
+          <div><b>{students.length}</b><span>{t('个学生')}</span></div>
+          <div><b>{unassigned}</b><span>{t('还没排班')}</span></div>
+          <div><b>{lessons.length}</b><span>{t('条课次记录')}</span></div>
+        </section>
+      ) : null}
+
       <div className="md-content-tabs">
         {TABS.map(item => (
           <button type="button" key={item.id} className={tab === item.id ? 'is-on' : ''} onClick={() => setTab(item.id)}>
@@ -52,7 +70,7 @@ export function StudentsView() {
 
       {tab === 'funnel' ? <FunnelPanel students={students ?? []} onChanged={onChanged} /> : null}
       {tab === 'roster' ? <RosterPanel students={students} classes={classes} onChanged={onChanged} /> : null}
-      {tab === 'classes' ? <ClassesPanel classes={classes} students={students ?? []} onChanged={onChanged} /> : null}
+      {tab === 'classes' ? <ClassesPanel classes={classes} students={students ?? []} lessons={lessons} onChanged={onChanged} onLessons={onLessons} /> : null}
     </div>
   )
 }

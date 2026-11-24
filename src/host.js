@@ -654,12 +654,14 @@ async function route(ctx, store, desk, req, res) {
       const lead = readLeads(root).find(row => row.rowIndex === index)
       if (!lead) return json(res, 404, { error: tr('没找到这条线索') })
       const students = readStudents(root)
-      const name = String(lead.name ?? '').trim() || String(lead.grade ?? '').trim() || '家长'
+      const name = String(lead.name ?? '').trim()
       const grade = String(lead.grade ?? '').trim()
-      const exists = students.find(row => row.name === name && row.grade === grade)
+      if (!name && !grade) return json(res, 400, { error: tr('先补上家长称呼或孩子年级，再转成学生') })
+      const studentName = name || grade
+      const exists = students.find(row => row.name === studentName && row.grade === grade)
       if (!exists) {
         saveStudent(root, {
-          name, grade, school: lead.school, source: lead.source, enrolledAt: dayStamp(),
+          name: studentName, grade, school: lead.school, source: lead.source, enrolledAt: dayStamp(),
           note: lead.painPoint ? `卡点：${lead.painPoint}` : '',
         })
       }

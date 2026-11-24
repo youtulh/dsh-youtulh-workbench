@@ -20,7 +20,7 @@ function groupsOf(roster, layers = []) {
 
 const emptyDraft = name => ({ attend: '到', mastery: '会', homework: '交', note: '' })
 
-export function ClassesPanel({ classes, students, onChanged }) {
+export function ClassesPanel({ classes, students, lessons = [], onChanged, onLessons }) {
   useLang()
   const [selected, setSelected] = React.useState('')
   const klass = classes.find(row => row.name === selected)
@@ -62,6 +62,7 @@ export function ClassesPanel({ classes, students, onChanged }) {
           <ul className="md-class-list">
             {classes.map(row => {
               const roster = classRoster(students, row.name)
+              const done = new Set(lessons.filter(item => item.className === row.name).map(item => item.no)).size
               return (
                 <li key={row.name}>
                   <button type="button" className="md-class-card" onClick={() => setSelected(row.name)}>
@@ -69,7 +70,7 @@ export function ClassesPanel({ classes, students, onChanged }) {
                     <small>{row.time || t('还没填上课时间')}</small>
                     <span className="md-class-meta">
                       <span>{t('{n} 人', { n: roster.length })}</span>
-                      <span>{t('共 {n} 次课', { n: row.total })}</span>
+                      <span>{done ? t('已上 {done}/{total} 次', { done, total: row.total }) : t('共 {n} 次课', { n: row.total })}</span>
                     </span>
                     {row.layers.length ? <span className="md-layer-chips">{row.layers.map(layer => <em key={layer}>{layer}</em>)}</span> : null}
                   </button>
@@ -85,16 +86,16 @@ export function ClassesPanel({ classes, students, onChanged }) {
   return (
     <ClassDetail
       klass={klass}
-      classes={classes}
       students={students}
       onChanged={onChanged}
+      onLessons={onLessons}
       onBack={() => setSelected('')}
       onRenamed={(name) => setSelected(name)}
     />
   )
 }
 
-function ClassDetail({ klass, classes, students, onChanged, onBack, onRenamed }) {
+function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed }) {
   useLang()
   const roster = classRoster(students, klass.name)
   const rosterKey = roster.map(row => row.name).join('|')
@@ -105,7 +106,7 @@ function ClassDetail({ klass, classes, students, onChanged, onBack, onRenamed })
   const [busy, setBusy] = React.useState('')
 
   const loadLessons = React.useCallback(() => fetchLessons(klass.name)
-    .then(rows => setLessons(rows))
+    .then(rows => { setLessons(rows); onLessons?.(klass.name, rows) })
     .catch(err => toast(err.message, { error: true })), [klass.name])
   React.useEffect(() => { setLessons(null); loadLessons() }, [loadLessons])
 
@@ -154,6 +155,7 @@ function ClassDetail({ klass, classes, students, onChanged, onBack, onRenamed })
       const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft(student.name)) }))
       const data = await saveLessons({ class: klass.name, no, date, rows })
       setLessons(data.rows ?? [])
+      onLessons?.(klass.name, data.rows ?? [])
       toast(t('第 {n} 次课记好了', { n: no }))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -220,6 +222,16 @@ function ClassDetail({ klass, classes, students, onChanged, onBack, onRenamed })
 
   const groups = groupsOf(roster, klass.layers)
   const savedCount = (lessons ?? []).filter(row => row.no === no).length
+  const recent = [...new Set((lessons ?? []).map(row => row.no))].sort((a, b) => b - a).slice(0, 3).map((value) => {
+    const rows = (lessons ?? []).filter(row => row.no === value)
+    return {
+      no: value,
+      date: rows.find(row => row.date)?.date ?? '',
+      missed: rows.filter(row => row.attend === '缺').length,
+      homeworkMissing: rows.filter(row => row.homework === '未交').length,
+    }
+  })
+  const lastOf = (student) => (lessons ?? []).filter(row => row.name === student.name).sort((a, b) => b.no - a.no)[0]
 
   return (
     <div className="md-class-detail">
@@ -268,6 +280,7 @@ function ClassDetail({ klass, classes, students, onChanged, onBack, onRenamed })
                     {klass.layers.map(layer => <option key={layer} value={layer}>{t(layer)}</option>)}
                   </select>
                   <span className="md-roster-progress">{t('已上 {done}/{total}', { done: state.done, total: klass.total })}</span>
+                  {lastOf(student) ? <span className="md-roster-last">{t('第 {n} 次：{m}', { n: lastOf(student).no, m: lastOf(student).mastery || t('还没记') })}</span> : null}
                   {state.missed ? <span className="md-roster-warn">{t('缺 {n} 次', { n: state.missed })}</span> : null}
                   {state.homeworkMissing ? <span className="md-roster-warn">{t('作业 {n} 次没交', { n: state.homeworkMissing })}</span> : null}
                   <span className="md-grow" />
@@ -278,6 +291,23 @@ function ClassDetail({ klass, classes, students, onChanged, onBack, onRenamed })
           </ul>
         )}
       </section>
+
+      {recent.length ? (
+        <section className="md-tile">
+          <header className="md-tile-head"><b>{t('最近几次课')}</b><span className="md-grow" /><span className="md-muted">{t('缺课和作业没交，一眼能看到')}</span></header>
+          <ul className="md-lesson-recent">
+            {recent.map(row => (
+              <li key={row.no}>
+                <b>{t('第 {n} 次', { n: row.no })}</b>
+                <span className="md-muted">{row.date || t('没填日期')}</span>
+                <span className="md-grow" />
+                {row.missed ? <em>{t('缺 {n} 人', { n: row.missed })}</em> : <em className="is-ok">{t('都到了')}</em>}
+                {row.homeworkMissing ? <em>{t('作业没交 {n} 人', { n: row.homeworkMissing })}</em> : <em className="is-ok">{t('作业都交了')}</em>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {roster.length ? (
         <section className="md-tile md-lesson">

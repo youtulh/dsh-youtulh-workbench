@@ -138,6 +138,11 @@ export function FunnelPanel({ students = [], onChanged }) {
                       <div className="md-pipeline-more" onClick={event => event.stopPropagation()}>
                         {lead.raw ? <p className="md-muted">{t('原话：{raw}', { raw: lead.raw })}</p> : null}
                         {lead.next ? <p className="md-muted">{t('下一步：{next}', { next: lead.next })}</p> : null}
+                        <div className="md-pipeline-edit">
+                          <input defaultValue={lead.name || ''} placeholder={t('家长称呼')} onBlur={event => { if (event.target.value !== (lead.name || '')) save(lead, { name: event.target.value }) }} />
+                          <input defaultValue={lead.grade || ''} placeholder={t('年级')} onBlur={event => { if (event.target.value !== (lead.grade || '')) save(lead, { grade: event.target.value }) }} />
+                          <input className="is-wide" defaultValue={lead.painPoint || ''} placeholder={t('卡点')} onBlur={event => { if (event.target.value !== (lead.painPoint || '')) save(lead, { painPoint: event.target.value }) }} />
+                        </div>
                         <label className="md-pipeline-follow-edit">
                           <span>{t('下次跟进')}</span>
                           <input type="date" value={lead.nextAt || ''} onChange={event => save(lead, { nextAt: event.target.value })} />
