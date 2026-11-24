@@ -141,8 +141,9 @@ export function DmView() {
     if (!dmPerson) return
     setChatPerson(dmPerson)
     setChatView('turns')
-    // 从线索/漏斗过来时，顺手把名字填进台账，记一笔就不会丢名字
-    setFields(prev => ({ ...prev, name: prev.name || dmPerson }))
+    // 从线索/漏斗过来时，顺手把名字填进台账；换了人就覆盖，别把记录挂到上一个人名下
+    setFields(prev => ({ ...prev, name: dmPerson }))
+    setHistory('')
     setDesk({ dmPerson: '' })
     requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }, [dmPerson])
