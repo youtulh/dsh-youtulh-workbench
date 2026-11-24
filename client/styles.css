@@ -1702,3 +1702,15 @@ body[data-ds-dark-theme] .md-root {
 .md-chat-stats em { padding: 1px 7px; border-radius: 999px; font-style: normal; font-size: 11px; line-height: 18px; }
 .md-chat-stats em.is-won { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
 .md-chat-stats em.is-lost { background: var(--hover); color: var(--ink3); }
+
+/* 最近对话：按结果筛 + 时间线里改下一步 */
+.md-chat-result-filter { padding: 3px 8px; border: .5px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12px; }
+.md-chat-lead { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 6px; border-top: .5px solid var(--hairline); color: var(--ink3); font-size: 11.5px; }
+.md-chat-lead label { display: inline-flex; align-items: center; gap: 5px; }
+.md-chat-lead b { font-weight: 400; }
+.md-chat-lead input { width: 12em; padding: 3px 7px; border: .5px solid var(--line); border-radius: var(--r-xs); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12px; }
+@media (max-width: 640px) {
+  .md-chat-stats { flex-basis: 100%; }
+  .md-chat-row > header { gap: 6px; }
+  .md-chat-lead input { width: 100%; }
+}

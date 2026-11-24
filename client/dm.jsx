@@ -41,6 +41,7 @@ export function DmView() {
   const [chats, setChats] = React.useState([])
   const [chatFilter, setChatFilter] = React.useState('all')
   const [chatPerson, setChatPerson] = React.useState('')
+  const [chatResult, setChatResult] = React.useState('all')
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
@@ -108,8 +109,11 @@ export function DmView() {
   const chatStats = ['成交', '约试听', '加微', '流失']
     .map(result => ({ result, n: chats.filter(row => row.result === result).length }))
     .filter(item => item.n > 0)
+  const leadOf = name => (name ? leads.find(row => row.name === name) : null)
   const chatRows = chats.slice().reverse()
-    .filter(row => (chatFilter === 'all' || row.channel === chatFilter) && (!chatPerson || row.name === chatPerson))
+    .filter(row => (chatFilter === 'all' || row.channel === chatFilter)
+      && (chatResult === 'all' || (row.result || '未定') === chatResult)
+      && (!chatPerson || row.name === chatPerson))
   // 只看一个人时按时间正序，读起来像一条时间线
   if (chatPerson) chatRows.reverse()
   const chatLimit = chatPerson ? 50 : 20
@@ -380,6 +384,11 @@ export function DmView() {
             </span>
           ) : null}
           <span className="md-grow" />
+          <select className="md-chat-result-filter" value={chatResult} onChange={event => setChatResult(event.target.value)}>
+            {[['all', '全部结果'], ['未定', '未定'], ['成交', '成交'], ['约试听', '约试听'], ['加微', '加微'], ['流失', '流失']].map(([id, label]) => (
+              <option key={id} value={id}>{t(label)}</option>
+            ))}
+          </select>
           <div className="md-lead-tabs">
             {[['all', '全部'], ['平台私信', '平台私信'], ['微信', '微信']].map(([id, label]) => (
               <button type="button" key={id} className={chatFilter === id ? 'is-on' : ''} onClick={() => setChatFilter(id)}>{t(label)}</button>
@@ -435,6 +444,25 @@ export function DmView() {
                     <p><b>{t('对方')}</b>{row.incoming}</p>
                     <p><b>{t('我方')}</b>{row.outgoing}</p>
                     <button type="button" className="md-inline-link" onClick={() => copy(row.outgoing)}>{t('复制我方这句')}</button>
+                    {leadOf(row.name) ? (
+                      <div className="md-chat-lead">
+                        <span>{t('线索阶段：{stage}', { stage: t(leadOf(row.name).stage || '私信') })}</span>
+                        <label>
+                          <b>{t('下一步')}</b>
+                          <input
+                            defaultValue={leadOf(row.name).next || ''}
+                            placeholder={t('周四晚 8 点试听')}
+                            onBlur={event => {
+                              const lead = leadOf(row.name)
+                              if (event.target.value === (lead.next || '')) return
+                              updateLead(lead.rowIndex, { next: event.target.value })
+                                .then(data => { if (data.leads) setLeads(data.leads); toast(t('下一步存好了')) })
+                                .catch(err => toast(err.message, { error: true }))
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </li>
