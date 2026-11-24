@@ -31,6 +31,8 @@ export function StudentsView() {
   const onChanged = (data) => {
     if (data?.students) setStudents(data.students)
     if (data?.classes) setClasses(data.classes)
+    // 学生/班变了，课次记录可能被级联改过（改名、移出、删班），重新拉一遍，别让进度停在旧数据
+    if (data?.students || data?.classes) fetchLessons('').then(setLessons).catch(() => {})
   }
 
   // 某个班改完课次，只替换这个班的行，别把别的班冲掉

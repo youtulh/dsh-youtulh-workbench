@@ -44,6 +44,7 @@ export function DmView() {
   const [chatFilter, setChatFilter] = React.useState('all')
   const [chatPerson, setChatPerson] = React.useState('')
   const [chatResult, setChatResult] = React.useState('all')
+  const [chatView, setChatView] = React.useState('turns')
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
@@ -132,6 +133,21 @@ export function DmView() {
     .map(result => ({ result, n: chats.filter(row => row.result === result).length }))
     .filter(item => item.n > 0)
   const leadOf = name => (name ? leads.find(row => row.name === name) : null)
+  const people = (() => {
+    const map = new Map()
+    for (const row of chats) {
+      if (chatFilter !== 'all' && row.channel !== chatFilter) continue
+      const name = row.name || t('没写名字')
+      const item = map.get(name) ?? { name, turns: 0, lastDate: '', lastResult: '', channel: row.channel }
+      item.turns += 1
+      if (row.date >= item.lastDate) {
+        item.lastDate = row.date
+        item.lastResult = row.result || '未定'
+      }
+      map.set(name, item)
+    }
+    return [...map.values()].sort((a, b) => String(b.lastDate).localeCompare(String(a.lastDate)))
+  })()
   const chatRows = chats.slice().reverse()
     .filter(row => (chatFilter === 'all' || row.channel === chatFilter)
       && (chatResult === 'all' || (row.result || '未定') === chatResult)
@@ -418,6 +434,11 @@ export function DmView() {
             </span>
           ) : null}
           <span className="md-grow" />
+          <div className="md-lead-tabs">
+            {[['turns', '按轮次'], ['people', '按人']].map(([id, label]) => (
+              <button type="button" key={id} className={chatView === id ? 'is-on' : ''} onClick={() => setChatView(id)}>{t(label)}</button>
+            ))}
+          </div>
           <select className="md-chat-result-filter" value={chatResult} onChange={event => setChatResult(event.target.value)}>
             {[['all', '全部结果'], ['未定', '未定'], ['成交', '成交'], ['约试听', '约试听'], ['加微', '加微'], ['流失', '流失']].map(([id, label]) => (
               <option key={id} value={id}>{t(label)}</option>
@@ -440,6 +461,23 @@ export function DmView() {
             <button type="button" className="md-pill" onClick={() => document.querySelector('.md-dm-input textarea')?.focus()}>{t('去写第一句')}</button>
           </div>
         ) : (
+          chatView === 'people' && !chatPerson ? (
+            <ul className="md-chat-people">
+              {people.map(person => (
+                <li key={person.name}>
+                  <button type="button" className="md-chat-person-row" onClick={() => setChatPerson(person.name)}>
+                    <b>{person.name}</b>
+                    <span className="md-chat-channel">{t(person.channel)}</span>
+                    <span className="md-muted">{t('{n} 轮', { n: person.turns })}</span>
+                    <span className="md-grow" />
+                    <em className={`is-${['成交', '加微', '约试听'].includes(person.lastResult) ? 'won' : person.lastResult === '流失' ? 'lost' : 'plain'}`}>{t(person.lastResult)}</em>
+                    <span className="md-muted">{person.lastDate}</span>
+                  </button>
+                </li>
+              ))}
+              {people.length === 0 ? <li className="md-muted">{t('这个渠道还没有对话')}</li> : null}
+            </ul>
+          ) : (
           <ul className="md-chat-list">
             {chatRows.slice(0, chatLimit).map(row => (
               <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
@@ -502,6 +540,7 @@ export function DmView() {
               </li>
             ))}
           </ul>
+          )
         )}
       </section>
     </div>
