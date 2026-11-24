@@ -54,6 +54,39 @@ function SampleBadge() {
   )
 }
 
+/** 面板出错时别整片空白：告诉用户数据还在，给重试和重新加载两个出口。 */
+class PanelBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error }
+  }
+
+  componentDidCatch(error) {
+    // 出问题时留一份现场，方便回头查（不往外发）
+    try { window.__youtulhLastError = String(error?.stack || error) } catch { /* 忽略 */ }
+    console.error('[Youtulh 工作台]', error)
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="md-page md-crash">
+        <h1>{t('工作台这一页出错了')}</h1>
+        <p className="md-muted">{t('你的数据都在工作区的文件里，没有丢。先点重新加载；还不行就把下面这行发给我。')}</p>
+        <pre className="md-crash-detail">{String(this.state.error?.message || this.state.error)}</pre>
+        <div className="md-create-actions">
+          <button type="button" className="md-pill" onClick={() => this.setState({ error: null })}>{t('重试')}</button>
+          <button type="button" className="md-pill is-primary" onClick={() => window.location.reload()}>{t('重新加载')}</button>
+        </div>
+      </div>
+    )
+  }
+}
+
 function Desk() {
   // 切换语言时整棵树重新渲染
   useLang()
@@ -136,7 +169,7 @@ function Desk() {
         <main className="md-content" key={view}>
           {error ? (
             <div className="md-page"><p className="md-muted">{t('工作台加载失败：{error}', { error })}</p><button type="button" className="md-btn" onClick={loadDesk}>{t('重试')}</button></div>
-          ) : ready ? <Active /> : <div className="md-loading"><span className="md-shimmer">{t('正在打开工作台…')}</span></div>}
+          ) : ready ? <PanelBoundary key={view}><Active /></PanelBoundary> : <div className="md-loading"><span className="md-shimmer">{t('正在打开工作台…')}</span></div>}
         </main>
       </div>
       <FormDialog />
@@ -144,6 +177,10 @@ function Desk() {
       <Toast />
     </div>
   )
+}
+
+function Root() {
+  return <PanelBoundary><Desk /></PanelBoundary>
 }
 
 function PanelIcon({ size }) {
@@ -154,7 +191,7 @@ export const inject = ['slots', 'uiWorkspace']
 
 export function apply(ctx) {
   setAppCtx(ctx)
-  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: PANEL_ID }, Desk))
+  ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: PANEL_ID }, Root))
   // 侧栏的名字只在注册时读一次，换语言时重新注册
   ctx.effect(() => {
     let release = null
@@ -189,7 +226,7 @@ function mountBetterSidebar(ctx) {
       icon: size => <PanelIcon size={size} />,
       order: 60,
       single: true,
-      component: Desk,
+      component: Root,
     }), 'dsh-youtulh-workbench: better-sidebar tab')
   }
   try {

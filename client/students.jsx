@@ -21,7 +21,7 @@ export function StudentsView() {
   const load = () => fetchStudents()
     .then(data => { setStudents(data.students ?? []); setClasses(data.classes ?? []) })
     .catch(err => toast(err.message, { error: true }))
-  React.useEffect(load, [])
+  React.useEffect(() => { load() }, [])
 
   const onChanged = (data) => {
     if (data?.students) setStudents(data.students)
