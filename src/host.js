@@ -10,7 +10,7 @@ import { createTools } from './tools.js'
 import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
-import { creativeText, localScript, localTopics, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt } from './topics.js'
+import { creativeText, localScript, localTopics, localVariants, normalizeScript, normalizeTopics, normalizeVariants, scriptPrompt, topicsPrompt, variantsPrompt } from './topics.js'
 import { LAYOUT, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
@@ -338,47 +338,48 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { topics: markTopicsPicked(root, batch, picked) })
     }
     case 'scripts': {
-      // 给勾中的选题逐条生成口播：标题 + 稿子 + 标签
-      const topics = (Array.isArray(body.topics) ? body.topics : []).map(row => String(row ?? '').trim()).filter(Boolean).slice(0, 40)
+      // 每个勾中的选题出 3 个版本，用户再挑一条
+      const topics = (Array.isArray(body.topics) ? body.topics : []).map(row => String(row ?? '').trim()).filter(Boolean).slice(0, 20)
       if (!topics.length) return json(res, 400, { error: tr('先选几个选题') })
       const state = await store.read()
-      const results = []
-      let usedModel = false
-      for (let i = 0; i < topics.length; i += 3) {
-        const chunk = topics.slice(i, i + 3)
-        const rows = await Promise.all(chunk.map(async (topic) => {
-          try {
-            const lessonsForScript = buildLessonBlock(resolveRoot((await desk.settings.read()).saveRoot))
-            const { text: raw } = await callModel(ctx, { ...scriptPrompt(state, topic, lessonsForScript), maxTokens: 1200, light: true })
-            const one = normalizeScript(extractJson(raw))
-            if (one.title && one.script) {
-              usedModel = true
-              return { topic, ...one }
-            }
-          } catch { /* 单条失败就退回本地模板，不影响其它条 */ }
-          return { topic, ...localScript(state, topic) }
-        }))
-        results.push(...rows)
-      }
-      // 生成的口播直接落盘并登记，用户不用再点一次保存
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
       ensureLayout(root)
       const batch = String(body.batch ?? '')
-      for (const row of results) {
-        try {
-          const title = `${dayStamp()} ${folderName(row.title)}`
-          const saved = await savePiece({ dir: join(root, LAYOUT.content), title, text: creativeText(row), formats: ['md', 'docx'] })
-          row.dir = saved.dir
-          recordContent(root, {
-            '日期': dayStamp(), '批次': batch, '选题': row.topic, '标题': row.title,
-            '标签': (row.tags ?? []).map(tag => `#${tag}`).join(' '), '采用': '未定',
-            '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '', '爆款': '', '分数': '',
-            '目录': saved.dir, '备注': '',
-          })
-        } catch { /* 单条落盘失败不影响其它条 */ }
+      const lessons = buildLessonBlock(root)
+      const groups = []
+      let usedModel = false
+      for (let i = 0; i < topics.length; i += 3) {
+        const chunk = topics.slice(i, i + 3)
+        const rows = await Promise.all(chunk.map(async (topic) => {
+          let variants = []
+          try {
+            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic), maxTokens: 2800, light: true })
+            variants = normalizeVariants(extractJson(raw))
+            if (variants.length) usedModel = true
+          } catch { /* 单条失败就退回本地模板 */ }
+          if (!variants.length) variants = localVariants(state, topic)
+          const saved = []
+          for (const [index, variant] of variants.entries()) {
+            try {
+              const title = `${dayStamp()} ${folderName(variant.title)}`
+              const piece = await savePiece({ dir: join(root, LAYOUT.content), title, text: creativeText(variant), formats: ['md', 'docx'] })
+              const row = {
+                '日期': dayStamp(), '批次': batch, '选题': topic, '标题': variant.title,
+                '标签': (variant.tags ?? []).map(tag => `#${tag}`).join(' '), '采用': '未定',
+                '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '', '爆款': '', '分数': '',
+                '目录': piece.dir, '备注': `备选 ${'ABC'[index] ?? index + 1}`,
+              }
+              recordContent(root, row)
+              saved.push({ ...variant, dir: piece.dir, variant: 'ABC'[index] ?? String(index + 1) })
+            } catch { /* 单条落盘失败跳过 */ }
+          }
+          return { topic, variants: saved }
+        }))
+        groups.push(...rows)
       }
-      return json(res, 200, { scripts: results, source: usedModel ? 'model' : 'local' })
+      writeLessonMarkdown(root)
+      return json(res, 200, { groups, source: usedModel ? 'model' : 'local', lessons })
     }
     case 'output/save': {
       // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开
@@ -430,6 +431,14 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const row = updateContent(root, dir, body.patch ?? {})
       if (!row) return json(res, 404, { error: tr('没找到这一条') })
+      // 一条采用，同选题其它的备选自动标成放弃，省得内容库堆一堆没用的
+      if (body.patch?.['采用'] === '采用' && row['选题']) {
+        for (const other of readContent(root)) {
+          if (other['选题'] === row['选题'] && other['目录'] !== dir && other['采用'] === '未定') {
+            updateContent(root, other['目录'], { '采用': '放弃' })
+          }
+        }
+      }
       rescore(root)
       writeLessonMarkdown(root)
       const fresh = readContent(root).find(item => item['目录'] === dir) ?? row

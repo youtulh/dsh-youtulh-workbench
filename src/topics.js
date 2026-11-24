@@ -15,7 +15,7 @@ function settingBlock(state) {
 
 // ---- 选题 ----
 
-export function topicsPrompt(state, count = 30, lessons = '') {
+export function topicsPrompt(state, count = 10, lessons = '') {
   const pains = (state?.painPoints ?? []).slice(0, 20)
   const system = `你是给补课老师排选题的编辑。老师要做短视频（口播），你帮他列出 ${count} 个能直接拍成视频的选题。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的（都要用上，别浪费）：${pains.join('、')}` : ''}
@@ -33,10 +33,10 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的（都要用上，别�
 
 规则（按内容配比排，3:3:3:1，顺序别乱）：
 - 每个选题一句话，12 到 24 字，像家长会搜的词，不用「干货」「秘籍」「必看」
-- 前 30%（约 9 条）讲学科本身：某个知识点、某类题、某一章怎么过
-- 接下来 30%（约 9 条）讲家庭教育：习惯、手机、亲子沟通、心态 —— 不讲课，只讲家里的事
-- 接下来 30%（约 9 条）讲考试和考情：期中期末、分数线、命题趋势、志愿
-- 最后 10%（约 3 条）讲本地：本地的学校、考试节奏、升学路径
+- 前 30%（约 3 条）讲学科本身：某个知识点、某类题、某一章怎么过
+- 接下来 30%（约 3 条）讲家庭教育：习惯、手机、亲子沟通、心态 —— 不讲课，只讲家里的事
+- 接下来 30%（约 3 条）讲考试和考情：期中期末、分数线、命题趋势、志愿
+- 最后 10%（约 1 条）讲本地：本地的学校、考试节奏、升学路径
 - 五类家长至少每一类都覆盖到 2 条以上
 - 最好的选题来自家长的原话：私信里怎么说、评论区怎么问，就照着那个句子改
 - 不重复、不换皮同一个意思${lessons}
@@ -95,7 +95,7 @@ const EXAM_FRAMES = [
 const localExam = (who) => EXAM_FRAMES.map(frame => frame.replaceAll('{who}', who))
 
 /** 没有模型时的选题：按 3:3:3:1 配额拼，凑够 count 条。 */
-export function localTopics(state, count = 30) {
+export function localTopics(state, count = 10) {
   const p = state?.positioning ?? {}
   const who = `${text(p.grade, 10)}${text(p.subject, 10)}`.trim() || tr('这门课')
   const city = text(p.city, 12)
@@ -209,4 +209,47 @@ export function cityRule(state) {
   const city = text(state?.positioning?.city, 20)
   if (!city || /线上|全国|网课/.test(city)) return '- 我做的是线上，不用刻意带地名'
   return `- 我做的是同城（${city}）：开头前两句里要带上「${city}」或本地学校名，标签里加一个地区词`
+}
+
+// ---- 一个选题出 3 个版本 ----
+
+export function variantsPrompt(state, topic) {
+  const base = scriptPrompt(state, topic)
+  return {
+    system: `${base.system}
+
+这次要写 3 个版本，角度必须不一样，让人一眼能看出不是同一条：
+- A 版：从分数/焦虑切入（先说分数、先说急）
+- B 版：从具体知识点或场景切入（先说某一章、某类题）
+- C 版：从家长误区或反常识切入（先说家长做错了什么）
+三个版本的标题不能一样，开头第一句不能一样，但都要严格按上面的六段结构和红线写。
+
+只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]}]}`,
+    user: `选题：${topic}`,
+  }
+}
+
+export function normalizeVariants(json) {
+  const list = Array.isArray(json?.variants) ? json.variants : []
+  return list.map(row => normalizeScript(row)).filter(row => row.title && row.script).slice(0, 3)
+}
+
+/** 没模型时的三个版本：换开场，其余照六段结构。 */
+export function localVariants(state, topic) {
+  const p = state?.positioning ?? {}
+  const who = `${text(p.grade, 10)}${text(p.subject, 10)}`.trim()
+  const city = text(p.city, 12)
+  const local = city && !/线上|全国|网课/.test(city)
+  const base = localScript(state, topic)
+  const opens = [
+    [tr('我不知道咱们家里边有没有这样的情况：'), `${topic}？`],
+    [local ? tr('{city}的家长最近老问我一个问题：', { city }) : tr('这两天有三个家长问我同一个问题：'), `${topic}？`],
+    [tr('很多家长一上来就问：怎么给孩子补？'), tr('先别急着补 —— '), `${topic}？`],
+  ]
+  const titles = [base.title, `${topic}（说清楚版）`, `${topic}（家长版）`]
+  return opens.map((opening, index) => ({
+    ...base,
+    title: titles[index],
+    script: [...opening, base.script.split('\n').slice(2).join('\n')].filter(Boolean).join('\n'),
+  }))
 }

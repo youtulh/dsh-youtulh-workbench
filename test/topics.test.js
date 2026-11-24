@@ -111,3 +111,18 @@ test('选题规则：五类家长、选题公式、反例、自检都写进 prom
   assert.match(system, /如何提高化学成绩/)
   assert.match(system, /换成任何科目、任何年级都成立/)
 })
+
+test('一个选题出三个版本：标题和开头各不相同，本地兜底也能出 3 条', async () => {
+  const { localVariants, normalizeVariants } = await import('../src/topics.js')
+  const list = localVariants(state, '偏科的孩子，多半卡在物质的量')
+  assert.equal(list.length, 3)
+  assert.equal(new Set(list.map(item => item.title)).size, 3)
+  assert.equal(new Set(list.map(item => item.script.split('\n')[0])).size >= 2, true)
+  assert.ok(list.every(item => item.script.includes('先说结论')))
+
+  const normalized = normalizeVariants({ variants: [
+    { title: 'a', script: 'x' }, { title: '', script: '' }, { title: 'b', script: 'y' }, { title: 'c', script: 'z' }, { title: 'd', script: 'w' },
+  ] })
+  assert.equal(normalized.length, 3)
+  assert.deepEqual(normalized.map(item => item.title), ['a', 'b', 'c'])
+})

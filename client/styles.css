@@ -1346,3 +1346,16 @@ body[data-ds-dark-theme] .md-root {
 .md-lessons-inline summary::before { content: '›'; display: inline-block; margin-right: 6px; transition: transform .2s; }
 .md-lessons-inline[open] summary::before { transform: rotate(90deg); }
 .md-lessons-inline pre { margin-top: 8px; }
+
+/* 口播：按选题分组，一组三个版本 */
+.md-script-group + .md-script-group { margin-top: 16px; }
+.md-script-group-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.md-root .md-script-group-head h3 { font-size: 13px; line-height: 20px; font-weight: 500; color: var(--ink2); }
+.md-script-group ul { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 1120px) { .md-script-group ul { grid-template-columns: minmax(0, 1fr); } }
+.md-variant-head { display: flex; align-items: flex-start; gap: 8px; }
+.md-variant-tag { flex: none; display: grid; place-items: center; width: 20px; height: 20px; margin-top: 2px; border-radius: 6px; color: var(--ink2); font-size: 11px; box-shadow: inset 0 0 0 1px var(--hairline); }
+.md-root .md-variant-head h4 { font-size: 13.5px; line-height: 21px; font-weight: 500; }
+.md-script-item.is-adopted { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.md-script-item.is-dropped { opacity: .45; }
+.md-script-lines { max-height: 260px; }
