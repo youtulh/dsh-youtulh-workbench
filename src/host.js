@@ -687,7 +687,7 @@ async function route(ctx, store, desk, req, res) {
             school: sameName?.school || '',
             source: '聊天成交',
             enrolledAt: dayStamp(),
-            note: '聊天台标成交时自动建档',
+            note: [sameName?.painPoint ? `卡点：${sameName.painPoint}` : '', '聊天台标成交时自动建档'].filter(Boolean).join('；'),
           })
           studentCreated = true
         }

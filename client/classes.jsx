@@ -327,11 +327,16 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
           <ul className="md-lesson-recent">
             {recent.map(row => (
               <li key={row.no}>
-                <b>{t('第 {n} 次', { n: row.no })}</b>
-                <span className="md-muted">{row.date || t('没填日期')}</span>
-                <span className="md-grow" />
-                {row.missed ? <em>{t('缺 {n} 人', { n: row.missed })}</em> : <em className="is-ok">{t('都到了')}</em>}
-                {row.homeworkMissing ? <em>{t('作业没交 {n} 人', { n: row.homeworkMissing })}</em> : <em className="is-ok">{t('作业都交了')}</em>}
+                <button type="button" className="md-lesson-jump" onClick={() => {
+                  setNo(row.no)
+                  requestAnimationFrame(() => document.getElementById('lesson-recorder')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+                }}>
+                  <b>{t('第 {n} 次', { n: row.no })}</b>
+                  <span className="md-muted">{row.date || t('没填日期')}</span>
+                  <span className="md-grow" />
+                  {row.missed ? <em>{t('缺 {n} 人', { n: row.missed })}</em> : <em className="is-ok">{t('都到了')}</em>}
+                  {row.homeworkMissing ? <em>{t('作业没交 {n} 人', { n: row.homeworkMissing })}</em> : <em className="is-ok">{t('作业都交了')}</em>}
+                </button>
               </li>
             ))}
           </ul>
@@ -339,7 +344,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
       ) : null}
 
       {roster.length ? (
-        <section className="md-tile md-lesson">
+        <section className="md-tile md-lesson" id="lesson-recorder">
           <header className="md-tile-head">
             <b>{t('记这次课')}</b>
             <span className="md-grow" />

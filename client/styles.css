@@ -1836,3 +1836,14 @@ body[data-ds-dark-theme] .md-root {
 
 /* 最近对话：分批显示 */
 .md-chat-more { padding: 6px 10px; text-align: center; }
+
+/* 最近几次课：点一条跳到那次记录 */
+.md-lesson-jump { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border-radius: var(--r-md); text-align: left; font-size: 12.5px; }
+.md-lesson-jump:hover { background: var(--hover); }
+.md-lesson-jump b { min-width: 4.5em; font-weight: 500; }
+.md-lesson-jump em { font-style: normal; color: var(--accent); font-size: 11.5px; }
+.md-lesson-jump em.is-ok { color: var(--ink3); }
+
+/* 最近几次课：按钮自己带内边距，外层不要再加一层 */
+.md-lesson-recent li { padding: 0; }
+.md-lesson-recent li:hover { background: none; }
