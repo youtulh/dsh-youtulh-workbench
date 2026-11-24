@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchPlatformWords, fetchVoice, fetchWorkspace, fetchWorkspaceStats, revealDir, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchPlatformWords, fetchVoice, fetchWorkspace, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -314,7 +314,18 @@ export function SetupView() {
           </p>
         ) : null}
         {stats?.legacy?.length ? (
-          <p className="md-muted md-legacy-note">{t('旧版表头：{tables}。读取已经兼容，下次保存会自动升级成新列。', { tables: stats.legacy.join('、') })}</p>
+          <div className="md-legacy-row">
+            <span className="md-legacy-note">{t('旧版表头：{tables}。读取已经兼容，下次保存会自动升级成新列。', { tables: stats.legacy.join('、') })}</span>
+            <button type="button" className="md-inline-link" onClick={() => {
+              if (!window.confirm(t('现在把这几张表升级成新列？会按当前字段重写；你自己在表格里加的额外列不会保留。'))) return
+              upgradeWorkspace()
+                .then(data => {
+                  fetchWorkspaceStats().then(setStats).catch(() => {})
+                  toast(data.upgraded?.length ? t('升级好了：{tables}', { tables: data.upgraded.join('、') }) : t('没有需要升级的表'))
+                })
+                .catch(err => toast(err.message, { error: true }))
+            }}>{t('现在升级')}</button>
+          </div>
         ) : null}
         <div className="md-setup-samples-foot">
           <span className="md-muted">{backup ? t('备份好了：{dir}', { dir: backup }) : t('建议每周点一次')}</span>

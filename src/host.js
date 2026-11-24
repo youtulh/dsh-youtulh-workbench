@@ -15,7 +15,7 @@ import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePr
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
 import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
-import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
+import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
 import { currentLang, platformName, tr, withLang } from './i18n.js'
@@ -967,6 +967,11 @@ async function route(ctx, store, desk, req, res) {
       const leads = updateLeadRow(root, index, body.patch ?? {})
       if (!leads) return json(res, 404, { error: tr('没找到这一行') })
       return json(res, 200, { leads, lessons: leadLessons(root) })
+    }
+    case 'workspace/upgrade': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const upgraded = upgradeTables(root)
+      return json(res, 200, { upgraded })
     }
     case 'workspace/backup': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

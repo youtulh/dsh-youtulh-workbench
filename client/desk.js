@@ -163,6 +163,10 @@ export async function fetchWorkspaceStats() {
   return request('workspace/stats')
 }
 
+export async function upgradeWorkspace() {
+  return request('workspace/upgrade', {})
+}
+
 /** 做内容页的案例提示词：按人设想几条家长会问的问题。 */
 export async function fetchSuggestions() {
   const data = await request('suggest')

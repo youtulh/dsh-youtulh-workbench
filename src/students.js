@@ -1,6 +1,6 @@
 // 学生管理：学生档案 / 班课 / 课次记录三张表，和线索表一样是工作区里的 CSV。
 // 页面只是壳；Excel 能直接改这三张表，改完页面刷新就跟着变。
-import { LAYOUT, dayStamp, nowStamp, readTable, writeTable } from './workspace.js'
+import { LAYOUT, dayStamp, ensureLeadColumns, nowStamp, readTable, writeTable } from './workspace.js'
 
 export const ATTEND_OPTIONS = ['到', '缺']
 export const MASTERY_OPTIONS = ['会', '半会', '不会']
@@ -273,3 +273,27 @@ export function studentRecords(name, className, rows = []) {
     .sort((a, b) => a.no - b.no)
 }
 
+
+
+/** 一次性把老表头升级成当前列（用户点按钮才执行）。返回升级了哪几张表。 */
+export function upgradeTables(root) {
+  const upgraded = []
+  const headerOf = file => readTable(root, file).header
+  const classesHeader = headerOf(LAYOUT.classes)
+  if (classesHeader.length && !classesHeader.includes('班名') && classesHeader.includes('期次')) {
+    writeTable(root, LAYOUT.classes, CLASS_COLUMNS, readClasses(root).map(toClassRow))
+    upgraded.push('班课')
+  }
+  const studentsHeader = headerOf(LAYOUT.students)
+  if (studentsHeader.length && !studentsHeader.includes('微信')) {
+    writeTable(root, LAYOUT.students, STUDENT_COLUMNS, readStudents(root).map(toStudentRow))
+    upgraded.push('学生档案')
+  }
+  const lessonsHeader = headerOf(LAYOUT.lessons)
+  if (lessonsHeader.length && !lessonsHeader.includes('课次')) {
+    writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, readLessonRows(root).map(toLessonRow))
+    upgraded.push('课次记录')
+  }
+  if (ensureLeadColumns(root)) upgraded.push('线索表')
+  return upgraded
+}

@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import {
   groupByLayer, parseLayers, progressOf, readClasses, readLessons, readStudents,
   removeClass, removeStudent, saveClass, saveLessonRows, saveStudent,
+  upgradeTables,
 } from '../src/students.js'
 import { appendLead, readLeads, stageOfLead, updateLeadRow } from '../src/workspace.js'
 
@@ -264,6 +265,25 @@ test('老课次表没有课次列：按日期补 1、2，保存后写成新列',
     const raw = await readFile(join(root, '课次记录.csv'), 'utf8')
     assert.match(raw, /课次/)
     assert.deepEqual(readLessons(root, 'A 班').map(row => row.no).sort(), [1, 2])
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
+
+
+test('一键升级老表头：期次→班名、补微信、补课次，数据保留', async () => {
+  const root = await temp()
+  try {
+    await writeFile(join(root, '班课.csv'), '\uFEFF"期次","上课时间","总次数","分层","备注"\n"高一补漏一期","周日",10,"配平","腾讯会议"\n')
+    await writeFile(join(root, '学生档案.csv'), '\uFEFF"姓名","年级","学校","班"\n"赵培源","高一","某中学","高一补漏一期"\n')
+    await writeFile(join(root, '课次记录.csv'), '\uFEFF"日期","班","姓名","出勤","掌握","作业","备注"\n"2026-11-08","高一补漏一期","赵培源","到","半会","交",""\n')
+    const upgraded = upgradeTables(root)
+    assert.ok(upgraded.includes('班课'))
+    assert.ok(upgraded.includes('学生档案'))
+    assert.ok(upgraded.includes('课次记录'))
+    assert.equal(readClasses(root)[0].name, '高一补漏一期')
+    assert.equal(readStudents(root)[0].school, '某中学')
+    assert.equal(readLessons(root, '高一补漏一期')[0].no, 1)
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
