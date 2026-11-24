@@ -68,7 +68,8 @@ export function OnboardingWizard({ onDone, onSwitch }) {
   }
 
   // ---- 第 0 屏：先讲清楚你要做什么 ----
-  if (current.type === 'intro') {
+  // 走到最后一题之后 current 是 undefined；这里必须先判空，再读 current.type
+  if (current && current.type === 'intro') {
     return (
       <div className="md-onb">
         <p className="md-onb-step">{t('开始之前')}</p>
