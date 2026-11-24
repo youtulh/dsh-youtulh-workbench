@@ -666,4 +666,7 @@ export const PAGES = {
   '这个班已结课：还能补改以前的课次记录；要接着上，点上面「重新开班」。': 'This class is finished. You can still fix past lesson records; use “Reopen class” to keep teaching.',
   '线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons} · 反馈 {feedback} · 备份 {backups}': 'Leads {leads} · Students {students} · Classes {classes} · Lessons {lessons} · Updates {feedback} · Backups {backups}',
   '旧版表头：{tables}。读取已经兼容，下次保存会自动升级成新列。': 'Legacy headers: {tables}. Reading already works; the next save upgrades the columns.',
+  最近一次: 'Latest lesson',
+  '掌握{value}': 'mastery: {value}',
+  '作业{value}': 'homework: {value}',
 }

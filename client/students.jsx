@@ -234,6 +234,12 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                   ? <span className="md-student-from">{t('来自聊天成交')}</span>
                   : student.source ? <span className="md-muted">{t('来源：{source}', { source: student.source })}</span> : null}
               </div>
+              {(() => {
+                const last = lessons.filter(row => row.name === student.name && (!student.className || row.className === student.className))
+                  .sort((a, b) => String(b.date).localeCompare(String(a.date)) || b.no - a.no)[0]
+                if (!last) return null
+                return <p className="md-student-last">{t('最近一次')}：{[last.date || t('没填日期'), last.mastery ? t('掌握{value}', { value: last.mastery }) : '', last.homework ? t('作业{value}', { value: last.homework }) : ''].filter(Boolean).join(' · ')}</p>
+              })()}
               {student.note ? <p className="md-student-note">{student.note}</p> : null}
               <footer>
                 <span className="md-muted">{student.enrolledAt ? t('报课于 {date}', { date: student.enrolledAt }) : ''}</span>
