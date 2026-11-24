@@ -1,37 +1,77 @@
-// 做内容：先读人设，给几条「家长可能问的问题」当案例，用户照着改，再点开始去对话。
+// 做内容：先在这里出 30 个选题草稿，勾选后一次性生成口播（标题 + 稿子 + 标签），全程不跳页。
 import React from 'react'
-import { fetchSuggestions, fetchWorkspace, profileSummary, toast, useDesk } from './desk.js'
+import { fetchSuggestions, profileSummary, saveOutput, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
+
+async function post(path, body) {
+  const res = await fetch(`media-desk/${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-media-desk-lang': document.documentElement.lang || 'zh' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || t('请求失败（{status}）', { status: res.status }))
+  return data
+}
 
 export function CreateView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const pains = useDesk(s => s.state?.painPoints) ?? []
-  const [hint, setHint] = React.useState('')
-  const [examples, setExamples] = React.useState([])
-  const [source, setSource] = React.useState(null)
-  const [root, setRoot] = React.useState('')
   const configured = Boolean(positioning.subject || positioning.grade)
   const summary = profileSummary({ positioning, painPoints: pains })
-  const profileKey = JSON.stringify([positioning, pains])
 
-  React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
+  const [topics, setTopics] = React.useState([])
+  const [picked, setPicked] = React.useState({})
+  const [scripts, setScripts] = React.useState([])
+  const [examples, setExamples] = React.useState([])
+  const [busy, setBusy] = React.useState('')
+  const [saving, setSaving] = React.useState('')
 
   React.useEffect(() => {
-    let alive = true
-    fetchSuggestions().then(result => {
-      if (!alive) return
-      setExamples(result.prompts)
-      setSource(result.source)
-    }).catch(() => {})
-    return () => { alive = false }
-    // 设定变了就重新出案例
-  }, [profileKey])
+    fetchSuggestions().then(result => setExamples(result.prompts)).catch(() => {})
+  }, [])
 
-  const start = () => {
-    if (!startChat('content', { hint, root, profile: summary })) launchFailedToast(toast)
+  const selected = topics.filter(topic => picked[topic])
+
+  const makeTopics = async () => {
+    setBusy('topics')
+    try {
+      const data = await post('topics', { count: 30 })
+      setTopics(data.topics ?? [])
+      setPicked({})
+      setScripts([])
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+    setBusy('')
+  }
+
+  const makeScripts = async () => {
+    if (!selected.length) return toast(t('先勾几个选题'), { error: true })
+    setBusy('scripts')
+    try {
+      const data = await post('scripts', { topics: selected })
+      setScripts(data.scripts ?? [])
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+    setBusy('')
+  }
+
+  const copy = (value) => navigator.clipboard.writeText(value).then(() => toast(t('已复制')), () => toast(t('复制失败'), { error: true }))
+
+  const save = async (row, index) => {
+    setSaving(String(index))
+    try {
+      const result = await saveOutput({ kind: 'content', title: row.title, content: `【标题】${row.title}\n\n【口播文案】\n${row.script}\n\n【标签】${(row.tags ?? []).map(tag => `#${tag}`).join(' ')}` })
+      toast(t('已存到 {dir}', { dir: result.dir }))
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+    setSaving('')
   }
 
   return (
@@ -39,67 +79,81 @@ export function CreateView() {
       <header className="md-page-head">
         <div>
           <h1>{t('做内容')}</h1>
-          <p className="md-page-sub">
-            {configured
-              ? t('先看看下面几条 —— 都是你这个科目、这个年级的家长会问的问题。照着改一句你自己的，点开始。')
-              : t('先到「我的设定」填一下你教什么，案例才会按你的科目出。')}
-          </p>
+          <p className="md-page-sub">{t('先出 30 个选题，勾中想要的，再一次生成口播。全部在这个页面里完成。')}</p>
+          {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         </div>
       </header>
 
-      {summary ? (
-        <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p>
-      ) : null}
-
       {examples.length ? (
-        <section className="md-create-examples">
-          <h2>{t('可以这样问')}{source === 'model' ? <small>{t('按你的设定生成')}</small> : null}</h2>
-          <ul>
-            {examples.map(example => (
-              <li key={example}>
-                <button type="button" onClick={() => setHint(example)}>
-                  <Icon name="spark" size={13} />
-                  <span>{example}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p className="md-muted">{t('点一条填进下面，然后改成你自己的说法。')}</p>
-        </section>
-      ) : null}
-
-      {pains.length ? (
         <div className="md-create-pains">
-          <span>{t('或者从家长常愁的开始：')}</span>
-          {pains.slice(0, 6).map(point => (
-            <button type="button" key={point} className="md-chip" onClick={() => setHint(point)}>{point}</button>
+          <span>{t('没方向就点一条：')}</span>
+          {examples.slice(0, 4).map(example => (
+            <button type="button" key={example} className="md-chip" onClick={() => setTopics([example])}>{example}</button>
           ))}
         </div>
       ) : null}
 
       <section className="md-create-input">
-        <label className="md-field">
-          <span>{t('这条视频想讲什么？（一句话就行）')}</span>
-          <textarea
-            rows={3}
-            value={hint}
-            onChange={event => setHint(event.target.value)}
-            placeholder={configured ? t('比如：期中 58 分的娃，第一步不是刷题') : t('先填设定，再回来写这一句')}
-          />
-        </label>
         <div className="md-create-actions">
-          <span className="md-muted">{t('点「开始」，会跳到对话并把这句话填好，按回车就生成。')}</span>
+          <span className="md-muted">
+            {topics.length ? t('已出 {n} 个选题，勾选后点右边生成。', { n: topics.length }) : t('点右边先出 30 个选题草稿。')}
+          </span>
           <span className="md-grow" />
-          <button type="button" className="md-pill is-primary" onClick={start} disabled={!hint.trim()}>
-            <Icon name="chat" size={14} />{t('开始')}
+          <button type="button" className="md-pill" onClick={() => { if (!startChat('content', { hint: selected[0] ?? '', profile: summary })) launchFailedToast(toast) }} disabled={!selected.length}>
+            <Icon name="chat" size={14} />{t('去对话里写')}
+          </button>
+          <button type="button" className="md-pill is-primary" onClick={makeTopics} disabled={busy === 'topics' || !configured}>
+            <Icon name="spark" size={14} />{busy === 'topics' ? t('正在想…') : topics.length ? t('换一批选题') : t('生成 30 个选题')}
           </button>
         </div>
       </section>
 
-      <p className="md-create-empty">
-        <Icon name="folder" size={14} />
-        {t('产出会出现在对话里，同时存进工作区：内容/<日期 标题>/ 下有一份 Word 和一份 Markdown。')}
-      </p>
+      {topics.length ? (
+        <section className="md-topic-box">
+          <header>
+            <b>{t('选题')}</b>
+            <span className="md-muted">{t('勾 {n} 个', { n: selected.length })}</span>
+            <span className="md-grow" />
+            <button type="button" className="md-inline-link" onClick={() => setPicked(Object.fromEntries(topics.map(topic => [topic, true])))}>{t('全选')}</button>
+            <button type="button" className="md-inline-link" onClick={() => setPicked({})}>{t('清空')}</button>
+          </header>
+          <ul className="md-topic-list">
+            {topics.map(topic => (
+              <li key={topic}>
+                <button type="button" className={`md-topic ${picked[topic] ? 'is-on' : ''}`} onClick={() => setPicked({ ...picked, [topic]: !picked[topic] })}>
+                  <span className="md-topic-dot" aria-hidden="true" />{topic}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="md-create-actions">
+            <span className="md-muted">{t('勾中的每一条都会单独生成一条口播。')}</span>
+            <span className="md-grow" />
+            <button type="button" className="md-pill is-primary" onClick={makeScripts} disabled={!selected.length || busy === 'scripts'}>
+              <Icon name="bolt" size={14} />{busy === 'scripts' ? t('正在写 {n} 条…', { n: selected.length }) : t('为选中的 {n} 个生成口播', { n: selected.length })}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {scripts.length ? (
+        <section className="md-script-box">
+          <header><b>{t('口播')}</b><span className="md-muted">{t('{n} 条', { n: scripts.length })}</span></header>
+          <ul>
+            {scripts.map((row, index) => (
+              <li key={`${row.title}-${index}`} className="md-script-item">
+                <h3>{row.title}</h3>
+                <div className="md-script-lines">{row.script.split('\n').map((line, i) => <p key={i}>{line || '\u00a0'}</p>)}</div>
+                <div className="md-script-tags">{(row.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
+                <div className="md-script-actions">
+                  <button type="button" className="md-inline-link" onClick={() => copy(`【标题】${row.title}\n\n【口播文案】\n${row.script}\n\n【标签】${(row.tags ?? []).map(tag => `#${tag}`).join(' ')}`)}>{t('复制')}</button>
+                  <button type="button" className="md-inline-link" onClick={() => save(row, index)} disabled={saving === String(index)}>{saving === String(index) ? t('保存中…') : t('保存成 Word')}</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   )
 }

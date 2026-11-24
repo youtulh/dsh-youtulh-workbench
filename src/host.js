@@ -8,6 +8,7 @@ import { assistantModelOverride, callModel, defaultSelection, extractJson, model
 import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
+import { creativeText, localScript, localTopics, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt } from './topics.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
@@ -286,6 +287,44 @@ async function route(ctx, store, desk, req, res) {
     case 'undo': {
       const label = await store.undoLast()
       return json(res, 200, { label, state: await store.read(), canUndo: store.undo.length > 0 })
+    }
+    case 'topics': {
+      // 一次给 30 个选题草稿，页面里直接勾选，不跳对话
+      const count = Math.min(40, Math.max(5, Number(body.count) || 30))
+      const state = await store.read()
+      let topics = []
+      let source = 'local'
+      try {
+        const { text: raw } = await callModel(ctx, { ...topicsPrompt(state, count), maxTokens: 1600, light: true })
+        topics = normalizeTopics(extractJson(raw), count)
+        if (topics.length) source = 'model'
+      } catch { /* 没模型就用本地模板 */ }
+      if (!topics.length) topics = localTopics(state, count)
+      return json(res, 200, { topics, source })
+    }
+    case 'scripts': {
+      // 给勾中的选题逐条生成口播：标题 + 稿子 + 标签
+      const topics = (Array.isArray(body.topics) ? body.topics : []).map(row => String(row ?? '').trim()).filter(Boolean).slice(0, 40)
+      if (!topics.length) return json(res, 400, { error: tr('先选几个选题') })
+      const state = await store.read()
+      const results = []
+      let usedModel = false
+      for (let i = 0; i < topics.length; i += 3) {
+        const chunk = topics.slice(i, i + 3)
+        const rows = await Promise.all(chunk.map(async (topic) => {
+          try {
+            const { text: raw } = await callModel(ctx, { ...scriptPrompt(state, topic), maxTokens: 1200, light: true })
+            const one = normalizeScript(extractJson(raw))
+            if (one.title && one.script) {
+              usedModel = true
+              return { topic, ...one }
+            }
+          } catch { /* 单条失败就退回本地模板，不影响其它条 */ }
+          return { topic, ...localScript(state, topic) }
+        }))
+        results.push(...rows)
+      }
+      return json(res, 200, { scripts: results, source: usedModel ? 'model' : 'local' })
     }
     case 'output/save': {
       // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开

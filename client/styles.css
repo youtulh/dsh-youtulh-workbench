@@ -1063,3 +1063,23 @@ body[data-ds-dark-theme] .md-root {
 /* 页面上显示「按你的设定」 */
 .md-profile-line { display: flex; align-items: center; gap: 6px; color: var(--ink3); font-size: 12.5px; line-height: 19px; }
 .md-profile-line svg { color: var(--accent); }
+
+/* 做内容：选题勾选 + 口播结果 */
+.md-topic-box, .md-script-box { padding: 16px 18px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-topic-box header, .md-script-box header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.md-topic-box header b, .md-script-box header b { font-size: 14px; font-weight: 500; }
+.md-topic-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.md-topic { display: flex; align-items: flex-start; gap: 7px; width: 100%; padding: 7px 9px; border-radius: var(--r-sm); text-align: left; color: var(--ink2); font-size: 13px; line-height: 20px; transition: background .15s, color .15s; }
+.md-topic:hover { background: var(--hover); color: var(--ink); }
+.md-topic.is-on { color: var(--ink); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.md-topic-dot { flex: none; width: 13px; height: 13px; margin-top: 3px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+.md-topic.is-on .md-topic-dot { box-shadow: inset 0 0 0 4px var(--accent); }
+.md-script-box ul { display: grid; gap: 12px; }
+.md-script-item { padding: 12px 14px; border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 60%, transparent); box-shadow: inset 0 0 0 .5px var(--line); }
+.md-script-item h3 { font-size: 14px; font-weight: 500; line-height: 22px; }
+.md-script-lines { margin-top: 8px; max-height: 220px; overflow: auto; }
+.md-script-lines p { color: var(--ink2); font-size: 13px; line-height: 23px; }
+.md-script-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.md-script-tags span { padding: 0 7px; border-radius: var(--r-xs); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12px; line-height: 20px; }
+.md-script-actions { display: flex; gap: 14px; margin-top: 10px; font-size: 12.5px; }
+@media (max-width: 720px) { .md-topic-list { grid-template-columns: minmax(0, 1fr); } }
