@@ -987,3 +987,31 @@ body[data-ds-dark-theme] .md-root {
 .md-tagset.is-on { box-shadow: inset 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .md-tagset span { padding: 0 7px; border-radius: var(--r-xs); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12.5px; line-height: 20px; }
 .md-create-empty { display: flex; align-items: center; gap: 6px; color: var(--ink3); font-size: 12.5px; }
+
+/* ===== 新用户问卷 ===== */
+.md-onb { width: min(640px, 100%); margin: 0 auto; padding-top: 24px; }
+.md-onb-step { color: var(--ink3); font-size: 12.5px; }
+.md-onb-title { margin-top: 8px; font-size: 24px; font-weight: 400; line-height: 1.45; }
+.md-onb-hint { margin-top: 8px; color: var(--ink3); font-size: 13px; line-height: 20px; }
+.md-onb-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.md-onb-option { padding: 9px 16px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 .5px var(--line-strong); color: var(--ink2); font-size: 14px; transition: color .15s, background .15s, box-shadow .15s; }
+.md-onb-option:hover { color: var(--ink); }
+.md-onb-option.is-on { color: var(--on-primary); background: var(--primary); box-shadow: none; }
+.md-onb-input { width: 100%; margin-top: 20px; padding: 11px 13px; border: .5px solid var(--line-strong); border-radius: var(--r-md); outline: 0; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
+.md-onb-input:focus { border-color: var(--accent); }
+.md-onb-actions { display: flex; align-items: center; gap: 10px; margin-top: 26px; }
+.md-onb-summary { display: grid; gap: 10px; margin-top: 20px; }
+.md-onb-summary li { display: flex; gap: 12px; padding: 10px 12px; border-radius: var(--r-md); background: var(--card); font-size: 13px; line-height: 20px; }
+.md-onb-summary span { flex: none; width: 56px; color: var(--ink3); }
+.md-onb-summary b { font-weight: 400; color: var(--ink); }
+.md-onb-skip { margin-top: 18px; }
+
+/* ===== 工作流首页 ===== */
+.md-workflow .md-steps { display: grid; gap: 8px; margin-top: 22px; }
+.md-step { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-step.is-primary { box-shadow: inset 0 0 0 1px var(--accent); }
+.md-step-index { flex: none; display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 50%; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12px; }
+.md-step.is-done .md-step-index { color: var(--on-primary); background: var(--accent); }
+.md-step-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.md-step-body b { font-size: 14.5px; font-weight: 500; }
+.md-step-body small { color: var(--ink3); font-size: 12.5px; line-height: 18px; }

@@ -1,17 +1,21 @@
-// 首页：三个按钮，对应推流的三个动作。下面一条漏斗，告诉你现在推到哪一步了。
+// 首页 = 一条工作流：先问卷把定位填好，再带他做第一条口播，然后才是日常的回私信 / 看数据。
 import React from 'react'
 import { fetchInsights, setDesk, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
+import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
 import { compact } from './util.js'
 
-function BigButton({ icon, title, hint, onClick }) {
+function Step({ index, title, hint, done, action, onAction, primary }) {
   return (
-    <button type="button" className="md-big" onClick={onClick}>
-      <span className="md-big-icon"><Icon name={icon} size={20} /></span>
-      <b>{title}</b>
-      <small>{hint}</small>
-    </button>
+    <section className={`md-step ${primary ? 'is-primary' : ''} ${done ? 'is-done' : ''}`}>
+      <span className="md-step-index">{done ? <Icon name="check" size={13} /> : index}</span>
+      <div className="md-step-body">
+        <b>{title}</b>
+        <small>{hint}</small>
+      </div>
+      {action ? <button type="button" className={`md-pill ${primary ? 'is-primary' : ''}`} onClick={onAction}>{action}</button> : null}
+    </section>
   )
 }
 
@@ -19,6 +23,7 @@ export function WelcomeView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const [data, setData] = React.useState(null)
+  const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
 
   React.useEffect(() => {
     let alive = true
@@ -27,30 +32,41 @@ export function WelcomeView() {
   }, [])
 
   const funnel = data?.funnel ?? { dms: 0, adds: 0, trials: 0 }
-  // 设定填过没有：科目、年级、城市填了任意一个就算开过工
-  const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
+  const go = view => setDesk({ view, focusId: null })
+
+  // 没填设定：首页就是问卷，答完直接进入工作流
+  if (!configured) {
+    return (
+      <div className="md-page md-welcome">
+        <OnboardingWizard onDone={() => go('content')} onSwitch={() => go('setup')} />
+      </div>
+    )
+  }
 
   return (
-    <div className="md-page md-welcome">
+    <div className="md-page md-welcome md-workflow">
       <header className="md-welcome-head">
-        <h1>{configured ? t('今天推进哪一步？') : t('先花一分钟，让我认识你')}</h1>
-        <p className="md-welcome-sub">
-          {configured
-            ? t('三个按钮，都是给家长看的。')
-            : t('填一下你教什么、家长愁什么、你平时怎么说话，之后生成的内容才像你。')}
-        </p>
+        <h1>{t('接下来做这三步')}</h1>
+        <p className="md-welcome-sub">{t('做完第一条口播，剩下的就是每天回私信、每周看数据。')}</p>
       </header>
 
-      {configured ? null : (
-        <button type="button" className="md-welcome-setup" onClick={() => setDesk({ view: 'setup', focusId: null })}>
-          <Icon name="gear" size={15} />{t('去填我的设定（1 分钟）')}
-        </button>
-      )}
+      <div className="md-steps">
+        <Step index={1} title={t('认识你')} hint={t('科目、年级、城市、家长最愁什么')} done action={t('改一下')} onAction={() => go('setup')} />
+        <Step index={2} title={t('做第一条口播')} hint={t('写一句你想讲的，出口播稿、标题、标签，挑一版')} action={t('开始')} onAction={() => go('content')} primary />
+        <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；每周录一次数据')} />
+      </div>
 
       <div className="md-welcome-actions">
-        <BigButton icon="chat" title={t('回私信')} hint={t('粘一条家长消息，30 秒知道该回什么、怎么引到加微信')} onClick={() => setDesk({ view: 'dm', focusId: null })} />
-        <BigButton icon="pen" title={t('做内容')} hint={t('写一句你想讲的，出口播稿、标题和标签，挑一版')} onClick={() => setDesk({ view: 'content', focusId: null })} />
-        <BigButton icon="list" title={t('看数据')} hint={t('粘一段后台数据，看哪条真带人')} onClick={() => setDesk({ view: 'data', focusId: null })} />
+        <button type="button" className="md-big" onClick={() => go('dm')}>
+          <span className="md-big-icon"><Icon name="chat" size={20} /></span>
+          <b>{t('回私信')}</b>
+          <small>{t('粘一条家长消息，30 秒知道该回什么、怎么引到加微信')}</small>
+        </button>
+        <button type="button" className="md-big" onClick={() => go('data')}>
+          <span className="md-big-icon"><Icon name="list" size={20} /></span>
+          <b>{t('看数据')}</b>
+          <small>{t('粘一段后台数据，看哪条真带人')}</small>
+        </button>
       </div>
 
       <div className="md-welcome-funnel">
@@ -60,7 +76,7 @@ export function WelcomeView() {
           <div><dt>{t('加微')}</dt><dd>{funnel.adds ? compact(funnel.adds) : '—'}</dd></div>
           <div><dt>{t('约试听')}</dt><dd>{funnel.trials ? compact(funnel.trials) : '—'}</dd></div>
         </dl>
-        <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'data', focusId: null })}>{t('录入数据')}</button>
+        <button type="button" className="md-inline-link" onClick={() => go('data')}>{t('录入数据')}</button>
       </div>
     </div>
   )
