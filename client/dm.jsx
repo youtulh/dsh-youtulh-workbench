@@ -72,6 +72,7 @@ export function DmView() {
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
   const [cases, setCases] = React.useState([])
+  const [casesOpen, setCasesOpen] = React.useState(false)
   const [contentTitles, setContentTitles] = React.useState([])
   const [caseQuery, setCaseQuery] = React.useState(DM_DRAFT.caseQuery)
   const [caseFilter, setCaseFilter] = React.useState(DM_DRAFT.caseFilter)
@@ -89,6 +90,7 @@ export function DmView() {
   const [chatView, setChatView] = React.useState(DM_DRAFT.chatView)
   const dmPerson = useDesk(s => s.dmPerson)
   const dmFilter = useDesk(s => s.dmFilter)
+  const dmCases = useDesk(s => s.dmCases)
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => {
@@ -120,6 +122,13 @@ export function DmView() {
   React.useEffect(() => { reloadChats() }, [reloadChats])
 
   // 从线索漏斗点「聊过 n 轮」过来：直接只看这个人，并滚到最近对话
+  React.useEffect(() => {
+    if (!dmCases) return
+    setCasesOpen(true)
+    setDesk({ dmCases: false })
+    requestAnimationFrame(() => document.getElementById('dm-cases')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [dmCases])
+
   React.useEffect(() => {
     if (!dmFilter) return
     setFilter(dmFilter)
@@ -750,8 +759,8 @@ export function DmView() {
         )}
       </section>
 
-      <section className="md-tile md-cases">
-        <details>
+      <section className="md-tile md-cases" id="dm-cases">
+        <details open={casesOpen} onToggle={event => setCasesOpen(event.currentTarget.open)}>
           <summary>{t('案例库（{n}）· 聊成的会参考', { n: cases.length })}</summary>
           {cases.length === 0 ? (
             <p className="md-muted">{t('还没有导入案例。点上面「导入案例」，粘一段真实对话进来。')}</p>

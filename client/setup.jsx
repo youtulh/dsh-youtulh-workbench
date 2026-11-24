@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { dispatchOps, fetchPlatformWords, fetchVoice, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { dispatchOps, fetchChatRecords, fetchPlatformWords, fetchVoice, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -18,6 +18,7 @@ const SECTIONS = [
   ['setup-voice', '说话方式'],
   ['setup-samples', '原话样本'],
   ['setup-words', '平台词表'],
+  ['setup-cases', '案例库'],
   ['setup-advice', '定位体检'],
 ]
 
@@ -39,9 +40,11 @@ export function SetupView() {
   const [banText, setBanText] = React.useState('')
   const [wordsBusy, setWordsBusy] = React.useState(false)
   const [activeSection, setActiveSection] = React.useState(SECTIONS[0][0])
+  const [caseCount, setCaseCount] = React.useState(null)
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
+    fetchChatRecords().then(data => setCaseCount((data.cases ?? []).length)).catch(() => {})
     fetchPlatformWords().then(data => {
       setAllowText((data.allow ?? []).join('\n'))
       setBanText((data.ban ?? []).join('\n'))
@@ -263,6 +266,16 @@ export function SetupView() {
           <button type="button" className="md-pill is-small" onClick={saveWords} disabled={wordsBusy}>
             {wordsBusy ? t('保存中…') : t('保存词表')}
           </button>
+        </div>
+      </section>
+
+      <section className="md-setup-card" id="setup-cases">
+        <h2><span>7</span>{t('案例库')}</h2>
+        <p className="md-setup-hint">{t('你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去回私信页管理。')}</p>
+        <div className="md-setup-samples-foot">
+          <span className="md-muted">{caseCount === null ? t('读取中…') : t('现在有 {n} 条案例', { n: caseCount })}</span>
+          <span className="md-grow" />
+          <button type="button" className="md-pill is-small" onClick={() => setDesk({ view: 'dm', focusId: null, dmCases: true })}>{t('去管理案例')}</button>
         </div>
       </section>
 
