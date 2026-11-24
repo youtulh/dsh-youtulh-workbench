@@ -219,11 +219,17 @@ export function textLength(text) {
 
 
 
-// 私信线索的「家长反应」和「结果」。跟宿主侧 workspace.js 的 REACTION_NEXT 对应
+// 私信线索的「家长反应」和「结果」。反应决定阶段怎么往前挪，跟宿主侧 workspace.js 对应
 export const REACTIONS = ['没回', '回了但没继续', '问价格', '问细节', '说要考虑', '已加微', '约了试听', '拒绝', '同行/广告']
 export const RESULTS = ['待定', '加微成功', '失败']
 export const ADOPT_OPTIONS = ['未定', '采用', '放弃']
 // 私信分诊的判断和下一步
 export const LEAD_TYPES = ['家长', '学生本人', '同行', '广告']
 export const LEAD_CATEGORIES = ['A 价格', 'B 能不能提分', 'C 怎么补', 'D 时间形式']
-export const NEXT_OPTIONS = ['待加微', '已加微', '已进群', '约了试听', '待跟进']
+// 线索漏斗的阶段：和 线索表.csv 的「阶段」列同值
+export const LEAD_STAGES = ['私信', '已加微信', '已进群', '约试听', '已报课', '流失']
+// 学生管理：出勤 / 掌握 / 作业 三态，和 课次记录.csv 同值
+export const ATTEND_OPTIONS = ['到', '缺']
+export const MASTERY_OPTIONS = ['会', '半会', '不会']
+export const HOMEWORK_OPTIONS = ['交', '未交']
+export const DEFAULT_CLASS_TOTAL = 8

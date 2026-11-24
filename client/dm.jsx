@@ -1,17 +1,18 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { appendLeadRow, draftDm, fetchLeadsWithLessons, fetchWorkspace, profileSummary, revealDir, toast, updateLead, useDesk } from './desk.js'
+import { appendLeadRow, draftDm, fetchLeadsWithLessons, fetchWorkspace, profileSummary, revealDir, setDesk, toast, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
-import { LEAD_CATEGORIES, LEAD_TYPES, NEXT_OPTIONS, REACTIONS, RESULTS } from './util.js'
+import { LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS } from './util.js'
 
 const FILTERS = [
   { id: 'all', label: '全部', test: () => true },
-  { id: 'todo', label: '待跟进', test: lead => lead.next === '待跟进' || lead.next === '待加微' },
-  { id: 'added', label: '已加微', test: lead => lead.next === '已加微' || lead.next === '已进群' },
-  { id: 'trial', label: '已约试听', test: lead => lead.next === '约了试听' },
+  { id: 'lead', label: '私信', test: lead => lead.stage === '私信' },
+  { id: 'wechat', label: '已加微信', test: lead => lead.stage === '已加微信' || lead.stage === '已进群' },
+  { id: 'trial', label: '约试听', test: lead => lead.stage === '约试听' },
+  { id: 'paid', label: '已报课', test: lead => lead.stage === '已报课' },
 ]
 
 const EMPTY_FIELDS = { name: '', grade: '', school: '', painPoint: '', source: '' }
@@ -28,7 +29,7 @@ export function DmView() {
   const [chosen, setChosen] = React.useState(0)
   const [fields, setFields] = React.useState(EMPTY_FIELDS)
   const [draftText, setDraftText] = React.useState('')
-  const [next, setNext] = React.useState('待加微')
+  const [stage, setStage] = React.useState('私信')
   const [leads, setLeads] = React.useState([])
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState('all')
@@ -53,7 +54,7 @@ export function DmView() {
       setChosen(0)
       setFields({ ...EMPTY_FIELDS, ...(data.fields ?? {}) })
       setDraftText(data.drafts?.[0]?.text ?? '')
-      setNext(judged.type === '同行' || judged.type === '广告' ? '待跟进' : '待加微')
+      setStage('私信')
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
@@ -68,7 +69,7 @@ export function DmView() {
     if (!draftText.trim()) return toast(t('先选一条话术'), { error: true })
     setBusy('save')
     try {
-      const data = await appendLeadRow({ raw: raw.trim(), ...fields, type: result.type, category: result.category, draft: draftText, next })
+      const data = await appendLeadRow({ raw: raw.trim(), ...fields, type: result.type, category: result.category, draft: draftText, stage })
       setLeads(data.leads ?? [])
       setLessons(data.lessons ?? [])
       toast(t('记进线索表了'))
@@ -76,6 +77,7 @@ export function DmView() {
       setResult(null)
       setFields(EMPTY_FIELDS)
       setDraftText('')
+      setStage('私信')
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }
@@ -183,9 +185,9 @@ export function DmView() {
             </label>
             <div className="md-dm-actions">
               <label className="md-dm-field">
-                <span>{t('下一步')}</span>
-                <select value={next} onChange={event => setNext(event.target.value)}>
-                  {NEXT_OPTIONS.map(option => <option key={option} value={option}>{t(option)}</option>)}
+                <span>{t('阶段')}</span>
+                <select value={stage} onChange={event => setStage(event.target.value)}>
+                  {LEAD_STAGES.map(option => <option key={option} value={option}>{t(option)}</option>)}
                 </select>
               </label>
               <label className="md-dm-field">
@@ -214,6 +216,7 @@ export function DmView() {
           <h2>{t('线索表')}</h2>
           <span className="md-tile-meta">{t('{n} 条 · 工作区里的 线索表.csv', { n: leads.length })}</span>
           <span className="md-grow" />
+          <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'students', focusId: null })}>{t('看漏斗 →')}</button>
           <button type="button" className="md-pill is-small" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
             <Icon name="folder" size={13} />{t('打开工作区')}
           </button>
@@ -262,10 +265,18 @@ export function DmView() {
                     </select>
                   </label>
                   <label className="md-lead-field">
-                    <span>{t('下一步')}</span>
-                    <select value={lead.next || '待跟进'} onChange={event => mark(lead, { next: event.target.value })}>
-                      {NEXT_OPTIONS.map(row => <option key={row} value={row}>{t(row)}</option>)}
+                    <span>{t('阶段')}</span>
+                    <select value={lead.stage || '私信'} onChange={event => mark(lead, { stage: event.target.value })}>
+                      {LEAD_STAGES.map(row => <option key={row} value={row}>{t(row)}</option>)}
                     </select>
+                  </label>
+                  <label className="md-lead-field md-lead-next-input">
+                    <span>{t('下一步做什么')}</span>
+                    <input
+                      defaultValue={lead.next || ''}
+                      placeholder={t('周四晚 8 点试听')}
+                      onBlur={event => { if (event.target.value !== (lead.next || '')) mark(lead, { next: event.target.value }) }}
+                    />
                   </label>
                   <button type="button" className="md-inline-link" onClick={() => {
                     if (openDraft === lead.rowIndex) return setOpenDraft(-1)

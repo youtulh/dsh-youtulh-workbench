@@ -9,7 +9,10 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-export const LAYOUT = { settings: '我的设定.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv' }
+export const LAYOUT = {
+  settings: '我的设定.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv',
+  students: '学生档案.csv', classes: '班课.csv', lessons: '课次记录.csv',
+}
 
 export const defaultRoot = () => join(homedir(), 'Documents', 'Youtulh 工作台')
 
@@ -91,7 +94,23 @@ export function readSettingsMarkdown(root) {
 // ---- 线索表.csv ----
 
 // 话术 = 实际发给家长的那段；反应 = 家长怎么回的；结果 = 加微成功 / 失败 / 待定
-const LEAD_COLUMNS = ['日期', '姓名', '年级', '学校', '卡点', '来源', '类型', '分类', '原文', '话术', '反应', '结果', '下一步', '更新时间']
+// 阶段 = 漏斗上的位置；下一步 = 具体要做的那件事（自由文本），两者分开记
+const LEAD_COLUMNS = ['日期', '姓名', '年级', '学校', '卡点', '来源', '类型', '分类', '原文', '话术', '反应', '结果', '下一步', '更新时间', '阶段']
+
+/** 线索漏斗的六个阶段：从私信到报课，最后是流失。 */
+export const LEAD_STAGES = ['私信', '已加微信', '已进群', '约试听', '已报课', '流失']
+
+// 老数据只有「下一步」这一列（值带旧叫法），读的时候折成阶段
+const LEGACY_STAGE = { 约了试听: '约试听', 已加微: '已加微信', 已进群: '已进群', 已报课: '已报课' }
+
+/** 一条线索在漏斗上的阶段：显式的「阶段」优先，老数据按结果和下一步推导。 */
+export function stageOfLead(row = {}) {
+  // 明确标了失败就是流失，阶段写的是什么都不算
+  if (String(row.result ?? '').trim() === '失败') return '流失'
+  const explicit = String(row.stage ?? '').trim()
+  if (LEAD_STAGES.includes(explicit)) return explicit
+  return LEGACY_STAGE[String(row.next ?? '').trim()] ?? '私信'
+}
 
 function csvCell(value) {
   return `"${String(value ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
@@ -101,16 +120,41 @@ export function leadsCsvPath(root) {
   return join(root, LAYOUT.leads)
 }
 
-/** 追加一行线索；文件不存在就先写表头。 */
+/**
+ * 老线索表没有「阶段」列：补在最后一列，给每行补一个空值。
+ * 只在写之前调用；读的时候按「结果 / 下一步」推导，不动用户的文件。
+ */
+export function ensureLeadStageColumn(root) {
+  const file = leadsCsvPath(root)
+  if (!existsSync(file)) return false
+  const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  if (!lines.length) return false
+  const head = parseCsvLine(lines[0])
+  if (head.includes('阶段')) return false
+  const next = [head.concat('阶段'), ...lines.slice(1).map(line => parseCsvLine(line).concat(''))]
+  writeFileSync(file, `${next.map(cells => cells.map(csvCell).join(',')).join('\n')}\n`)
+  return true
+}
+
+/** 追加一行线索；文件不存在就先写表头。按表头名字填，老文件加过列也不会错位。 */
 export function appendLead(root, lead) {
   ensureLayout(root)
   const file = leadsCsvPath(root)
   const exists = existsSync(file)
-  const row = [
-    dayStamp(new Date(lead.createdAt ?? Date.now())), lead.name, lead.grade, lead.school, lead.painPoint, lead.source,
-    lead.type, lead.category, lead.raw, lead.draft, lead.reaction ?? '', lead.result ?? '待定', lead.next ?? '待加微',
-    new Date().toISOString().slice(0, 16).replace('T', ' '),
-  ].map(csvCell).join(',')
+  if (exists) ensureLeadStageColumn(root)
+  let header = LEAD_COLUMNS
+  if (exists) {
+    const first = parseCsvLine(readFileSync(file, 'utf8').split(/\r?\n/)[0])
+    if (first.length) header = first
+  }
+  const stage = LEAD_STAGES.includes(String(lead.stage ?? '').trim()) ? String(lead.stage).trim() : '私信'
+  const values = {
+    '日期': dayStamp(new Date(lead.createdAt ?? Date.now())), '姓名': lead.name, '年级': lead.grade, '学校': lead.school,
+    '卡点': lead.painPoint, '来源': lead.source, '类型': lead.type, '分类': lead.category, '原文': lead.raw,
+    '话术': lead.draft, '反应': lead.reaction ?? '', '结果': lead.result ?? '待定', '下一步': lead.next ?? '',
+    '更新时间': new Date().toISOString().slice(0, 16).replace('T', ' '), '阶段': stage,
+  }
+  const row = header.map(name => csvCell(values[name] ?? '')).join(',')
   if (exists) {
     const current = readFileSync(file, 'utf8')
     writeFileSync(file, `${current.replace(/\n*$/, '\n')}${row}\n`)
@@ -151,10 +195,13 @@ export function readLeads(root) {
   const rows = lines.slice(1).map((line, rowIndex) => {
     const cells = parseCsvLine(line)
     const at = name => cells[index(name)] ?? ''
+    const result = at('结果') || '待定'
+    const next = at('下一步')
     return {
       date: at('日期'), name: at('姓名'), grade: at('年级'), school: at('学校'), painPoint: at('卡点'),
       source: at('来源'), type: at('类型'), category: at('分类'), raw: at('原文'), draft: at('话术'),
-      reaction: at('反应'), result: at('结果') || '待定', next: at('下一步') || '待加微', updatedAt: at('更新时间'), rowIndex,
+      reaction: at('反应'), result, next, updatedAt: at('更新时间'), rowIndex,
+      stage: stageOfLead({ stage: at('阶段'), result, next }),
     }
   })
   return rows.reverse()
@@ -248,9 +295,15 @@ export const REACTIONS = Object.keys(REACTION_NEXT)
 export const RESULTS = ['待定', '加微成功', '失败']
 
 /** 按行号改一条线索（行号从 0 开始，按文件里的数据行算）。 */
+const LEAD_PATCH_COLUMN = {
+  name: '姓名', grade: '年级', school: '学校', painPoint: '卡点', source: '来源',
+  result: '结果', next: '下一步', stage: '阶段', draft: '话术',
+}
+
 export function updateLeadRow(root, index, patch = {}) {
   const file = leadsCsvPath(root)
   if (!existsSync(file)) return null
+  ensureLeadStageColumn(root)
   const lines = readFileSync(file, 'utf8').split(/\r?\n/)
   const head = lines[0]
   const dataStart = 1
@@ -265,12 +318,21 @@ export function updateLeadRow(root, index, patch = {}) {
   for (const [key, value] of Object.entries(patch)) {
     if (key === 'reaction') {
       set('反应', value)
-      // 选回「还没回」不应该把下一步改掉
-      if (!patch.next && value) set('下一步', REACTION_NEXT[value] ?? '待跟进')
-      if (value === '已加微' && !patch.result) set('结果', '加微成功')
-    } else if (key === 'result') set('结果', value)
-    else if (key === 'next') set('下一步', value)
-    else if (key === 'draft') set('话术', value)
+      // 家长说已经加了微信 → 阶段往前推，结果跟着记成功；选回「还没回」不动阶段
+      if (value === '已加微') {
+        set('阶段', '已加微信')
+        if (!patch.result) set('结果', '加微成功')
+      } else if (value === '约了试听') {
+        set('阶段', '约试听')
+      }
+    } else if (key === 'stage') {
+      set('阶段', LEAD_STAGES.includes(String(value ?? '').trim()) ? String(value).trim() : '私信')
+    } else if (key === 'result') {
+      set('结果', value)
+      if (value === '失败') set('阶段', '流失')
+    } else if (LEAD_PATCH_COLUMN[key]) {
+      set(LEAD_PATCH_COLUMN[key], value)
+    }
   }
   set('更新时间', new Date().toISOString().slice(0, 16).replace('T', ' '))
   lines[at] = cells.map(csvCell).join(',')
@@ -278,11 +340,12 @@ export function updateLeadRow(root, index, patch = {}) {
   return readLeads(root)
 }
 
-/** 成功经验：加微成功（或已加微）的线索摘要，给分诊 prompt 当参考。 */
+/** 成功经验：进了漏斗后半段（加了微信 → 报课）的线索摘要，给分诊 prompt 当参考。 */
 export function leadLessons(root, limit = 3) {
+  const win = new Set(['已加微信', '已进群', '约试听', '已报课'])
   return readLeads(root)
-    // 明确标了失败的就不算成功经验，哪怕下一步还写着已加微
-    .filter(row => row.result !== '失败' && (row.result === '加微成功' || row.next === '已加微'))
+    // 明确标了失败的就不算成功经验
+    .filter(row => row.result !== '失败' && (row.result === '加微成功' || win.has(row.stage)))
     .slice(0, limit)
     .map(row => `${row.type || '家长'} · ${row.category || '未分类'}｜家长说「${(row.raw || '').slice(0, 24)}」｜我们回「${(row.draft || '').slice(0, 40)}」→ 加了微信`)
 }

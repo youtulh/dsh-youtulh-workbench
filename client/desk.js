@@ -221,6 +221,48 @@ export async function updateLead(index, patch) {
   return request('workspace/lead/update', { index, patch })
 }
 
+/** 漏斗上把一条线索挪到另一个阶段。 */
+export async function setLeadStage(index, stage) {
+  return request('workspace/lead/stage', { index, stage })
+}
+
+/** 报课了：一条线索转成学生档案。 */
+export async function convertLead(index) {
+  return request('students/from-lead', { index })
+}
+
+/** 学生档案 + 班课。 */
+export async function fetchStudents() {
+  return request('students')
+}
+
+export async function saveStudentRow(student, original = null) {
+  return request('students/save', { student, original })
+}
+
+export async function removeStudentRow(name, grade) {
+  return request('students/remove', { name, grade })
+}
+
+export async function saveClassRow(klass, original = null) {
+  return request('classes/save', { klass, original })
+}
+
+export async function removeClassRow(name) {
+  return request('classes/remove', { name })
+}
+
+/** 某个班的全部课次记录。 */
+export async function fetchLessons(className) {
+  const data = await request(`lessons?class=${encodeURIComponent(String(className ?? ''))}`)
+  return data.rows ?? []
+}
+
+/** 保存某一次课：一个学生一行。 */
+export async function saveLessons(payload) {
+  return request('lessons/save', payload)
+}
+
 /** 在 Finder 里打开工作区里的某个目录。 */
 export async function revealDir(dir) {
   return request('workspace/reveal', { dir })

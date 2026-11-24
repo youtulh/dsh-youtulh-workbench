@@ -24,6 +24,7 @@ Afterwards the home page is a three-step workflow.
 | **Answer DMs** | Paste a parent's message → decide who they are and what they ask → two replies (one that catches them, one that moves them to WeChat) → seven ledger fields | A Word file under `私信/<date name>/`, plus a row in `线索表.csv` |
 | **Make content** | Spoken video only. Write one line of your own → 3 drafts; or pick from 10 topics → 3 versions each; edit by hand or type one line to revise the set; keep the one you like | `.docx` + `.md` under `内容/<date title>/` |
 | **Read the numbers** | Record views, DMs, WeChat adds, trial bookings → two rankings | `数据/复盘 <date>.csv` |
+| **Students** | Drag leads through the pipeline → turn enrolled parents into students → create a class (dates, roster, 8 lessons, layer list) → record attendance, mastery and homework per lesson | `学生档案.csv`, `班课.csv`, `课次记录.csv`; the stage is written back to `线索表.csv` |
 
 Plus **我的产出** (list the real files in your workspace, preview and reveal them) and **我的设定** (edit `我的设定.md` visually, or edit the file directly and refresh).
 

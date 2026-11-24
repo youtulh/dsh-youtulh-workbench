@@ -90,9 +90,9 @@ export function WelcomeView() {
   }
 
   const total = leads.length
-  const todo = leads.filter(row => row.next === '待跟进' || row.next === '待加微').length
-  const added = leads.filter(row => ['已加微', '已进群', '约了试听'].includes(row.next)).length
-  const trials = leads.filter(row => row.next === '约了试听').length
+  const todo = leads.filter(row => row.stage === '私信').length
+  const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
+  const trials = leads.filter(row => row.stage === '约试听').length
 
   return (
     <div className="md-page md-welcome md-workflow">
@@ -134,6 +134,7 @@ export function WelcomeView() {
         />
         <Step index={2} title={t('做第一条口播')} hint={t('选题 → 每个 3 版 → 改一版 → 采用这条')} action={t('开始')} onAction={() => go('content')} primary />
         <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
+        <Step index={4} title={t('报课之后')} hint={t('转成学生、建班，每次课记出勤和掌握')} action={t('去学生')} onAction={() => go('students')} />
       </div>
 
       <div className="md-welcome-actions">

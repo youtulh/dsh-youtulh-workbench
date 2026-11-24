@@ -113,11 +113,12 @@ test('线索表：记录话术、反应、结果；改了反应自动推下一�
     assert.equal(rows[0].result, '待定')
     assert.equal(rows[0].rowIndex, 1)  // 最新一行在文件里是第 2 条数据
 
-    // 王（文件第一行）：家长加了微信 → 下一步和结果一起变
+    // 王（文件第一行）：家长加了微信 → 阶段和结果一起变，下一步留给具体动作
     rows = updateLeadRow(root, 0, { reaction: '已加微' })
     const wang = rows.find(row => row.name === '王')
-    assert.equal(wang.next, '已加微')
+    assert.equal(wang.stage, '已加微信')
     assert.equal(wang.result, '加微成功')
+    assert.equal(wang.next, '')
 
     // 经验里能捞到这条
     const lessons = leadLessons(root)
@@ -125,13 +126,14 @@ test('线索表：记录话术、反应、结果；改了反应自动推下一�
     assert.match(lessons[0], /加了微信/)
     assert.match(lessons[0], /王|高一 58 分|家长您好/)
 
-    // 选回「还没回」不会把下一步改掉
+    // 选回「还没回」不会把阶段改回去
     rows = updateLeadRow(root, 0, { reaction: '' })
-    assert.equal(rows.find(row => row.name === '王').next, '已加微')
+    assert.equal(rows.find(row => row.name === '王').stage, '已加微信')
 
-    // 手动改成失败
+    // 手动改成失败 → 流失，不再算成功经验
     rows = updateLeadRow(root, 0, { result: '失败' })
     assert.equal(rows.find(row => row.name === '王').result, '失败')
+    assert.equal(rows.find(row => row.name === '王').stage, '流失')
     assert.equal(leadLessons(root).length, 0)
   } finally {
     await rm(root, { recursive: true, force: true })

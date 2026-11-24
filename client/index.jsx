@@ -6,6 +6,7 @@ import { DataView } from './data.jsx'
 import { DmView } from './dm.jsx'
 import { setAppCtx } from './launch.js'
 import { SetupView } from './setup.jsx'
+import { StudentsView } from './students.jsx'
 import { WelcomeView } from './welcome.jsx'
 import { SettingsDialog } from './settings.jsx'
 import css from './styles.css'
@@ -19,12 +20,13 @@ const PANEL_ID = 'media-desk'
 const NAV = [
   { id: 'home', label: '首页', icon: 'wall' },
   { id: 'dm', label: '回私信', icon: 'chat' },
+  { id: 'students', label: '学生', icon: 'target' },
   { id: 'content', label: '做内容', icon: 'pen' },
   { id: 'data', label: '看数据', icon: 'list' },
   { id: 'setup', label: '我的设定', icon: 'user' },
 ]
 
-const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: DataView, setup: SetupView }
+const VIEWS = { home: WelcomeView, dm: DmView, students: StudentsView, content: CreateView, data: DataView, setup: SetupView }
 
 function UpdateBadge() {
   const info = useVersionInfo()

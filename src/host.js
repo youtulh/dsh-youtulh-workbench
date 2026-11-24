@@ -14,6 +14,7 @@ import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVari
 import { dmPrompt, localDm, normalizeDm } from './dm.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, recordPickedTopics, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
+import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
 import { currentLang, platformName, tr, withLang } from './i18n.js'
@@ -216,6 +217,14 @@ async function route(ctx, store, desk, req, res) {
         default: defaultSelection(ctx),
         current: assistantModelOverride(),
       })
+    }
+    if (path === 'students') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root) })
+    }
+    if (path === 'lessons') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { rows: readLessons(root, url.searchParams.get('class') ?? '') })
     }
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
@@ -581,16 +590,90 @@ async function route(ctx, store, desk, req, res) {
     }
     case 'lead/append': {
       // 话术定了：这一条线索连同话术一起写进 线索表.csv
+      // 手动记线索可以没有私信原文，但姓名和卡点至少要有一个
       const raw = String(body.raw ?? '').trim().slice(0, 2000)
-      if (!raw) return json(res, 400, { error: tr('私信原文不能为空') })
+      const name = String(body.name ?? '').trim()
+      const painPoint = String(body.painPoint ?? '').trim()
+      if (!raw && !name && !painPoint) return json(res, 400, { error: tr('至少写一个姓名或卡点') })
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       appendLead(root, {
         raw,
-        name: body.name, grade: body.grade, school: body.school, painPoint: body.painPoint, source: body.source,
+        name, grade: body.grade, school: body.school, painPoint, source: body.source,
         type: body.type, category: body.category, draft: body.draft, reaction: body.reaction, result: body.result, next: body.next,
-        createdAt: new Date().toISOString(),
+        stage: body.stage, createdAt: new Date().toISOString(),
       })
       return json(res, 200, { leads: readLeads(root), lessons: leadLessons(root) })
+    }
+    case 'workspace/lead/stage': {
+      // 漏斗上把一张卡拖到另一列
+      const index = Number(body.index)
+      if (!Number.isInteger(index) || index < 0) return json(res, 400, { error: tr('行号不对') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const leads = updateLeadRow(root, index, { stage: body.stage })
+      if (!leads) return json(res, 404, { error: tr('没找到这一行') })
+      return json(res, 200, { leads, lessons: leadLessons(root) })
+    }
+    case 'students/from-lead': {
+      // 报课了：线索转成学生档案；同名同年级已经在了就只补空字段
+      const index = Number(body.index)
+      if (!Number.isInteger(index) || index < 0) return json(res, 400, { error: tr('行号不对') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const lead = readLeads(root).find(row => row.rowIndex === index)
+      if (!lead) return json(res, 404, { error: tr('没找到这条线索') })
+      const students = readStudents(root)
+      const name = String(lead.name ?? '').trim() || String(lead.grade ?? '').trim() || '家长'
+      const grade = String(lead.grade ?? '').trim()
+      const exists = students.find(row => row.name === name && row.grade === grade)
+      if (!exists) {
+        saveStudent(root, {
+          name, grade, school: lead.school, source: lead.source, enrolledAt: dayStamp(),
+          note: lead.painPoint ? `卡点：${lead.painPoint}` : '',
+        })
+      }
+      if (lead.stage !== '流失' && lead.stage !== '已报课') updateLeadRow(root, index, { stage: '已报课' })
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root), leads: readLeads(root) })
+    }
+    case 'students/save': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      try {
+        saveStudent(root, body.student ?? {}, body.original ?? null)
+      } catch (err) {
+        return json(res, 400, { error: tr(err.message) })
+      }
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root) })
+    }
+    case 'students/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      removeStudent(root, { name: body.name, grade: body.grade })
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root) })
+    }
+    case 'classes/save': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      try {
+        saveClass(root, body.klass ?? {}, body.original ?? null)
+      } catch (err) {
+        return json(res, 400, { error: tr(err.message) })
+      }
+      return json(res, 200, { classes: readClasses(root), students: readStudents(root) })
+    }
+    case 'classes/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      try {
+        removeClass(root, body.name)
+      } catch (err) {
+        return json(res, 400, { error: tr(err.message) })
+      }
+      return json(res, 200, { classes: readClasses(root), students: readStudents(root) })
+    }
+    case 'lessons/save': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      let rows = []
+      try {
+        rows = saveLessonRows(root, { className: body.class, no: body.no, date: body.date, rows: body.rows })
+      } catch (err) {
+        return json(res, 400, { error: tr(err.message) })
+      }
+      return json(res, 200, { rows })
     }
     case 'workspace/lead/update': {
       // 家长有反应了：按行号改这一条的「反应 / 结果 / 下一步 / 话术」
