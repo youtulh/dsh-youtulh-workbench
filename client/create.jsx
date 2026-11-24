@@ -10,11 +10,11 @@ function copy(text, what) {
 
 function PickList({ rows, value, onChange, render }) {
   return (
-    <ul className="md-pick">
+    <ul className="md-choice">
       {rows.map((row, index) => (
         <li key={index}>
-          <button type="button" className={`md-pick-row ${index === value ? 'is-on' : ''}`} onClick={() => onChange(index)}>
-            <span className="md-pick-dot" aria-hidden="true" />
+          <button type="button" className={`md-choice-row ${index === value ? 'is-on' : ''}`} onClick={() => onChange(index)}>
+            <span className="md-choice-dot" aria-hidden="true" />
             {render(row, index)}
           </button>
         </li>
@@ -107,7 +107,7 @@ export function CreateView() {
               {title ? <button type="button" className="md-inline-link" onClick={() => copy(title, t('标题'))}>{t('复制')}</button> : null}
             </header>
             {creative.titles.length
-              ? <PickList rows={creative.titles} value={pick.title} onChange={index => setPick({ ...pick, title: index })} render={row => <span className="md-pick-text">{row}</span>} />
+              ? <PickList rows={creative.titles} value={pick.title} onChange={index => setPick({ ...pick, title: index })} render={row => <span className="md-choice-text">{row}</span>} />
               : <p className="md-muted">{t('这次没给出标题，换一批试试。')}</p>}
           </section>
 
