@@ -1052,3 +1052,10 @@ body[data-ds-dark-theme] .md-root {
 .md-create-examples button:hover { background: var(--hover); }
 .md-create-examples button svg { flex: none; margin-top: 4px; color: var(--accent); }
 .md-create-examples p { margin-top: 10px; font-size: 12px; }
+
+/* 看数据：文件夹概览 */
+.md-data { display: grid; gap: 12px; width: min(880px, 100%); margin: 0 auto; }
+.md-data-summary { display: flex; gap: 28px; padding: 16px 18px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-data-summary div { display: flex; align-items: baseline; gap: 6px; }
+.md-data-summary b { font-size: 18px; font-weight: 500; }
+.md-data-summary span { color: var(--ink3); font-size: 12.5px; }

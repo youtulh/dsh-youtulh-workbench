@@ -49,18 +49,18 @@ export function buildPrompt(kind, payload = {}) {
     ].join('\n')
   }
   if (kind === 'data') {
+    const files = Array.isArray(payload.files) ? payload.files.slice(0, 12) : []
     return [
       WORKSPACE_NOTE,
       '',
-      '这是我的后台数据，帮我按下面几件事分析：',
+      `数据在 ~/Documents/Youtulh 工作台/数据/ 文件夹里${files.length ? `，现在是这些：${files.join('、')}` : ''}。先把里面的文件读一遍。`,
+      '',
+      '按下面三件事分析：',
       '1. 哪条内容真带人（看私信、加微、约试听，不只是播放）',
       '2. 哪条白拍了（播放高但不带人）',
       '3. 下一步该改什么，只给一条最值得改的',
       '',
-      '数据：',
-      payload.text || '（还没粘，请先问我）',
-      '',
-      '分析完调用 youtulh_save_output（kind=data，formats 用 csv + md）把结论写进工作区。',
+      '分析完调用 youtulh_save_output（kind=data，formats 用 csv + md）把结论写回工作区，并在回复里直接讲结论。',
     ].join('\n')
   }
   return String(payload.text ?? '')

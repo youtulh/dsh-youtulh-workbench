@@ -42,7 +42,7 @@ export function DmView() {
           <span className="md-muted">{t('点下面的按钮，会跳到对话并把私信填好，按回车就开始。')}</span>
           <span className="md-grow" />
           <button type="button" className="md-pill is-primary" onClick={launch} disabled={!raw.trim()}>
-            <Icon name="chat" size={14} />{t('让助教在对话里分诊')}
+            <Icon name="chat" size={14} />{t('开始')}
           </button>
         </div>
       </section>
