@@ -92,6 +92,7 @@ export function DmView() {
   const dmFilter = useDesk(s => s.dmFilter)
   const dmCases = useDesk(s => s.dmCases)
   const prefilledPerson = React.useRef('')
+  const autoHistoryFor = React.useRef('')
   const [openChat, setOpenChat] = React.useState(-1)
   const [chatShown, setChatShown] = React.useState(30)
 
@@ -126,9 +127,13 @@ export function DmView() {
   // 从线索进来看某个人时，把上一轮对话带进上下文，接着聊不用重讲背景
   React.useEffect(() => {
     if (!chatPerson || history) return
+    if (autoHistoryFor.current === chatPerson) return
     const mine = chats.filter(row => row.name === chatPerson)
     const last = mine[mine.length - 1]
-    if (last) setHistory(`${t('对方')}：${last.incoming}\n${t('我方')}：${last.outgoing}`)
+    if (last) {
+      autoHistoryFor.current = chatPerson
+      setHistory(`${t('对方')}：${last.incoming}\n${t('我方')}：${last.outgoing}`)
+    }
   }, [chatPerson, chats.length])
 
   // 从线索漏斗点「聊过 n 轮」过来：直接只看这个人，并滚到最近对话
@@ -561,6 +566,12 @@ export function DmView() {
                   ) : null}
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
+                  {lead.source ? (
+                    <span className={`md-lead-source ${contentTitles.length && !contentTitles.includes(lead.source) ? 'is-missing' : ''}`}>
+                      {t('来源：{source}', { source: lead.source })}
+                      {contentTitles.length && !contentTitles.includes(lead.source) ? t(' · 不在内容库') : ''}
+                    </span>
+                  ) : null}
                   {lead.nextAt || lead.followUps ? (
                     <span className={`md-lead-follow ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
                       {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}

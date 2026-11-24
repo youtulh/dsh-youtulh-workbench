@@ -596,4 +596,5 @@ export const PAGES = {
   '把人加进来就能记课了。': 'Add students to start recording lessons.',
   '还没有学生。聊天台标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。': 'No students yet. Marking “enrolled” in the chat desk creates one; you can also convert a lead in the pipeline or add one directly.',
   '⌘ + Enter 直接给下一句；结果就在这页出，不用跳到对话。': '⌘ + Enter suggests the next line right here — no need to jump to chat.',
+  ' · 不在内容库': ' · not in content library',
 }
