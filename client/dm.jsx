@@ -64,6 +64,7 @@ export function DmView() {
   const [stage, setStage] = React.useState(DM_DRAFT.stage)
   const [leads, setLeads] = React.useState([])
   const [leadsReady, setLeadsReady] = React.useState(false)
+  const [leadsError, setLeadsError] = React.useState('')
   const [converted, setConverted] = React.useState({})
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState(DM_DRAFT.filter)
@@ -78,6 +79,7 @@ export function DmView() {
   const [caseFilter, setCaseFilter] = React.useState(DM_DRAFT.caseFilter)
   const [chatTotal, setChatTotal] = React.useState(0)
   const [chatsReady, setChatsReady] = React.useState(false)
+  const [chatsError, setChatsError] = React.useState('')
   const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
@@ -109,17 +111,19 @@ export function DmView() {
   }, [])
 
   const reload = React.useCallback(() => {
+    setLeadsError('')
     fetchLeadsWithLessons()
       .then(({ leads: rows, lessons: hints }) => { setLeads(rows); setLessons(hints) })
-      .catch(() => {})
+      .catch(err => setLeadsError(err.message))
       .finally(() => setLeadsReady(true))
   }, [])
   React.useEffect(() => { reload() }, [reload])
 
   const reloadChats = React.useCallback(() => {
+    setChatsError('')
     fetchChatRecords()
       .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length); setCases(data.cases ?? []) })
-      .catch(() => {})
+      .catch(err => setChatsError(err.message))
       .finally(() => setChatsReady(true))
   }, [])
   React.useEffect(() => { reloadChats() }, [reloadChats])
@@ -545,7 +549,12 @@ export function DmView() {
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜家长、卡点、原话')} />
         </div>
 
-        {!leadsReady ? (
+        {leadsError ? (
+          <div className="md-load-error">
+            <p>{t('读取失败：{msg}', { msg: leadsError })}</p>
+            <button type="button" className="md-pill is-small" onClick={reload}>{t('重试')}</button>
+          </div>
+        ) : !leadsReady ? (
           <p className="md-muted md-dm-empty">{t('读取中…')}</p>
         ) : leads.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('还没有线索。粘第一条私信，判断完记进线索表，这里就会多一行。')}</p>
@@ -719,7 +728,12 @@ export function DmView() {
           ) : null}
           <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
         </header>
-        {!chatsReady && chats.length === 0 ? (
+        {chatsError ? (
+          <div className="md-load-error">
+            <p>{t('读取失败：{msg}', { msg: chatsError })}</p>
+            <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>
+          </div>
+        ) : !chatsReady && chats.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('读取中…')}</p>
         ) : chats.length === 0 ? (
           <div className="md-works-empty">

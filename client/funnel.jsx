@@ -13,11 +13,14 @@ export function FunnelPanel({ students = [], onChanged }) {
   const [leads, setLeads] = React.useState(null)
   const [chatCounts, setChatCounts] = React.useState({})
   const [contentTitles, setContentTitles] = React.useState([])
+  const [loadError, setLoadError] = React.useState('')
   const [busy, setBusy] = React.useState('')
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
 
-  const load = () => Promise.all([fetchLeadsWithLessons(), fetchChatRecords().catch(() => ({ rows: [] })), fetchContent().catch(() => ({ rows: [] }))])
+  const load = () => {
+    setLoadError('')
+    return Promise.all([fetchLeadsWithLessons(), fetchChatRecords().catch(() => ({ rows: [] })), fetchContent().catch(() => ({ rows: [] }))])
     .then(([{ leads: rows }, chatData, content]) => {
       setLeads(rows)
       setContentTitles((content.rows ?? []).map(row => row['标题']).filter(Boolean).slice(0, 60))
@@ -27,7 +30,8 @@ export function FunnelPanel({ students = [], onChanged }) {
       }
       setChatCounts(counts)
     })
-    .catch(err => toast(err.message, { error: true }))
+    .catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
+  }
   React.useEffect(() => { load() }, [])
 
   const move = async (lead, stage) => {
@@ -97,6 +101,13 @@ export function FunnelPanel({ students = [], onChanged }) {
         <span className="md-muted">{t('共 {n} 条', { n: leads.length })}</span>
         <button type="button" className="md-pill is-small is-primary" onClick={addLead}><Icon name="plus" size={13} />{t('记一条线索')}</button>
       </div>
+
+      {loadError ? (
+        <div className="md-load-error">
+          <p>{t('读取失败：{msg}', { msg: loadError })}</p>
+          <button type="button" className="md-pill is-small" onClick={load}>{t('重试')}</button>
+        </div>
+      ) : null}
 
       {leads.length === 0 ? (
         <div className="md-works-empty">
