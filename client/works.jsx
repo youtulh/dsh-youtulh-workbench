@@ -13,6 +13,7 @@ export function WorksPanel() {
   const [tree, setTree] = React.useState(null)
   const [info, setInfo] = React.useState(null)
   const [preview, setPreview] = React.useState(null)
+  const [loadError, setLoadError] = React.useState('')
 
   const view = async (item) => {
     if (preview?.dir === item.dir) return setPreview(null)
@@ -26,10 +27,13 @@ export function WorksPanel() {
     }
   }
 
-  const load = () => Promise.all([fetchTree(), fetchWorkspace()]).then(([nextTree, nextInfo]) => {
-    setTree(nextTree)
-    setInfo(nextInfo)
-  }).catch(err => toast(err.message, { error: true }))
+  const load = () => {
+    setLoadError('')
+    return Promise.all([fetchTree(), fetchWorkspace()]).then(([nextTree, nextInfo]) => {
+      setTree(nextTree)
+      setInfo(nextInfo)
+    }).catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
+  }
 
   React.useEffect(() => { load() }, [])
 
@@ -43,7 +47,13 @@ export function WorksPanel() {
         <button type="button" className="md-pill is-small" onClick={load}>{t('刷新')}</button>
       </div>
 
-      {tree === null ? <p className="md-muted">{t('读取中…')}</p> : null}
+      {tree === null && !loadError ? <p className="md-muted">{t('读取中…')}</p> : null}
+      {tree === null && loadError ? (
+        <div className="md-load-error">
+          <p>{t('读取失败：{msg}', { msg: loadError })}</p>
+          <button type="button" className="md-pill is-small" onClick={load}>{t('重试')}</button>
+        </div>
+      ) : null}
 
       {tree?.length === 0 ? (
         <div className="md-works-empty">
