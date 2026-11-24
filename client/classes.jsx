@@ -368,6 +368,10 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
         </section>
       ) : null}
 
+      {klass.status === '结课' ? (
+        <p className="md-muted md-class-ended-note">{t('这个班已结课：还能补改以前的课次记录；要接着上，点上面「重新开班」。')}</p>
+      ) : null}
+
       {roster.length ? (
         <section className="md-tile md-lesson" id="lesson-recorder">
           <header className="md-tile-head">

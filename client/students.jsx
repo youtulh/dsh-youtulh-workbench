@@ -194,7 +194,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         <select value={filter} onChange={event => setFilter(event.target.value)}>
           <option value="">{t('全部班')}</option>
           <option value="none">{t('还没排班')}</option>
-          {classes.map(row => <option key={row.name} value={row.name}>{row.name}</option>)}
+          {classes.filter(row => row.status !== '结课').map(row => <option key={row.name} value={row.name}>{row.name}</option>)}
         </select>
         <span className="md-grow" />
         <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入名单')}</button>
