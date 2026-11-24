@@ -1756,3 +1756,8 @@ body[data-ds-dark-theme] .md-root {
   .md-chat-row > header select { max-width: 100%; }
   .md-chat-person-row { gap: 6px; }
 }
+
+/* 聊天台：长消息换行；没写名字的行不可点 */
+.md-dm-drafts p, .md-chat-full p { overflow-wrap: anywhere; }
+.md-chat-person-row:disabled { cursor: default; opacity: .7; }
+.md-chat-person-row:disabled:hover { background: none; }

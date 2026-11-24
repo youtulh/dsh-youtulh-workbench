@@ -417,6 +417,7 @@ export const PAGES = {
   按轮次: 'By turn',
   按人: 'By person',
   没写名字: 'No name',
+  '页面只看最近 {n} 轮': 'Showing the latest {n} turns',
   这个渠道还没有对话: 'No chats in this channel yet',
   '{n} 轮': '{n} turns',
   来自聊天成交: 'From chat close',

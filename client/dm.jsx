@@ -55,6 +55,7 @@ export function DmView() {
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
+  const [chatTotal, setChatTotal] = React.useState(0)
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
   const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
@@ -77,7 +78,7 @@ export function DmView() {
   React.useEffect(() => { reload() }, [reload])
 
   const reloadChats = React.useCallback(() => {
-    fetchChatRecords().then(data => setChats(data.rows ?? [])).catch(() => {})
+    fetchChatRecords().then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length) }).catch(() => {})
   }, [])
   React.useEffect(() => { reloadChats() }, [reloadChats])
 
@@ -168,8 +169,9 @@ export function DmView() {
     const map = new Map()
     for (const row of chats) {
       if (chatFilter !== 'all' && row.channel !== chatFilter) continue
+      const key = row.name || ''
       const name = row.name || t('没写名字')
-      const item = map.get(name) ?? { name, turns: 0, lastDate: '', lastResult: '', channel: row.channel }
+      const item = map.get(key) ?? { key, name, turns: 0, lastDate: '', lastResult: '', channel: row.channel }
       item.turns += 1
       if (row.date >= item.lastDate) {
         item.lastDate = row.date
@@ -458,7 +460,8 @@ export function DmView() {
       <section className="md-tile md-chat-log" id="dm-chat-log">
         <header className="md-tile-head">
           <h2>{t('最近对话')}</h2>
-          <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chats.length })}</span>
+          <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chatTotal || chats.length })}</span>
+          {chatTotal > chats.length ? <span className="md-muted">{t('页面只看最近 {n} 轮', { n: chats.length })}</span> : null}
           {chatStats.length ? (
             <span className="md-chat-stats">
               {chatStats.map(item => <em key={item.result} className={`is-${item.result === '流失' ? 'lost' : 'won'}`}>{t(item.result)} {item.n}</em>)}
@@ -495,8 +498,8 @@ export function DmView() {
           chatView === 'people' && !chatPerson ? (
             <ul className="md-chat-people">
               {people.map(person => (
-                <li key={person.name}>
-                  <button type="button" className="md-chat-person-row" onClick={() => setChatPerson(person.name)}>
+                <li key={person.key || 'none'}>
+                  <button type="button" className="md-chat-person-row" onClick={() => { if (person.key) setChatPerson(person.key) }} disabled={!person.key}>
                     <b>{person.name}</b>
                     <span className="md-chat-channel">{t(person.channel)}</span>
                     <span className="md-muted">{t('{n} 轮', { n: person.turns })}</span>
