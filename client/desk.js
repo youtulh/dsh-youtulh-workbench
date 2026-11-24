@@ -128,6 +128,15 @@ export async function fetchSuggestions() {
   return { prompts: data.prompts ?? [], source: data.source }
 }
 
+/** 人设摘要：科目 · 年级 · 城市（+ 前两条家长痛点），给页面和提示词用。 */
+export function profileSummary(state) {
+  const p = state?.positioning ?? {}
+  const who = [p.subject, p.grade, p.city].filter(Boolean).join(' · ')
+  const pains = (state?.painPoints ?? []).slice(0, 2).join('、')
+  const tail = pains ? `家长愁：${pains}` : ''
+  return [who, tail].filter(Boolean).join('；')
+}
+
 /** 读工作区里的线索表（CSV）。 */
 export async function fetchLeads() {
   const data = await request('workspace/leads')

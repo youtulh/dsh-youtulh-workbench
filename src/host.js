@@ -15,7 +15,7 @@ import { harvest, harvestText } from './harvest.js'
 import { generateImage } from './images.js'
 import { generateToolImage, imageTool } from './image-tool.js'
 import { localIntent } from './intents.js'
-import { computeInsights, exportSkill, proposeRules } from './learn.js'
+import { exportSkill, proposeRules } from './learn.js'
 import { createMonidRunner, fetchAccount, importPosts, monidStatus, postsToMaterial, resolveAccount, saveCovers } from './monid.js'
 import { applyOps, newId } from './ops.js'
 import { applyRevision, Producer } from './produce.js'
@@ -356,7 +356,6 @@ async function route(ctx, store, desk, req, res) {
         current: assistantModelOverride(),
       })
     }
-    if (path === 'insights') return json(res, 200, computeInsights(await store.read()))
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
       return json(res, 200, { leads: readLeads(resolveRoot(settings.saveRoot)) })

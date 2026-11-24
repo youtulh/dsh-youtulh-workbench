@@ -1,6 +1,6 @@
 // 做内容：先读人设，给几条「家长可能问的问题」当案例，用户照着改，再点开始去对话。
 import React from 'react'
-import { fetchSuggestions, toast, useDesk } from './desk.js'
+import { fetchSuggestions, fetchWorkspace, profileSummary, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
@@ -12,7 +12,12 @@ export function CreateView() {
   const [hint, setHint] = React.useState('')
   const [examples, setExamples] = React.useState([])
   const [source, setSource] = React.useState(null)
+  const [root, setRoot] = React.useState('')
   const configured = Boolean(positioning.subject || positioning.grade)
+  const summary = profileSummary({ positioning, painPoints: pains })
+  const profileKey = JSON.stringify([positioning, pains])
+
+  React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
   React.useEffect(() => {
     let alive = true
@@ -22,10 +27,11 @@ export function CreateView() {
       setSource(result.source)
     }).catch(() => {})
     return () => { alive = false }
-  }, [])
+    // 设定变了就重新出案例
+  }, [profileKey])
 
   const start = () => {
-    if (!startChat('content', { hint })) launchFailedToast(toast)
+    if (!startChat('content', { hint, root, profile: summary })) launchFailedToast(toast)
   }
 
   return (
@@ -40,6 +46,10 @@ export function CreateView() {
           </p>
         </div>
       </header>
+
+      {summary ? (
+        <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p>
+      ) : null}
 
       {examples.length ? (
         <section className="md-create-examples">

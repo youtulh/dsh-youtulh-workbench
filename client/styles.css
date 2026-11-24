@@ -1059,3 +1059,7 @@ body[data-ds-dark-theme] .md-root {
 .md-data-summary div { display: flex; align-items: baseline; gap: 6px; }
 .md-data-summary b { font-size: 18px; font-weight: 500; }
 .md-data-summary span { color: var(--ink3); font-size: 12.5px; }
+
+/* 页面上显示「按你的设定」 */
+.md-profile-line { display: flex; align-items: center; gap: 6px; color: var(--ink3); font-size: 12.5px; line-height: 19px; }
+.md-profile-line svg { color: var(--accent); }

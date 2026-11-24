@@ -1,19 +1,24 @@
 // 回私信：这里只负责收原文，判断和话术交给对话里的助教；线索表是工作区里的 CSV。
 import React from 'react'
-import { fetchLeads, revealDir, toast } from './desk.js'
+import { fetchLeads, fetchWorkspace, profileSummary, revealDir, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
 
 export function DmView() {
   useLang()
+  const positioning = useDesk(s => s.state?.positioning) ?? {}
+  const pains = useDesk(s => s.state?.painPoints) ?? []
   const [raw, setRaw] = React.useState('')
+  const [root, setRoot] = React.useState('')
+  const summary = profileSummary({ positioning, painPoints: pains })
+  React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   const [leads, setLeads] = React.useState([])
   const reload = React.useCallback(() => { fetchLeads().then(setLeads).catch(() => {}) }, [])
   React.useEffect(() => { reload() }, [reload])
 
   const launch = () => {
-    if (!startChat('dm', { raw })) launchFailedToast(toast)
+    if (!startChat('dm', { raw, root, profile: summary })) launchFailedToast(toast)
   }
   const copy = (text) => {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
@@ -27,6 +32,8 @@ export function DmView() {
           <p className="md-page-sub">{t('粘一条家长私信，交给对话里的助教：他判断是谁、问什么，给两条话术（第二条引导加微信），再把台账存进线索表。')}</p>
         </div>
       </header>
+
+      {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
 
       <section className="md-dm-input">
         <label className="md-field">

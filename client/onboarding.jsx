@@ -49,13 +49,13 @@ export function OnboardingWizard({ onDone, onSwitch }) {
     setAnswer(key, [...picked, value])
   }
 
+  // 保存完就留在首页：状态一变，首页会自动从问卷切到工作流，不强制去做口播
   const finish = () => {
     const { positioning, painPoints } = summary
     dispatchOps([
       { op: 'update_positioning', ...positioning },
       { op: 'set_pain_points', points: painPoints },
-    ], { label: t('填好了我的设定') })
-    onDone?.()
+    ], { label: t('填好了我的设定') }).catch(err => toast(err.message, { error: true }))
   }
 
   // 最后一屏：把拼出来的定位给对方看，确认了才写进去

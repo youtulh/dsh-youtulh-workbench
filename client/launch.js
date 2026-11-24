@@ -7,15 +7,26 @@ export function setAppCtx(ctx) {
   appCtx = ctx
 }
 
-const WORKSPACE_NOTE = '工作区根目录是 ~/Documents/Youtulh 工作台。动手之前先读里面的 我的设定.md（科目、年级、城市、只做、不做、说话方式、红线、家长痛点），所有内容都要符合它。做完把结果写成文件放回工作区。'
+export const FALLBACK_ROOT = '~/Documents/Youtulh 工作台'
 
 const RED_LINE = '红线：不承诺提分、不说包过、不报价格、不编造学生的情况。'
 
+function workspaceNote(root, profile) {
+  return [
+    `工作区根目录是 ${root}。动手之前先读里面的 我的设定.md（科目、年级、城市、只做、不做、说话方式、红线、家长痛点），所有内容都要符合它。`,
+    profile ? `我的设定摘要：${profile}。` : '',
+    '做完把结果写成文件放回工作区。',
+  ].filter(Boolean).join('\n')
+}
+
 /** 三种任务的提示词。都在这里拼，页面只负责把用户填的东西传进来。 */
 export function buildPrompt(kind, payload = {}) {
+  const root = payload.root || FALLBACK_ROOT
+  const profile = payload.profile || ''
+
   if (kind === 'content') {
     return [
-      WORKSPACE_NOTE,
+      workspaceNote(root, profile),
       '',
       `帮我做一条口播视频的内容，主题：${payload.hint || '（还没写，请先问我一句）'}`,
       '',
@@ -29,9 +40,10 @@ export function buildPrompt(kind, payload = {}) {
       '写完后调用 youtulh_save_output 工具（kind=content，title 用标题，text 放完整稿子），它会把 Word 和 Markdown 写进工作区。',
     ].join('\n')
   }
+
   if (kind === 'dm') {
     return [
-      WORKSPACE_NOTE,
+      workspaceNote(root, profile),
       '',
       '这是一条家长私信，帮我分诊：',
       '',
@@ -39,6 +51,8 @@ export function buildPrompt(kind, payload = {}) {
       '2. 判断问什么：A 价格 / B 能不能提分 / C 怎么补 / D 时间形式',
       '3. 给两条话术：第一条接住对方最急的那句话（不评价、不承诺）；第二条落到一个具体动作，优先引导加微信',
       '4. 抽出台账七个字段：姓名、年级、学校、卡点、来源、下一步（私信没说过的一律留空，不许编）',
+      '',
+      '话术要贴着我的设定写：只说我在教的科目、年级、城市范围内的事，碰到「不做」的范围就礼貌收住。',
       '',
       '私信原文：',
       payload.raw || '（还没粘，请先问我）',
@@ -48,12 +62,13 @@ export function buildPrompt(kind, payload = {}) {
       '做完以后调用 youtulh_save_output（kind=dm）把话术落盘，再调用 youtulh_append_lead 把台账追加进线索表。',
     ].join('\n')
   }
+
   if (kind === 'data') {
     const files = Array.isArray(payload.files) ? payload.files.slice(0, 12) : []
     return [
-      WORKSPACE_NOTE,
+      workspaceNote(root, profile),
       '',
-      `数据在 ~/Documents/Youtulh 工作台/数据/ 文件夹里${files.length ? `，现在是这些：${files.join('、')}` : ''}。先把里面的文件读一遍。`,
+      `数据在 ${root}/数据/ 文件夹里${files.length ? `，现在是这些：${files.join('、')}` : ''}。先把里面的文件读一遍。`,
       '',
       '按下面三件事分析：',
       '1. 哪条内容真带人（看私信、加微、约试听，不只是播放）',
@@ -63,6 +78,7 @@ export function buildPrompt(kind, payload = {}) {
       '分析完调用 youtulh_save_output（kind=data，formats 用 csv + md）把结论写回工作区，并在回复里直接讲结论。',
     ].join('\n')
   }
+
   return String(payload.text ?? '')
 }
 
@@ -83,5 +99,5 @@ export function startChat(kind, payload) {
 
 /** 按钮被点了但环境不支持时的统一提示。 */
 export function launchFailedToast(toast) {
-  toast(t('当前环境不支持跳到对话，请用下面的内嵌生成'), { error: true })
+  toast(t('当前环境不支持跳到对话，请稍后再试'), { error: true })
 }
