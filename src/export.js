@@ -5,6 +5,7 @@ import { copyFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { extname, join } from 'node:path'
 import { currentLang, tr } from './i18n.js'
+import { buildDocx } from './word.js'
 
 export function defaultExportDir() {
   // 已经有中文文件夹的老用户切到英文后继续用原来的文件夹
@@ -44,6 +45,36 @@ function stamp(date) {
 
 function cell(text) {
   return String(text ?? '').replace(/\|/g, '｜').replace(/\n/g, ' ')
+}
+
+/**
+ * 把一份产出写成本地文件：同名文件夹里一份 Word、一份 Markdown。
+ * 口播稿、私信话术、复盘结论都走这一条，保证用户拿到的是能打开的文件。
+ * @returns {Promise<{dir: string, files: string[]}>}
+ */
+export async function savePiece({ dir, title, text, formats = ['docx', 'md'] }) {
+  const root = resolveExportDir(dir)
+  const base = folderName(title)
+  const target = join(root, base)
+  await mkdir(target, { recursive: true })
+  const files = []
+  const lines = String(text ?? '').split(/\r?\n/)
+  if (formats.includes('docx')) {
+    const name = `${base}.docx`
+    await writeFile(join(target, name), buildDocx({ title, lines }))
+    files.push(name)
+  }
+  if (formats.includes('md')) {
+    const name = `${base}.md`
+    await writeFile(join(target, name), `# ${title}\n\n${String(text ?? '').trim()}\n`)
+    files.push(name)
+  }
+  if (formats.includes('txt')) {
+    const name = `${base}.txt`
+    await writeFile(join(target, name), `${String(text ?? '').trim()}\n`)
+    files.push(name)
+  }
+  return { dir: target, files }
 }
 
 /**

@@ -6,6 +6,7 @@ import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk
 import { InsightsView } from './insights.jsx'
 import { DmView } from './dm.jsx'
 import { SetupView } from './setup.jsx'
+import { WorksView } from './works.jsx'
 import { WelcomeView } from './welcome.jsx'
 import { ModelButton, ModelPicker } from './modelpick.jsx'
 import { SettingsDialog } from './settings.jsx'
@@ -23,10 +24,11 @@ const NAV = [
   { id: 'dm', label: '回私信' },
   { id: 'content', label: '做内容' },
   { id: 'data', label: '看数据' },
+  { id: 'works', label: '我的产出' },
   { id: 'setup', label: '我的设定' },
 ]
 
-const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: InsightsView, setup: SetupView }
+const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: InsightsView, works: WorksView, setup: SetupView }
 
 function CaptureDialog() {
   const capture = useDesk(s => s.capture)

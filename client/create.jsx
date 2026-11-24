@@ -1,6 +1,6 @@
 // 做内容：只做口播视频。给一句话 → 标题 / 口播文案 / 标签三组候选，挑一版复制走。
 import React from 'react'
-import { createContent, setDesk, toast, useDesk } from './desk.js'
+import { createContent, saveOutput, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 
@@ -60,6 +60,20 @@ export function CreateView() {
     : ''
 
   const configured = Boolean(positioning.subject || positioning.grade)
+  const [saving, setSaving] = React.useState(false)
+  const save = async () => {
+    if (!creative || !all || saving) return
+    setSaving(true)
+    try {
+      const title = (title || hint).slice(0, 40)
+      const result = await saveOutput({ kind: 'script', title, content: all, summary: `${creative.scripts.length} 版口播 · ${creative.tags.length} 组标签` })
+      toast(t('已保存到 {dir}', { dir: result.dir }))
+      setDesk({ view: 'works', focusId: null })
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+    setSaving(false)
+  }
 
   return (
     <div className="md-page md-create">
@@ -91,6 +105,7 @@ export function CreateView() {
           {engine && engine !== 'local' ? <span className="md-muted">{t('由 {model} 生成', { model: engine })}</span> : null}
           <span className="md-grow" />
           {creative ? <button type="button" className="md-pill" onClick={() => copy(all, t('全部'))}><Icon name="copy" size={14} />{t('复制选中的三样')}</button> : null}
+          {creative ? <button type="button" className="md-pill" onClick={save} disabled={saving}><Icon name="save" size={14} />{saving ? t('保存中…') : t('保存成 Word')}</button> : null}
           <button type="button" className="md-pill is-primary" onClick={generate} disabled={busy || !hint.trim()}>
             <Icon name="spark" size={14} />{busy ? t('生成中…') : creative ? t('换一批') : t('生成')}
           </button>

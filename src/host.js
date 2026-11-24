@@ -5,7 +5,8 @@ import { stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
-import { defaultExportDir, resolveExportDir, saveProduction } from './export.js'
+import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
+import { addWork, listWorks, removeWork } from './works.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
 import { harvest, harvestText } from './harvest.js'
@@ -329,6 +330,7 @@ async function route(ctx, store, desk, req, res) {
       })
     }
     if (path === 'insights') return json(res, 200, computeInsights(await store.read()))
+    if (path === 'works') return json(res, 200, { works: listWorks() })
     if (path === 'monid/status') return json(res, 200, await monidStatus(desk.monid))
     if (path === 'version') return json(res, 200, await desk.versionCheck.read())
     return json(res, 404, { error: tr('接口不存在') })
@@ -372,6 +374,27 @@ async function route(ctx, store, desk, req, res) {
         creative = fallbackCreative(state, hint)
       }
       return json(res, 200, { creative, engine })
+    }
+    case 'output/save': {
+      // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开
+      const title = String(body.title ?? '').trim() || tr('未命名的一篇')
+      const content = String(body.content ?? '')
+      if (!content.trim()) return json(res, 400, { error: tr('还没有可以保存的内容') })
+      const settings = await desk.settings.read()
+      const saved = await savePiece({ dir: settings.exportDir, title, text: content })
+      const work = addWork({ kind: String(body.kind ?? 'script'), title, summary: String(body.summary ?? '').slice(0, 120), dir: saved.dir, files: saved.files, content })
+      return json(res, 200, { work, dir: saved.dir, files: saved.files })
+    }
+    case 'output/reveal': {
+      const work = listWorks().find(row => row.id === body.id)
+      const path = work?.dir ?? resolveExportDir((await desk.settings.read()).exportDir)
+      const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
+      execFile(command, [path], () => {})
+      return json(res, 200, { path })
+    }
+    case 'works/remove': {
+      const removed = removeWork(String(body.id ?? ''))
+      return json(res, 200, { removed })
     }
     case 'dm': {
       // 回私信分诊：有模型就用模型判断，模型不可用时退回规则兜底，不让按钮转圈

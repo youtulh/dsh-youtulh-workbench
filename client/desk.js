@@ -103,6 +103,27 @@ export async function runProduce(id, { withImages } = {}) {
   }
 }
 
+/** 把一份产出写成本地文件并登记进产出库。 */
+export async function saveOutput({ kind, title, content, summary }) {
+  return request('output/save', { kind, title, content, summary })
+}
+
+/** 拉产出库列表。 */
+export async function fetchWorks() {
+  const data = await request('works')
+  return data.works ?? []
+}
+
+/** 在 Finder 里打开这份产出（不带 id 就打开导出根目录）。 */
+export async function revealOutput(id) {
+  return request('output/reveal', { id })
+}
+
+/** 从产出库删掉一条登记（不删文件）。 */
+export async function removeOutput(id) {
+  return request('works/remove', { id })
+}
+
 /** 做内容：给一句话，拿回 { creative, engine }。 */
 export async function createContent(hint) {
   return request('create', { hint })
