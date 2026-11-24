@@ -1680,3 +1680,10 @@ body[data-ds-dark-theme] .md-root {
 .md-chat-full p { display: flex; gap: 8px; font-size: 12.5px; line-height: 20px; color: var(--ink2); }
 .md-chat-full p b { flex: none; color: var(--ink3); font-weight: 400; }
 .md-chat-full .md-inline-link { justify-self: start; }
+
+/* 接着上一轮聊 */
+.md-dm-context { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 10px; padding: 8px 10px; border-radius: var(--r-md); background: color-mix(in srgb, var(--accent) 6%, transparent); color: var(--ink2); font-size: 12px; }
+.md-dm-context span { color: var(--accent); flex: none; }
+.md-dm-context p { flex: 1 1 220px; min-width: 0; color: var(--ink3); white-space: pre-wrap; line-height: 18px; }
+.md-chat-row.is-won { box-shadow: inset 2px 0 0 var(--accent); }
+.md-chat-row.is-lost { opacity: .66; }

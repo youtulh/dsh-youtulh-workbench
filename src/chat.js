@@ -86,7 +86,7 @@ const channelName = channel => (channel === '微信' ? '微信私聊' : '平台�
  * 下一句建议。平台阶段只做「把对话挪到更私密的地方」，微信阶段才谈诊断和试听。
  * cases 是人工聊成的案例（chatLessons 拼好的），越用越像本人。
  */
-export function chatPrompt(state, { channel = '平台私信', raw = '', cases = '' } = {}) {
+export function chatPrompt(state, { channel = '平台私信', raw = '', history = '', cases = '' } = {}) {
   const pains = (state?.painPoints ?? []).slice(0, 6)
   const wechat = channel === '微信'
   const head = wechat
@@ -113,7 +113,7 @@ ${cases ? `\n以前聊成的真实例子（照着这种感觉写，别照抄内�
 
 只输出 JSON：
 {"type":"家长","category":"C 怎么补","judge":"他现在卡在哪 / 在问什么","stage":"引流","drafts":[{"tag":"先接住","text":"…"},{"tag":"往下推一步","text":"…"}],"fields":{"name":"","grade":"","school":"","painPoint":"","source":""}}`
-  return { system, user: `对方最近的消息：\n${raw}` }
+  return { system, user: `${history.trim() ? `前面聊过的（接着这个上下文）：\n${history.trim()}\n\n` : ''}对方最近的消息：\n${raw}` }
 }
 
 /** 只留两条能直接发的、一个判断和阶段；台账字段沿用 dm 的抽取。 */

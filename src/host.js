@@ -616,13 +616,14 @@ async function route(ctx, store, desk, req, res) {
       const raw = String(body.raw ?? '').trim().slice(0, 2000)
       if (!raw) return json(res, 400, { error: tr('先粘一条消息') })
       const channel = CHANNELS.includes(body.channel) ? body.channel : CHANNELS[0]
+      const history = String(body.history ?? '').trim().slice(0, 1200)
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const cases = chatLessons(root, channel)
       let result = null
       let from = 'local'
       try {
-        const { text: out } = await callModel(ctx, { ...chatPrompt(state, { channel, raw, cases }), maxTokens: 1200, light: true })
+        const { text: out } = await callModel(ctx, { ...chatPrompt(state, { channel, raw, history, cases }), maxTokens: 1200, light: true })
         const normalized = normalizeChat(extractJson(out))
         if (normalized.drafts.length) { result = normalized; from = 'model' }
       } catch { /* 没模型就本地兜底 */ }
@@ -630,11 +631,18 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { ...result, source: from, channel })
     }
     case 'chat/update': {
-      // 给一轮对话标结果：成交 / 流失 / 约试听，后面的建议会参考
+      // 给一轮对话标结果：成交 / 流失 / 约试听，后面的建议会参考；顺手把线索阶段推上去
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const rows = updateChatRow(root, body.index, body.patch ?? {})
       if (!rows) return json(res, 404, { error: tr('没找到这一轮对话') })
-      return json(res, 200, { rows })
+      const row = rows.find(item => item.rowIndex === Number(body.index))
+      const toStage = { 加微: '已加微信', 约试听: '约试听', 成交: '已报课' }[String(body.patch?.result ?? '')]
+      let leads = null
+      if (toStage && row?.name) {
+        const match = readLeads(root).find(item => item.name === row.name && !['已报课', '流失'].includes(item.stage))
+        if (match) leads = updateLeadRow(root, match.rowIndex, { stage: toStage })
+      }
+      return json(res, 200, { rows, leads })
     }
     case 'chat/log': {
       // 这句我发出去了：记进 对话记录.csv，后面用来复盘和给建议

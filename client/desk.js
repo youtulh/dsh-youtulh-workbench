@@ -208,8 +208,8 @@ export async function fetchLeadsWithLessons() {
 }
 
 /** 页内聊天台：按渠道（平台私信 / 微信）给判断 + 两条下一句 + 台账字段。 */
-export async function draftDm(raw, channel = '平台私信') {
-  return request('dm/draft', { raw, channel })
+export async function draftDm(raw, channel = '平台私信', history = '') {
+  return request('dm/draft', { raw, channel, history })
 }
 
 /** 这句发出去了：记进 对话记录.csv。 */

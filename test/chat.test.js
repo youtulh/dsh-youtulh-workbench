@@ -20,6 +20,14 @@ test('平台阶段：一两句把人挪走私信，不报价不展开；微信�
   assert.match(wechat, /诊断/)
 })
 
+test('带上下文：把上一轮喂进去，模型顺着聊', () => {
+  const prompt = chatPrompt(state, { channel: '微信', raw: '那多少钱？', history: '对方：孩子高二物理 40 分\n我方：先看看卷子' })
+  assert.match(prompt.user, /前面聊过的/)
+  assert.match(prompt.user, /孩子高二物理 40 分/)
+  assert.match(prompt.user, /那多少钱？/)
+  assert.doesNotMatch(chatPrompt(state, { channel: '微信', raw: '多少钱' }).user, /前面聊过的/)
+})
+
 test('聊成的案例会进提示词；没案例时不编', () => {
   const withCase = chatPrompt(state, { channel: '微信', raw: '多少钱', cases: '- 家长问价格（成交）：先别报数字，先问孩子卡在哪。' }).system
   assert.match(withCase, /先别报数字/)

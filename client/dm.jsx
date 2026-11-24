@@ -25,6 +25,7 @@ export function DmView() {
   const [root, setRoot] = React.useState('')
   const [raw, setRaw] = React.useState('')
   const [channel, setChannel] = React.useState('平台私信')
+  const [history, setHistory] = React.useState('')
   const [busy, setBusy] = React.useState('')
   const [result, setResult] = React.useState(null)
   const [chosen, setChosen] = React.useState(0)
@@ -57,7 +58,7 @@ export function DmView() {
     if (!raw.trim()) return
     setBusy('draft')
     try {
-      const data = await draftDm(raw.trim(), channel)
+      const data = await draftDm(raw.trim(), channel, history)
       const judged = { ...data, type: data.type || LEAD_TYPES[0], category: data.category || LEAD_CATEGORIES[2] }
       setResult(judged)
       setChosen(0)
@@ -155,6 +156,13 @@ export function DmView() {
             },
           })}>{t('导入案例')}</button>
         </div>
+        {history ? (
+          <div className="md-dm-context">
+            <span>{t('接着上一轮聊：')}</span>
+            <p>{history}</p>
+            <button type="button" className="md-inline-link" onClick={() => setHistory('')}>{t('清除上下文')}</button>
+          </div>
+        ) : null}
         <label className="md-field">
           <span>{channel === '微信' ? t('对方最后一句（可以把前面几句一起粘）') : t('对方在平台上的最后一句（或几条）')}</span>
           <textarea
@@ -368,15 +376,25 @@ export function DmView() {
         ) : (
           <ul className="md-chat-list">
             {chats.slice().reverse().filter(row => chatFilter === 'all' || row.channel === chatFilter).slice(0, 20).map(row => (
-              <li key={row.rowIndex} className="md-chat-row">
+              <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
                 <header>
                   <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
                   {row.name ? <b>{row.name}</b> : null}
                   <span className="md-muted">{row.date} {row.stage ? `· ${t(row.stage)}` : ''}</span>
                   <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => {
+                    setChannel(row.channel)
+                    setHistory(`${t('对方')}：${row.incoming}${row.outgoing ? `\n${t('我方')}：${row.outgoing}` : ''}`)
+                    setRaw('')
+                    toast(t('已带入上一轮，粘对方的新消息就行'))
+                  }}>{t('接着聊')}</button>
                   <select value={row.result || '未定'} onChange={event => {
                     updateChatLog(row.rowIndex, { result: event.target.value })
-                      .then(data => setChats(data.rows ?? []))
+                      .then(data => {
+                        setChats(data.rows ?? [])
+                        if (data.leads) setLeads(data.leads)
+                        if (['加微', '约试听', '成交'].includes(event.target.value) && data.leads) toast(t('结果记下了，线索阶段也一起更新'))
+                      })
                       .catch(err => toast(err.message, { error: true }))
                   }}>
                     {['未定', '加微', '约试听', '成交', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}

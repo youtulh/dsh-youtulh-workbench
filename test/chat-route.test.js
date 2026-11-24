@@ -70,6 +70,16 @@ test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
     assert.equal(updated.body.rows[0].result, '成交')
     assert.equal((await call('POST', 'chat/update', { index: 9, patch: { result: '成交' } })).status, 404)
 
+    // 结果是成交时，同名线索的阶段一起推到「已报课」
+    const lead = await call('POST', 'lead/append', { name: '王', grade: '高二', painPoint: '配平不会', stage: '已加微信' })
+    assert.equal(lead.status, 200)
+    await call('POST', 'chat/log', { channel: '微信', name: '王', incoming: '怎么报', outgoing: '先约个诊断' })
+    const rows = (await call('GET', 'chat/records')).body.rows
+    const last = rows[rows.length - 1]
+    const synced = await call('POST', 'chat/update', { index: last.rowIndex, patch: { result: '成交' } })
+    assert.equal(synced.status, 200)
+    assert.equal(synced.body.leads[0].stage, '已报课')
+
     assert.equal((await call('POST', 'chat/cases', { channel: '微信', scene: '问价格', result: '成交', text: '家长：多少钱？老师：先别报数字。' })).status, 200)
     assert.equal((await call('POST', 'chat/cases', { channel: '微信', text: '   ' })).status, 400)
     const after = await call('GET', 'chat/records')
