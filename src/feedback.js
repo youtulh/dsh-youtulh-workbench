@@ -63,8 +63,8 @@ export function localFeedback(student, lessons = [], subject = '') {
 
 export const FEEDBACK_COLUMNS = ['日期', '姓名', '年级', '课次', '内容', '来源', '创建时间']
 
-const toFeedback = row => ({
-  date: row['日期'] ?? '', name: row['姓名'] ?? '', grade: row['年级'] ?? '',
+const toFeedback = (row, rowIndex = -1) => ({
+  rowIndex, date: row['日期'] ?? '', name: row['姓名'] ?? '', grade: row['年级'] ?? '',
   lessons: row['课次'] ?? '', text: row['内容'] ?? '', source: row['来源'] ?? '',
   createdAt: row['创建时间'] ?? '',
 })
@@ -72,7 +72,7 @@ const toFeedback = row => ({
 /** 读家长反馈记录；按姓名筛选时只返回这个人。 */
 export function readFeedback(root, name = '') {
   const target = clean(name, 40)
-  return readTable(root, LAYOUT.feedback).rows.map(toFeedback)
+  return readTable(root, LAYOUT.feedback).rows.map((row, index) => toFeedback(row, index))
     .filter(row => row.name && (!target || row.name === target))
 }
 
@@ -90,4 +90,15 @@ export function appendFeedback(root, input = {}) {
   })
   writeTable(root, LAYOUT.feedback, FEEDBACK_COLUMNS, rows)
   return readFeedback(root, name)
+}
+
+
+/** 删一条写过的反馈（写废了、重复了）。 */
+export function removeFeedback(root, index) {
+  const rows = readTable(root, LAYOUT.feedback).rows
+  const at = Number(index)
+  if (!Number.isInteger(at) || at < 0 || at >= rows.length) return null
+  rows.splice(at, 1)
+  writeTable(root, LAYOUT.feedback, FEEDBACK_COLUMNS, rows)
+  return readFeedback(root)
 }

@@ -12,7 +12,7 @@ import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
-import { appendFeedback, feedbackPrompt, localFeedback, readFeedback } from './feedback.js'
+import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -805,6 +805,12 @@ async function route(ctx, store, desk, req, res) {
         return json(res, 400, { error: tr(err.message) })
       }
       return json(res, 200, { classes: readClasses(root), students: readStudents(root) })
+    }
+    case 'feedback/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const rows = removeFeedback(root, body.index)
+      if (!rows) return json(res, 404, { error: tr('没找到这条反馈') })
+      return json(res, 200, { rows })
     }
     case 'feedback/append': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

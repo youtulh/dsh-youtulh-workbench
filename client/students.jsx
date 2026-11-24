@@ -1,6 +1,6 @@
 // 学生：线索漏斗 / 学生档案 / 班课 三个 tab。数据都在工作区的 CSV 里。
 import React from 'react'
-import { fetchFeedbackList, fetchLessons, fetchStudentFeedback, fetchStudents, removeStudentRow, saveStudentFeedback, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
+import { fetchFeedbackList, fetchLessons, fetchStudentFeedback, fetchStudents, removeFeedback, removeStudentRow, saveStudentFeedback, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ClassesPanel } from './classes.jsx'
 import { FunnelPanel } from './funnel.jsx'
@@ -288,8 +288,24 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                   <summary>{t('以前写过的 {n} 条', { n: feedback.history.length })}</summary>
                   <ul>
                     {feedback.history.slice().reverse().map(row => (
-                      <li key={row.createdAt || `${row.date}-${row.text.slice(0, 8)}`}>
-                        <span className="md-muted">{row.date}</span>
+                      <li key={row.rowIndex ?? `${row.date}-${row.text.slice(0, 8)}`}>
+                        <div className="md-feedback-history-head">
+                          <span className="md-muted">{row.date}</span>
+                          <span className="md-grow" />
+                          <button type="button" className="md-inline-link" onClick={() => {
+                            if (navigator.clipboard?.writeText) {
+                              navigator.clipboard.writeText(row.text).then(() => toast(t('复制了反馈'))).catch(() => toast(t('复制失败'), { error: true }))
+                            } else {
+                              toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
+                            }
+                          }}>{t('复制')}</button>
+                          <button type="button" className="md-inline-link" onClick={() => {
+                            if (!window.confirm(t('删掉这条写过的反馈？'))) return
+                            removeFeedback(row.rowIndex)
+                              .then(data => { setFeedback(prev => ({ ...prev, history: data.rows ?? [] })); toast(t('删掉了')) })
+                              .catch(err => toast(err.message, { error: true }))
+                          }}>{t('删除')}</button>
+                        </div>
                         <p>{row.text}</p>
                       </li>
                     ))}

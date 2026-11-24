@@ -1900,3 +1900,6 @@ body[data-ds-dark-theme] .md-root {
 .md-feedback-history ul { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .md-feedback-history li { padding: 8px 10px; border-radius: var(--r-md); background: color-mix(in srgb, var(--hover) 60%, transparent); }
 .md-feedback-history li p { margin-top: 2px; line-height: 20px; }
+
+.md-feedback-history-head { display: flex; align-items: center; gap: 8px; }
+.md-feedback-history-head .md-grow { flex: 1; }

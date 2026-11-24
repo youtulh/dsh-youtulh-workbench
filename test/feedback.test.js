@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { appendFeedback, feedbackPrompt, localFeedback, readFeedback } from '../src/feedback.js'
+import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from '../src/feedback.js'
 
 const state = { positioning: { subject: '高中物理', grade: '高二', city: '北京' } }
 const student = { name: '王小明', grade: '高二', school: '某中学', layer: '动量守恒', note: '做题慢' }
@@ -43,6 +43,8 @@ test('家长反馈能存进 家长反馈.csv，按人读回来', async () => {
     assert.match(wang[0].text, /进步/)
     assert.equal(wang[0].source, 'model')
     assert.equal(readFeedback(root).length, 2)
+    assert.equal(removeFeedback(root, 0).length, 1)
+    assert.equal(removeFeedback(root, 9), null)
   } finally {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }

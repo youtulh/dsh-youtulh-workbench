@@ -276,6 +276,10 @@ export async function saveStudentFeedback(payload) {
   return request('feedback/append', payload)
 }
 
+export async function removeFeedback(index) {
+  return request('feedback/remove', { index })
+}
+
 /** 家长有反应了：按行号更新那条线索。 */
 export async function updateLead(index, patch) {
   return request('workspace/lead/update', { index, patch })
