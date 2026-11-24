@@ -79,6 +79,8 @@ export function DmView() {
   const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
+  const [editDraft, setEditDraft] = React.useState(-1)
+  const [editText, setEditText] = React.useState('')
   const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
   const [chatPerson, setChatPerson] = React.useState(DM_DRAFT.chatPerson)
   const [chatResult, setChatResult] = React.useState(DM_DRAFT.chatResult)
@@ -370,10 +372,27 @@ export function DmView() {
             {(result.drafts ?? []).map((draft, index) => (
               <li key={`${draft.tag}-${index}`} className={chosen === index ? 'is-used' : ''}>
                 <span className="md-dm-tag">{draft.tag || t('第 {n} 条', { n: index + 1 })}</span>
-                <p>{draft.text}</p>
+                {editDraft === index ? (
+                  <div className="md-dm-draft-edit">
+                    <textarea rows={4} value={editText} onChange={event => setEditText(event.target.value)} />
+                    <div className="md-dm-draft-actions">
+                      <span className="md-muted">{t('改完这句，记一笔时存的就是改过的')}</span>
+                      <span className="md-grow" />
+                      <button type="button" className="md-inline-link" onClick={() => setEditDraft(-1)}>{t('取消')}</button>
+                      <button type="button" className="md-pill is-small" onClick={() => {
+                        setResult(prev => ({ ...prev, drafts: prev.drafts.map((row, at) => (at === index ? { ...row, text: editText } : row)) }))
+                        setEditDraft(-1)
+                        toast(t('改好了'))
+                      }}>{t('保存这句')}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p>{draft.text}</p>
+                )}
                 <div className="md-dm-draft-actions">
                   <button type="button" className={`md-pill is-small ${chosen === index ? 'is-primary' : ''}`} onClick={() => pick(index)}>{chosen === index ? t('用这条') : t('用这条')}</button>
                   <button type="button" className="md-inline-link" onClick={() => copy(draft.text)}>{t('复制')}</button>
+                  {editDraft === index ? null : <button type="button" className="md-inline-link" onClick={() => { setEditDraft(index); setEditText(draft.text) }}>{t('改一下')}</button>}
                   <button type="button" className="md-inline-link" onClick={async () => {
                     try {
                       await logChat({

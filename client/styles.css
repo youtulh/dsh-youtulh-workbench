@@ -1821,3 +1821,9 @@ body[data-ds-dark-theme] .md-root {
 .md-dm-scenarios { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--ink3); font-size: 12px; }
 .md-dm-scenarios .md-chip { cursor: pointer; }
 .md-dm-scenarios .md-chip:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* 聊天台：改建议 */
+.md-dm-draft-edit { display: grid; gap: 6px; margin-top: 4px; }
+.md-dm-draft-edit textarea { width: 100%; padding: 8px 10px; border: .5px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 13px; line-height: 21px; resize: vertical; }
+.md-dm-draft-edit textarea:focus { border-color: var(--accent); }
+.md-dm-draft-edit .md-dm-draft-actions { align-items: center; }
