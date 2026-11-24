@@ -9,6 +9,8 @@ const DEFAULTS = {
   assistant: { provider: '', model: '' },
   voice: '',
   exportDir: '',
+  // 工作区根目录：内容、私信、数据和「我的设定.md」都写在这里；空表示用默认的 ~/Documents/Youtulh 工作台
+  saveRoot: '',
   generateImages: true,
   imageCount: 2,
   shotCount: 6,
@@ -100,6 +102,7 @@ export class Settings {
     }
     if (typeof patch.voice === 'string') next.voice = patch.voice.slice(0, 8000)
     if (typeof patch.exportDir === 'string') next.exportDir = patch.exportDir.trim().slice(0, 500)
+    if (typeof patch.saveRoot === 'string') next.saveRoot = patch.saveRoot.trim().slice(0, 500)
     if (typeof patch.generateImages === 'boolean') next.generateImages = patch.generateImages
     if (patch.imageCount !== undefined) next.imageCount = clamp(patch.imageCount, 0, 4, current.imageCount)
     if (['auto', 'zh', 'en'].includes(patch.language)) next.language = patch.language

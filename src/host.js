@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
 import { addWork, listWorks, removeWork } from './works.js'
+import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, resolveRoot, writeSettingsMarkdown } from './workspace.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
 import { harvest, harvestText } from './harvest.js'
@@ -331,6 +332,12 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'insights') return json(res, 200, computeInsights(await store.read()))
     if (path === 'works') return json(res, 200, { works: listWorks() })
+    if (path === 'workspace/info') {
+      const settings = await desk.settings.read()
+      const root = resolveRoot(settings.saveRoot)
+      ensureLayout(root)
+      return json(res, 200, { root, settingsFile: join(root, LAYOUT.settings), leadsFile: join(root, LAYOUT.leads), contentDir: join(root, LAYOUT.content), dmDir: join(root, LAYOUT.dm) })
+    }
     if (path === 'monid/status') return json(res, 200, await monidStatus(desk.monid))
     if (path === 'version') return json(res, 200, await desk.versionCheck.read())
     return json(res, 404, { error: tr('接口不存在') })
@@ -350,6 +357,20 @@ async function route(ctx, store, desk, req, res) {
         const applied = applyOps(draft, body.ops)
         return { ...applied, state: draft }
       }, { undoable: body.undoable !== false })
+      // 数据和本地文件是同一份真相：改了设定就写回 md，加了线索就追加 CSV
+      const names = (Array.isArray(body.ops) ? body.ops : []).map(op => op?.op)
+      try {
+        const root = resolveRoot((await desk.settings.read()).saveRoot)
+        if (names.includes('update_positioning') || names.includes('set_pain_points')) {
+          const state = await store.read()
+          writeSettingsMarkdown(root, state.positioning ?? {}, state.painPoints ?? [])
+        }
+        if (names.includes('add_lead')) {
+          const state = await store.read()
+          const lead = state.leads?.[state.leads.length - 1]
+          if (lead) appendLead(root, lead)
+        }
+      } catch { /* 文件写失败不影响这次操作本身 */ }
       return json(res, 200, result)
     }
     case 'undo': {
@@ -377,17 +398,22 @@ async function route(ctx, store, desk, req, res) {
     }
     case 'output/save': {
       // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开
-      const title = String(body.title ?? '').trim() || tr('未命名的一篇')
+      const rawTitle = String(body.title ?? '').trim() || tr('未命名的一篇')
       const content = String(body.content ?? '')
       if (!content.trim()) return json(res, 400, { error: tr('还没有可以保存的内容') })
       const settings = await desk.settings.read()
-      const saved = await savePiece({ dir: settings.exportDir, title, text: content })
-      const work = addWork({ kind: String(body.kind ?? 'script'), title, summary: String(body.summary ?? '').slice(0, 120), dir: saved.dir, files: saved.files, content })
+      const root = resolveRoot(settings.saveRoot)
+      ensureLayout(root)
+      const kind = String(body.kind ?? 'script')
+      const sub = kind === 'dm' ? LAYOUT.dm : kind === 'data' ? LAYOUT.data : LAYOUT.content
+      const title = `${dayStamp()} ${folderName(rawTitle)}`
+      const saved = await savePiece({ dir: join(root, sub), title, text: content })
+      const work = addWork({ kind, title: rawTitle, summary: String(body.summary ?? '').slice(0, 120), dir: saved.dir, files: saved.files, content })
       return json(res, 200, { work, dir: saved.dir, files: saved.files })
     }
     case 'output/reveal': {
       const work = listWorks().find(row => row.id === body.id)
-      const path = work?.dir ?? resolveExportDir((await desk.settings.read()).exportDir)
+      const path = work?.dir ?? resolveRoot((await desk.settings.read()).saveRoot)
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
       execFile(command, [path], () => {})
       return json(res, 200, { path })

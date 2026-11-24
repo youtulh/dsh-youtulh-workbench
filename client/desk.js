@@ -108,6 +108,11 @@ export async function saveOutput({ kind, title, content, summary }) {
   return request('output/save', { kind, title, content, summary })
 }
 
+/** 工作区路径信息（根目录、设定文件、线索表）。 */
+export async function fetchWorkspace() {
+  return request('workspace/info')
+}
+
 /** 拉产出库列表。 */
 export async function fetchWorks() {
   const data = await request('works')
