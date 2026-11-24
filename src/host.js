@@ -920,28 +920,39 @@ async function route(ctx, store, desk, req, res) {
       if (table.length < 2) return json(res, 400, { error: tr('至少要有表头和一行学生') })
       const cols = table[0].map(studentImportColumn)
       if (!cols.includes('name')) return json(res, 400, { error: tr('第一行要有「姓名」列') })
-      let imported = 0
+      const norm = value => String(value ?? '').replace(/\s+/g, '').toLowerCase()
+      const classList = readClasses(root)
+      // 「A班」和「A 班」当成同一个班，别因为空格多建一个
+      const canonical = new Map(classList.map(row => [norm(row.name), row.name]))
+      const pending = []
       let skipped = 0
-      const classNames = new Set()
+      let adjusted = 0
       for (const row of table.slice(1)) {
         const input = {}
         for (let i = 0; i < cols.length; i += 1) {
           if (cols[i]) input[cols[i]] = row[i] ?? ''
         }
         if (!String(input.name ?? '').trim()) { skipped += 1; continue }
-        saveStudent(root, input)
-        if (String(input.className ?? '').trim()) classNames.add(String(input.className).trim())
-        imported += 1
+        const wanted = String(input.className ?? '').trim()
+        if (wanted) {
+          const key = norm(wanted)
+          if (!canonical.has(key)) canonical.set(key, wanted)
+          if (canonical.get(key) !== wanted) adjusted += 1
+          input.className = canonical.get(key)
+        }
+        pending.push(input)
       }
+      for (const input of pending) saveStudent(root, input)
+      const imported = pending.length
       // 名单里提到但还没建过的班，顺手建一个空班，免得学生挂在「不存在的班」里
       const existing = new Set(readClasses(root).map(row => row.name))
       let createdClasses = 0
-      for (const name of classNames) {
+      for (const name of new Set(pending.map(row => String(row.className ?? '').trim()).filter(Boolean))) {
         if (existing.has(name)) continue
         saveClass(root, { name })
         createdClasses += 1
       }
-      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped, createdClasses })
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped, createdClasses, adjusted })
     }
     case 'students/save': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

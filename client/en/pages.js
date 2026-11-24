@@ -689,4 +689,5 @@ export const PAGES = {
   '跳过 {n} 行（没写姓名）': 'Skipped {n} rows (no name)',
   '跳过 {n} 条重复': 'skipped {n} duplicates',
   '{n} 条没写日期，按今天记': '{n} without a date — recorded today',
+  '{n} 条班名按已有班对齐（空格/大小写不同）': '{n} class names aligned with existing ones (spacing/case differences)',
 }

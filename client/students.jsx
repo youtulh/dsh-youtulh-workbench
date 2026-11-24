@@ -162,6 +162,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 ? t('导入了 {n} 个学生，顺手建了 {m} 个班', { n: data.imported, m: data.createdClasses })
                 : t('导入了 {n} 个学生', { n: data.imported }),
               data.skipped ? t('跳过 {n} 行（没写姓名）', { n: data.skipped }) : '',
+              data.adjusted ? t('{n} 条班名按已有班对齐（空格/大小写不同）', { n: data.adjusted }) : '',
             ].filter(Boolean).join('；'))
           })
           .catch(err => toast(err.message, { error: true }))
