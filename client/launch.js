@@ -26,7 +26,7 @@ export function buildPrompt(kind, payload = {}) {
       '',
       RED_LINE,
       '',
-      '写完后在 内容/ 下建一个「日期 标题」的文件夹，把稿子存成 Markdown；能生成 Word 就再存一份 .docx。',
+      '写完后调用 youtulh_save_output 工具（kind=content，title 用标题，text 放完整稿子），它会把 Word 和 Markdown 写进工作区。',
     ].join('\n')
   }
   if (kind === 'dm') {
@@ -45,7 +45,7 @@ export function buildPrompt(kind, payload = {}) {
       '',
       RED_LINE,
       '',
-      '做完以后：稿子存到 私信/日期 姓名/ 下，并在 线索表.csv 里追加一行。',
+      '做完以后调用 youtulh_save_output（kind=dm）把话术落盘，再调用 youtulh_append_lead 把台账追加进线索表。',
     ].join('\n')
   }
   if (kind === 'data') {
@@ -60,7 +60,7 @@ export function buildPrompt(kind, payload = {}) {
       '数据：',
       payload.text || '（还没粘，请先问我）',
       '',
-      '分析完写到 数据/复盘 <日期>.md，并给一份 .csv。',
+      '分析完调用 youtulh_save_output（kind=data，formats 用 csv + md）把结论写进工作区。',
     ].join('\n')
   }
   return String(payload.text ?? '')

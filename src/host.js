@@ -6,6 +6,7 @@ import { dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
+import { createTools } from './tools.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readLeads, readSettingsMarkdown, resolveRoot, writeSettingsMarkdown } from './workspace.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
@@ -580,7 +581,7 @@ export function requestRejection(ctx, req) {
 export const name = 'dsh-youtulh-workbench'
 
 export default {
-  inject: ['webServer', 'connection'],
+  inject: ['webServer', 'connection', 'tools'],
   apply(ctx) {
     const store = new Store()
     const settings = new Settings(store.root)
@@ -591,6 +592,13 @@ export default {
     })
     const monid = createMonidRunner()
     const desk = { settings, producer, monid, versionCheck: createVersionCheck() }
+    // 对话里的 agent 用这两个工具把产出写进工作区
+    ctx.effect(() => {
+      // 工具只在有 tools 服务的宿主里注册；单元测试的假 ctx 没有它
+      if (typeof ctx.tools?.register !== 'function') return () => {}
+      const offs = createTools({ settings }).map(tool => ctx.tools.register(tool))
+      return () => offs.forEach(off => off?.())
+    }, 'dsh-youtulh-workbench: workspace tools')
     // 启动时恢复用户在工作台里选过的助手模型
     settings.read().then(saved => setAssistantModel(saved.assistant)).catch(() => {})
     ctx.effect(() => ctx.webServer.register({
