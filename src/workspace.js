@@ -441,7 +441,17 @@ export function backupWorkspace(root, { keep = 10, at = new Date() } = {}) {
   return dir
 }
 
-/** 已有的备份，最新在前。 */
+function folderSize(dir) {
+  let total = 0
+  for (const name of readdirSync(dir)) {
+    const abs = join(dir, name)
+    const info = statSync(abs)
+    total += info.isDirectory() ? folderSize(abs) : info.size
+  }
+  return total
+}
+
+/** 已有的备份，最新在前，带大小。 */
 export function listBackups(root) {
   const parent = dirname(root)
   const prefix = `${basename(root)} 备份 `
@@ -450,7 +460,12 @@ export function listBackups(root) {
     .filter(name => name.startsWith(prefix))
     .sort()
     .reverse()
-    .map(name => ({ name, dir: join(parent, name) }))
+    .map(name => {
+      const dir = join(parent, name)
+      let size = 0
+      try { size = folderSize(dir) } catch { size = 0 }
+      return { name, dir, size }
+    })
 }
 
 export function writeTable(root, file, columns, rows) {

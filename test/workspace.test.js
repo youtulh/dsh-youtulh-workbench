@@ -290,6 +290,7 @@ test('备份：整个工作区复制到旁边，原文件不动', async () => {
     const backups = listBackups(root)
     assert.equal(backups.length, 3)
     assert.ok(backups[0].name >= backups[2].name)
+    assert.ok(backups[0].size > 0)
   } finally {
     await rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }

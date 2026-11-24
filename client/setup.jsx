@@ -313,6 +313,7 @@ export function SetupView() {
               {backups.slice(0, 10).map(item => (
                 <li key={item.name}>
                   <span>{item.name}</span>
+                  <span className="md-muted">{item.size ? `${(item.size / 1024 / 1024).toFixed(1)} MB` : ''}</span>
                   <span className="md-grow" />
                   <button type="button" className="md-inline-link" onClick={() => revealDir(item.dir).catch(err => toast(err.message, { error: true }))}>{t('打开')}</button>
                 </li>
