@@ -286,7 +286,7 @@ export function leadLessons(root, limit = 3) {
 // ---- 内容库 / 选题库 ----
 // 这两张表是「越用越好」的底账：内容库记每条口播的结果，选题库记哪些选题被勾中。
 
-export const CONTENT_COLUMNS = ['日期', '批次', '选题', '标题', '标签', '采用', '平台', '发布日', '播放', '涨粉', '私信', '加微', '爆款', '分数', '目录', '备注']
+export const CONTENT_COLUMNS = ['日期', '创建时间', '批次', '选题', '标题', '标签', '采用', '状态', '平台', '发布日', '播放', '涨粉', '私信', '加微', '爆款', '分数', '目录', '备注']
 export const TOPICS_COLUMNS = ['日期', '批次', '选题', '勾选', '生成条数']
 
 export const contentPath = root => join(root, '内容库.csv')
@@ -400,3 +400,19 @@ export function markTopicsPicked(root, batch, picked) {
 }
 
 export { nowStamp }
+
+
+/** 内容库对账：目录已经被用户删掉的条目，从库里清掉。返回被清掉的标题。 */
+export function pruneMissingContent(root) {
+  const { rows } = readTable(root, '内容库.csv')
+  if (!rows.length) return []
+  const alive = []
+  const removed = []
+  for (const row of rows) {
+    const dir = row['目录']
+    if (!dir || existsSync(dir)) alive.push(row)
+    else removed.push(row['标题'] || dir)
+  }
+  if (removed.length) writeTable(root, '内容库.csv', CONTENT_COLUMNS, alive)
+  return removed
+}

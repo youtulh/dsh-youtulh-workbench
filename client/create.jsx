@@ -1,6 +1,6 @@
 // 做内容：出 10 个选题 → 勾选 → 每个选题出 3 个口播版本 → 挑一条。两步都能刷新，全程不跳页。
 import React from 'react'
-import { fetchSuggestions, pickTopics, profileSummary, toast, updateContentRow, useDesk } from './desk.js'
+import { fetchSuggestions, pickTopics, profileSummary, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
@@ -78,19 +78,15 @@ export function CreateView() {
     setBusy('')
   }
 
-  const adopt = async (group, variant) => {
-    if (!variant.dir) return
+  const adopt = async (group, variant, index) => {
+    const key = `${group.topic}-${index}`
+    setBusy(key)
     try {
-      await updateContentRow(variant.dir, { '采用': '采用' })
-      setAdopted(prev => ({ ...prev, [variant.dir]: true }))
-      // 同选题的其它版本在库里已经标成放弃，这里同步一下显示
-      setAdopted(prev => {
-        const next = { ...prev }
-        for (const item of group.variants) if (item.dir && item.dir !== variant.dir) next[item.dir] = false
-        return next
-      })
-      toast(t('已采用，其它版本标成放弃'))
+      const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], batch })
+      setAdopted(prev => ({ ...prev, [key]: true }))
+      toast(t('已保存到 {dir}，并记进内容库', { dir: data.dir }))
     } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
   }
 
   const copy = (variant) => {
@@ -187,8 +183,10 @@ export function CreateView() {
                 </button>
               </div>
               <ul>
-                {group.variants.map(variant => (
-                  <li key={variant.dir ?? variant.title} className={`md-script-item ${adopted[variant.dir] === true ? 'is-adopted' : adopted[variant.dir] === false ? 'is-dropped' : ''}`}>
+                {group.variants.map((variant, index) => {
+                  const key = `${group.topic}-${index}`
+                  return (
+                  <li key={key} className={`md-script-item ${adopted[key] ? 'is-adopted' : ''}`}>
                     <header className="md-variant-head">
                       <span className="md-variant-tag">{variant.variant ?? 'A'}</span>
                       <h4>{variant.title}</h4>
@@ -196,13 +194,14 @@ export function CreateView() {
                     <div className="md-script-lines">{variant.script.split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
                     <div className="md-script-tags">{(variant.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
                     <div className="md-script-actions">
-                      <button type="button" className={`md-pill is-small ${adopted[variant.dir] ? 'is-primary' : ''}`} onClick={() => adopt(group, variant)} disabled={adopted[variant.dir] === true}>
-                        {adopted[variant.dir] ? t('已采用') : t('采用这条')}
+                      <button type="button" className={`md-pill is-small ${adopted[key] ? 'is-primary' : ''}`} onClick={() => adopt(group, variant, index)} disabled={adopted[key] || busy === key}>
+                        {adopted[key] ? t('已采用') : busy === key ? t('保存中…') : t('采用这条')}
                       </button>
                       <button type="button" className="md-inline-link" onClick={() => copy(variant)}>{t('复制')}</button>
                     </div>
                   </li>
-                ))}
+                  )
+                })}
               </ul>
             </div>
           ))}

@@ -19,7 +19,12 @@ export function DataView() {
 
   const load = React.useCallback(() => {
     fetchContent()
-      .then(data => { setRows(data.rows ?? []); setStats(data.stats ?? {}); setLessons(data.lessons ?? '') })
+      .then(data => {
+        setRows(data.rows ?? [])
+        setStats(data.stats ?? {})
+        setLessons(data.lessons ?? '')
+        if (data.removed?.length) toast(t('有 {n} 条在文件夹里已经删掉了，已同步移除', { n: data.removed.length }))
+      })
       .catch(err => toast(err.message, { error: true }))
   }, [])
   React.useEffect(() => { load() }, [load])
@@ -111,20 +116,38 @@ export function DataView() {
                 <span className="md-card-score" title={t('分数')}>{row['分数'] || '—'}</span>
               </header>
               {row['选题'] ? <p className="md-card-topic">{row['选题']}</p> : null}
-              <div className="md-card-metrics">
-                {['播放', '涨粉', '私信'].map(key => (
-                  <label key={key}>
-                    <span>{t(key)}</span>
-                    <input
-                      defaultValue={row[key] ?? ''}
-                      placeholder="—"
-                      inputMode="numeric"
-                      onBlur={event => { if (event.target.value !== (row[key] ?? '')) patch(row, key, event.target.value) }}
-                    />
-                  </label>
-                ))}
-              </div>
+              {row['状态'] === '已发布' ? (
+                <>
+                  <div className="md-card-metrics">
+                    {['播放', '涨粉', '私信'].map(key => (
+                      <label key={key}>
+                        <span>{t(key)}</span>
+                        <input
+                          defaultValue={row[key] ?? ''}
+                          placeholder="—"
+                          inputMode="numeric"
+                          onBlur={event => { if (event.target.value !== (row[key] ?? '')) patch(row, key, event.target.value) }}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="md-card-metrics">
+                    <label><span>{t('平台')}</span>
+                      <input defaultValue={row['平台'] ?? ''} placeholder={t('抖音 / 视频号')} onBlur={event => { if (event.target.value !== (row['平台'] ?? '')) patch(row, '平台', event.target.value) }} />
+                    </label>
+                    <label><span>{t('发布日')}</span>
+                      <input defaultValue={row['发布日'] ?? ''} placeholder="2026-11-24" onBlur={event => { if (event.target.value !== (row['发布日'] ?? '')) patch(row, '发布日', event.target.value) }} />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <p className="md-card-hint">{t('还没发布。发出去以后把状态改成「已发布」，再回来填播放、涨粉、私信。')}</p>
+              )}
               <footer className="md-card-foot">
+                <select value={row['状态'] || '未发布'} onChange={event => patch(row, '状态', event.target.value)}>
+                  <option value="未发布">{t('未发布')}</option>
+                  <option value="已发布">{t('已发布')}</option>
+                </select>
                 <select value={row['采用'] || '未定'} onChange={event => patch(row, '采用', event.target.value)}>
                   {ADOPT_OPTIONS.map(option => <option key={option} value={option}>{t(option)}</option>)}
                 </select>

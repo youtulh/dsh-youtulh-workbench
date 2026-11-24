@@ -169,3 +169,24 @@ test('爆款：分数按 私信×3 + 涨粉×1 + 播放×0.001 算，够 3 条�
   const manual = scoreRows([{ '私信': '9', '爆款': '否' }, { '私信': '0', '爆款': '' }, { '私信': '0', '爆款': '' }])
   assert.equal(manual.rows[0]['爆款'], '否')
 })
+
+test('内容库对账：文件夹被删掉的条目自动清掉', async () => {
+  const { mkdir, writeFile } = await import('node:fs/promises')
+  const { pruneMissingContent } = await import('../src/workspace.js')
+  const root = await mkdtemp(join(tmpdir(), 'workbench-prune-'))
+  try {
+    const aliveDir = join(root, '内容', '留着')
+    await mkdir(aliveDir, { recursive: true })
+    await writeFile(join(aliveDir, '留着.md'), 'x')
+    recordContent(root, { '日期': '2026-11-24', '创建时间': '2026-11-24T18:00:00Z', '标题': '留着', '目录': aliveDir })
+    recordContent(root, { '日期': '2026-11-23', '创建时间': '2026-11-23T18:00:00Z', '标题': '删掉的', '目录': join(root, '内容', '不存在') })
+
+    const removed = pruneMissingContent(root)
+    assert.deepEqual(removed, ['删掉的'])
+    const rows = readContent(root)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0]['标题'], '留着')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})

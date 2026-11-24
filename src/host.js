@@ -11,7 +11,7 @@ import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { creativeText, localScript, localTopics, localVariants, normalizeScript, normalizeTopics, normalizeVariants, scriptPrompt, topicsPrompt, variantsPrompt } from './topics.js'
-import { LAYOUT, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, pruneMissingContent, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
@@ -208,12 +208,15 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'content') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const removed = pruneMissingContent(root)
       rescore(root)
       writeLessonMarkdown(root)
-      const rows = readContent(root).slice().reverse()
+      const rows = readContent(root)
+        .slice()
+        .sort((a, b) => String(b['创建时间'] || b['日期']).localeCompare(String(a['创建时间'] || a['日期'])))
       const hits = rows.filter(row => row['爆款'] === '是').length
       const sum = key => rows.reduce((total, row) => total + (Number(row[key]) || 0), 0)
-      return json(res, 200, { rows, stats: { count: rows.length, hits, views: sum('播放'), follows: sum('涨粉'), dms: sum('私信') }, lessons: buildLessonBlock(root) })
+      return json(res, 200, { rows, removed, stats: { count: rows.length, hits, views: sum('播放'), follows: sum('涨粉'), dms: sum('私信') }, lessons: buildLessonBlock(root) })
     }
     if (path === 'suggest') {
       const state = await store.read()
@@ -338,14 +341,11 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { topics: markTopicsPicked(root, batch, picked) })
     }
     case 'scripts': {
-      // 每个勾中的选题出 3 个版本，用户再挑一条
+      // 只生成、不落盘：用户点「采用这条」时才保存
       const topics = (Array.isArray(body.topics) ? body.topics : []).map(row => String(row ?? '').trim()).filter(Boolean).slice(0, 20)
       if (!topics.length) return json(res, 400, { error: tr('先选几个选题') })
       const state = await store.read()
-      const settings = await desk.settings.read()
-      const root = resolveRoot(settings.saveRoot)
-      ensureLayout(root)
-      const batch = String(body.batch ?? '')
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
       const lessons = buildLessonBlock(root)
       const groups = []
       let usedModel = false
@@ -359,27 +359,31 @@ async function route(ctx, store, desk, req, res) {
             if (variants.length) usedModel = true
           } catch { /* 单条失败就退回本地模板 */ }
           if (!variants.length) variants = localVariants(state, topic)
-          const saved = []
-          for (const [index, variant] of variants.entries()) {
-            try {
-              const title = `${dayStamp()} ${folderName(variant.title)}`
-              const piece = await savePiece({ dir: join(root, LAYOUT.content), title, text: creativeText(variant), formats: ['md', 'docx'] })
-              const row = {
-                '日期': dayStamp(), '批次': batch, '选题': topic, '标题': variant.title,
-                '标签': (variant.tags ?? []).map(tag => `#${tag}`).join(' '), '采用': '未定',
-                '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '', '爆款': '', '分数': '',
-                '目录': piece.dir, '备注': `备选 ${'ABC'[index] ?? index + 1}`,
-              }
-              recordContent(root, row)
-              saved.push({ ...variant, dir: piece.dir, variant: 'ABC'[index] ?? String(index + 1) })
-            } catch { /* 单条落盘失败跳过 */ }
-          }
-          return { topic, variants: saved }
+          return { topic, variants }
         }))
         groups.push(...rows)
       }
-      writeLessonMarkdown(root)
       return json(res, 200, { groups, source: usedModel ? 'model' : 'local', lessons })
+    }
+    case 'content/adopt': {
+      // 采用这条 → 现在才写文件、记进内容库
+      const title = String(body.title ?? '').trim()
+      const script = String(body.script ?? '')
+      if (!title || !script.trim()) return json(res, 400, { error: tr('没有可保存的稿子') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      ensureLayout(root)
+      const text = `【标题】${title}\n\n【口播文案】\n${script}\n\n【标签】${(Array.isArray(body.tags) ? body.tags : []).map(tag => `#${tag}`).join(' ')}`
+      const saved = await savePiece({ dir: join(root, LAYOUT.content), title: `${dayStamp()} ${folderName(title)}`, text, formats: ['md', 'docx'] })
+      const row = recordContent(root, {
+        '日期': dayStamp(), '创建时间': new Date().toISOString(), '批次': String(body.batch ?? ''),
+        '选题': String(body.topic ?? ''), '标题': title,
+        '标签': (Array.isArray(body.tags) ? body.tags : []).map(tag => `#${tag}`).join(' '),
+        '采用': '采用', '状态': '未发布', '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '',
+        '爆款': '', '分数': '', '目录': saved.dir, '备注': '采用的版本',
+      })
+      rescore(root)
+      writeLessonMarkdown(root)
+      return json(res, 200, { dir: saved.dir, row })
     }
     case 'output/save': {
       // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开
@@ -431,14 +435,6 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const row = updateContent(root, dir, body.patch ?? {})
       if (!row) return json(res, 404, { error: tr('没找到这一条') })
-      // 一条采用，同选题其它的备选自动标成放弃，省得内容库堆一堆没用的
-      if (body.patch?.['采用'] === '采用' && row['选题']) {
-        for (const other of readContent(root)) {
-          if (other['选题'] === row['选题'] && other['目录'] !== dir && other['采用'] === '未定') {
-            updateContent(root, other['目录'], { '采用': '放弃' })
-          }
-        }
-      }
       rescore(root)
       writeLessonMarkdown(root)
       const fresh = readContent(root).find(item => item['目录'] === dir) ?? row
