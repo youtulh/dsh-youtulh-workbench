@@ -45,3 +45,12 @@ test('本地口播按五段结构：场景提问 → 破旧认知 → 说法 →
   // 不能有书面连接词和黑话
   assert.doesNotMatch(one.script, /首先|其次|综上所述|赋能|闭环|底层逻辑/)
 })
+
+test('口播 prompt 带上他的开头句式，选题 prompt 要求从家长原话里来', async () => {
+  const { scriptPrompt, topicsPrompt } = await import('../src/topics.js')
+  const { system } = scriptPrompt(state, '偏科的孩子')
+  assert.match(system, /我不知道咱们家里边有没有这样的孩子/)
+  assert.match(system, /五段/)
+  const topics = topicsPrompt(state, 30)
+  assert.match(topics.system, /家长的原话/)
+})

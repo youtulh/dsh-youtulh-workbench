@@ -23,6 +23,13 @@ export const STYLE_SAMPLES = [
   '这个时候我们再去练习难题，去争取一个高分，而这个才是行之有效的、孩子能够操作的学数学的办法。',
 ]
 
+/** 他常用的开头句式（从稿子里抽的），写口播时照着这种感觉起头。 */
+export const HOOK_SAMPLES = [
+  '我不知道咱们家里边有没有这样的孩子：其他科目成绩都还可以，就化学怎么补课、怎么刷题，成绩都提不起来。',
+  '很多家长来找我的时候，他甚至不说自己孩子多大，你知道吗。',
+  '你看人家这个孩子就确定得很明白：上次期末化学 85，这次 95。',
+]
+
 /** 口播文案的结构，也是他自己讲的：场景提问 → 破旧认知 → 立新说法 → 三条动作 → 再强调一次。 */
 export const SCRIPT_STRUCTURE = `口播结构（他讲爆款拆解时自己总结的五段）：
 1. 开头用具体场景提问，把人圈住：「我不知道咱们家里边有没有这样的孩子：……」
@@ -53,5 +60,5 @@ ${STYLE_SAMPLES.map(row => `- ${row}`).join('\n')}
 
 /** 拼进 prompt 的完整风格块。 */
 export function styleBlock() {
-  return `\n${STYLE_RULES}\n\n${SCRIPT_STRUCTURE}\n\n他本人说过的原话（口气参考，不要照抄内容）：\n${STYLE_SAMPLES.map(row => `- ${row}`).join('\n')}\n`
+  return `\n${STYLE_RULES}\n\n${SCRIPT_STRUCTURE}\n\n他本人说过的原话（口气参考，不要照抄内容）：\n${STYLE_SAMPLES.map(row => `- ${row}`).join('\n')}\n\n他常用的开头句式（换成你的科目，别照抄）：\n${HOOK_SAMPLES.map(row => `- ${row}`).join('\n')}\n`
 }
