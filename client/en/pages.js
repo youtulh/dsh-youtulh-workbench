@@ -508,6 +508,7 @@ export const PAGES = {
   学校: 'School',
   卡点: 'Stuck point',
   来源: 'Source',
+  '选一条内容，或自己写': 'Pick a piece of content, or type your own',
   分诊类型: 'DM type',
   下一步做什么: 'Next step',
   这一列还空着: 'Nothing here yet',

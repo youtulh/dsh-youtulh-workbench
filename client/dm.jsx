@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchContent, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -72,6 +72,7 @@ export function DmView() {
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
   const [cases, setCases] = React.useState([])
+  const [contentTitles, setContentTitles] = React.useState([])
   const [caseQuery, setCaseQuery] = React.useState(DM_DRAFT.caseQuery)
   const [caseFilter, setCaseFilter] = React.useState(DM_DRAFT.caseFilter)
   const [chatTotal, setChatTotal] = React.useState(0)
@@ -96,6 +97,11 @@ export function DmView() {
   }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, caseQuery, caseFilter])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
+  React.useEffect(() => {
+    fetchContent()
+      .then(data => setContentTitles((data.rows ?? []).map(row => row['标题']).filter(Boolean).slice(0, 60)))
+      .catch(() => {})
+  }, [])
 
   const reload = React.useCallback(() => {
     fetchLeadsWithLessons()
@@ -429,12 +435,20 @@ export function DmView() {
             </button>
           </div>
 
+          <datalist id="md-content-titles">
+            {contentTitles.map(title => <option key={title} value={title} />)}
+          </datalist>
           <div className="md-dm-ledger">
             <div className="md-dm-ledger-grid">
               {[['name', '姓名'], ['grade', '年级'], ['school', '学校'], ['painPoint', '卡点'], ['source', '来源']].map(([key, label]) => (
                 <label className="md-field" key={key}>
                   <span>{t(label)}</span>
-                  <input value={fields[key] ?? ''} placeholder={t('没提就空着')} onChange={event => setFields(prev => ({ ...prev, [key]: event.target.value }))} />
+                  <input
+                    value={fields[key] ?? ''}
+                    placeholder={key === 'source' ? t('选一条内容，或自己写') : t('没提就空着')}
+                    list={key === 'source' ? 'md-content-titles' : undefined}
+                    onChange={event => setFields(prev => ({ ...prev, [key]: event.target.value }))}
+                  />
                 </label>
               ))}
             </div>
