@@ -10,7 +10,7 @@ import { createTools } from './tools.js'
 import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
-import { fillTopicAngles, guessTopicAngle, localTopics, localVariants, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
+import { fillTopicAngles, guessTopicAngle, localTopics, localVariants, normalizeBrief, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { dmPrompt, localDm, normalizeDm } from './dm.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, recordPickedTopics, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
@@ -391,7 +391,11 @@ async function route(ctx, store, desk, req, res) {
     }
     case 'scripts': {
       // 只生成、不落盘：用户点「采用这条」时才保存
-      const topics = (Array.isArray(body.topics) ? body.topics : []).map(row => String(row ?? '').trim()).filter(Boolean).slice(0, 20)
+      // 给了提示就按提示直接出草稿（一条，3 版），没给才看勾选的选题
+      const brief = normalizeBrief(body.brief)
+      const topics = brief
+        ? [brief]
+        : (Array.isArray(body.topics) ? body.topics : []).map(row => String(row ?? '').trim()).filter(Boolean).slice(0, 20)
       if (!topics.length) return json(res, 400, { error: tr('先选几个选题') })
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -403,12 +407,12 @@ async function route(ctx, store, desk, req, res) {
         const rows = await Promise.all(chunk.map(async (topic) => {
           let variants = []
           try {
-            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic, lessons), maxTokens: 2800, light: true })
+            const { text: raw } = await callModel(ctx, { ...variantsPrompt(state, topic, lessons, brief), maxTokens: 2800, light: true })
             variants = normalizeVariants(extractJson(raw))
             if (variants.length) usedModel = true
           } catch { /* 单条失败就退回本地模板 */ }
           if (!variants.length) variants = localVariants(state, topic)
-          return { topic, variants }
+          return { topic, variants, source: brief ? 'brief' : 'topic' }
         }))
         groups.push(...rows)
       }

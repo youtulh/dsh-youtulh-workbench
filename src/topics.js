@@ -308,11 +308,22 @@ export function cityRule(state) {
 
 // ---- 一个选题出 3 个版本 ----
 
-export function variantsPrompt(state, topic, lessons = '') {
+/** 做内容页的那句「想讲什么」：压成一行、截断，空值一律当成没写。 */
+export function normalizeBrief(value, max = 120) {
+  const raw = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''
+  return raw.slice(0, max)
+}
+
+export function variantsPrompt(state, topic, lessons = '', brief = '') {
   const base = scriptPrompt(state, topic, lessons)
+  const ask = brief
+    ? `我的要求：${brief}
+照这个要求写，不要另起别的选题；没写到的地方按我的设定补足。`
+    : `选题：${topic}`
+  const given = brief ? '\n这次主题由老师直接给定，不要另换人群或话题。' : ''
   return {
     system: `${base.system}
-
+${given}
 这次要写 3 个版本，角度必须不一样，让人一眼能看出不是同一条：
 - A 版：从分数/焦虑切入（先说分数、先说急）
 - B 版：从具体知识点或场景切入（先说某一章、某类题）
@@ -320,7 +331,7 @@ export function variantsPrompt(state, topic, lessons = '') {
 三个版本的标题不能一样，开头第一句不能一样，但都要严格按上面的六段结构和红线写。
 
 只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]}]}`,
-    user: `选题：${topic}`,
+    user: ask,
   }
 }
 

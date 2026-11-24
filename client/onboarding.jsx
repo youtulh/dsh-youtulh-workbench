@@ -11,13 +11,13 @@ const NO_EXCLUDE = '都不排斥'
 
 const steps = () => [
   { key: 'intro', type: 'intro' },
-  { key: 'subject', title: t('你教什么科目？'), type: 'single', options: SUBJECTS, placeholder: t('比如：信息技术、生物、雅思'), hint: t('先说科目：家长刷到你的第一眼，得知道你是不是她要找的老师') },
-  { key: 'grade', title: t('主要带哪个年级？'), type: 'single', options: GRADES, placeholder: t('比如：四年级、艺考生、高三复读'), hint: t('同一年级的家长，愁的完全不是一件事') },
-  { key: 'city', title: t('你在哪个城市？'), type: 'text', placeholder: t('北京；只做线上就写「线上」'), hint: t('只招本地的，这一步决定同城内容怎么写；做全国获客最难') },
-  { key: 'situations', title: t('你的学生主要是哪种情况？'), type: 'multi', options: SITUATIONS, placeholder: t('还有别的情况？自己写一句加进去'), hint: t('先定人再定内容，最多选三个') },
-  { key: 'excludes', title: t('你不想接哪种？'), type: 'multi', options: [...EXCLUDES, NO_EXCLUDE], placeholder: t('还有不想接的？自己写一句'), hint: t('定位等于取舍：什么人不接，和接谁一样重要') },
-  { key: 'pains', title: t('家长最常跟你说的一句话是什么？'), type: 'text', placeholder: t('期中 58 分还能补吗，物质的量听不懂'), hint: t('题目和开头都从这句话里长出来；多个用逗号隔开，想不起来可以跳过') },
-  { key: 'target', type: 'target', title: t('先只抓一类家长，你选哪一类？'), hint: t('一次只抓一类；内容和话术都围着她说，跑通了再加第二类。') },
+  { key: 'subject', title: t('你教什么科目？'), type: 'single', options: SUBJECTS, placeholder: t('比如：信息技术、生物、雅思'), hint: t('说清楚你教哪一科。家长刷到你，先看你教的是不是她要的科目。') },
+  { key: 'grade', title: t('主要带哪个年级？'), type: 'single', options: GRADES, placeholder: t('比如：四年级、艺考生、高三复读'), hint: t('同年级的家长，愁的事差不多；换个年级，愁的就全变了。') },
+  { key: 'city', title: t('你在哪个城市？'), type: 'text', placeholder: t('北京；只做线上就写「线上」'), hint: t('只招本地就写城市名。同城的家长更信你；想做全国最难。') },
+  { key: 'situations', title: t('你的学生主要是哪种情况？'), type: 'multi', options: SITUATIONS, placeholder: t('还有别的情况？自己写一句加进去'), hint: t('你带的学生大多是什么情况？最多选三个。') },
+  { key: 'excludes', title: t('你不想接哪种？'), type: 'multi', options: [...EXCLUDES, NO_EXCLUDE], placeholder: t('还有不想接的？自己写一句'), hint: t('不接谁，跟接谁一样重要。宁可少写一个人群。') },
+  { key: 'pains', title: t('家长最常跟你说的一句话是什么？'), type: 'text', placeholder: t('期中 58 分还能补吗，物质的量听不懂'), hint: t('就写家长原话，别改。这句话会变成你视频的题目和开头。多个用逗号隔开，想不起来先跳过。') },
+  { key: 'target', type: 'target', title: t('先只抓一类家长，你选哪一类？'), hint: t('先只抓一类。内容和话术都围着她说，做顺了再加第二类。') },
 ]
 
 /** 把每题的「自己写」合并进答案：自己写的优先，多选的追加。 */
@@ -78,7 +78,7 @@ export function OnboardingWizard({ onDone, onSwitch }) {
           <li><b>{t('先圈一类人')}</b><span>{t('一个账号只面向一类家长；越窄越容易赚到钱。')}</span></li>
           <li><b>{t('人群是洗出来的')}</b><span>{t('平台不会直接给你精准家长，是靠内容一条一条洗出来的。')}</span></li>
         </ul>
-        <p className="md-onb-hint">{t('下面 {n} 个问题，帮你把「你为谁、解决什么问题」定下来。', { n: total })}</p>
+        <p className="md-onb-hint">{t('下面 {n} 个问题，帮你定下「你为谁、解决什么问题」。不想被选项框住的地方，都能自己写。', { n: total })}</p>
         <div className="md-onb-actions">
           <button type="button" className="md-pill is-primary" onClick={() => setStep(1)}>{t('开始，先说说你教什么')}</button>
           <span className="md-grow" />

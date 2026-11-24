@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { localScript, localTopics, normalizeScript, normalizeTopics, topicsPrompt } from '../src/topics.js'
+import { localScript, localTopics, normalizeBrief, normalizeScript, normalizeTopics, topicsPrompt, variantsPrompt } from '../src/topics.js'
 
 const state = { positioning: { subject: '化学', grade: '高一', city: '北京' }, painPoints: ['期中 58 分还能补吗', '物质的量听不懂', '上课听懂了做题就废'] }
 
@@ -177,4 +177,28 @@ test('目标客户、切入点、最怕什么会进 prompt，并要求只写给�
   assert.match(script, /怕补了没起色/)
   assert.match(script, /只面向这一类家长/)
   assert.match(topicsPrompt(state, 10).system, /北京高二物理 40–60 分/)
+})
+
+test('normalizeBrief：压成一行、去空、截断，空值当成没写', () => {
+  assert.equal(normalizeBrief('  讲一道期中卷上最常丢分的题  '), '讲一道期中卷上最常丢分的题')
+  assert.equal(normalizeBrief('第一行\n第二行'), '第一行 第二行')
+  assert.equal(normalizeBrief('   '), '')
+  assert.equal(normalizeBrief(undefined), '')
+  assert.equal(normalizeBrief(42), '')
+  assert.equal(normalizeBrief('长'.repeat(200)).length, 120)
+})
+
+test('按提示写时不另起选题，提示原样进 user', () => {
+  const brief = '家长总问来得及吗，我想正面回一次'
+  const prompt = variantsPrompt(state, brief, '', brief)
+  assert.match(prompt.user, /我的要求：家长总问来得及吗/)
+  assert.doesNotMatch(prompt.user, /^选题：/)
+  assert.match(prompt.system, /主题由老师直接给定/)
+  assert.equal(prompt.user.includes('我的要求'), true)
+})
+
+test('不给提示时还是照选题写，system 不多那句话', () => {
+  const prompt = variantsPrompt(state, '期中 58 分，先补哪一块')
+  assert.equal(prompt.user, '选题：期中 58 分，先补哪一块')
+  assert.doesNotMatch(prompt.system, /主题由老师直接给定/)
 })

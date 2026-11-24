@@ -22,7 +22,7 @@ Afterwards the home page is a three-step workflow.
 | Feature | What it does | What it leaves behind |
 |---|---|---|
 | **Answer DMs** | Paste a parent's message → decide who they are and what they ask → two replies (one that catches them, one that moves them to WeChat) → seven ledger fields | A Word file under `私信/<date name>/`, plus a row in `线索表.csv` |
-| **Make content** | Spoken video only. One line of input → 3 titles, 2 scripts (45s direct / 60s story), 2 tag sets; pick one of each | `.docx` + `.md` under `内容/<date title>/` |
+| **Make content** | Spoken video only. Write one line of your own → 3 drafts; or pick from 10 topics → 3 versions each; keep the one you like | `.docx` + `.md` under `内容/<date title>/` |
 | **Read the numbers** | Record views, DMs, WeChat adds, trial bookings → two rankings | `数据/复盘 <date>.csv` |
 
 Plus **我的产出** (list the real files in your workspace, preview and reveal them) and **我的设定** (edit `我的设定.md` visually, or edit the file directly and refresh).

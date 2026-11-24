@@ -963,6 +963,11 @@ body[data-ds-dark-theme] .md-root {
 .md-create-input { padding: 16px 18px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
 .md-create-input textarea { width: 100%; padding: 10px 12px; border: .5px solid var(--line); border-radius: var(--r-md); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); resize: vertical; font: inherit; font-size: 14px; line-height: 22px; }
 .md-create-input textarea:focus { border-color: var(--accent); }
+/* 「想讲什么」：写一句就直接出草稿，比出选题更快 */
+.md-create-brief > span { display: block; margin-bottom: 6px; color: var(--ink2); font-size: 13px; }
+.md-create-brief-foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; }
+.md-create-brief-foot .md-muted:last-child { font-variant-numeric: tabular-nums; opacity: .7; }
+.md-brief-echo { min-width: 0; overflow: hidden; color: var(--ink3); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
 .md-create-pains { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; color: var(--ink3); font-size: 12.5px; }
 .md-create-pains .md-chip { cursor: pointer; }
 .md-create-pains .md-chip:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }

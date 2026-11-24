@@ -7,6 +7,7 @@ import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
 
 const TOPIC_COUNT = 10
+const BRIEF_MAX = 120
 
 async function post(path, body) {
   const res = await fetch(`media-desk/${path}`, {
@@ -33,7 +34,8 @@ export function CreateView() {
   const create = useDesk(s => s.create)
   const modelOk = useDesk(s => s.modelOk)
   const modelError = useDesk(s => s.modelError)
-  const { topics, angles, picked, groups, adopted, batch, lessons, source, examples } = create
+  const { topics, angles, picked, groups, adopted, batch, lessons, source, examples, brief } = create
+  const briefText = String(brief ?? '').trim()
   const [busy, setBusy] = React.useState('')
   const [editKey, setEditKey] = React.useState('')
   const [editText, setEditText] = React.useState('')
@@ -60,6 +62,24 @@ export function CreateView() {
     setBusy('')
   }
 
+  // 给了提示就直接出草稿：一条，3 版，不再先出选题
+  const makeDrafts = async () => {
+    if (!briefText) return makeTopics()
+    setBusy('brief')
+    try {
+      const data = await post('scripts', { brief: briefText, batch })
+      patchCreate({
+        topics: [], angles: {}, picked: {}, adopted: {},
+        groups: (data.groups ?? []).map((group, index) => ({ ...group, key: `${group.topic}-${index}` })),
+        source: data.source ?? '',
+      })
+      toast(t('按你的提示写了 3 版，挑一条'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const generate = () => (briefText ? makeDrafts() : makeTopics())
+
   const makeScripts = async () => {
     if (!selected.length) return toast(t('先勾几个选题'), { error: true })
     setBusy('scripts')
@@ -78,7 +98,9 @@ export function CreateView() {
   const refreshGroup = async (group) => {
     setBusy(`group-${group.topic}`)
     try {
-      const data = await post('scripts', { topics: [group.topic], batch })
+      // 按提示写出来的那组，刷新时还用同一句提示
+      const body = group.source === 'brief' ? { brief: group.topic, batch } : { topics: [group.topic], batch }
+      const data = await post('scripts', body)
       const next = data.groups?.[0]
       if (next) {
         patchCreate(state => ({
@@ -134,7 +156,7 @@ export function CreateView() {
       <header className="md-page-head">
         <div>
           <h1>{t('做内容')}</h1>
-          <p className="md-page-sub">{t('先出 10 个选题，勾中的每个给 3 个版本，你挑一条。不喜欢哪一批，就按刷新；切到别的页面也不会丢。')}</p>
+          <p className="md-page-sub">{t('想好了就写一句，直接出 3 版草稿；没想好就先出 10 个选题，勾中的每个给 3 个版本。切到别的页面也不会丢。')}</p>
           {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         </div>
       </header>
@@ -166,23 +188,44 @@ export function CreateView() {
         <div className="md-create-pains">
           <span>{t('没方向就点一条：')}</span>
           {examples.slice(0, 4).map(example => (
-            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], angles: {}, picked: { [example]: true }, groups: [], adopted: {} })}>{example}</button>
+            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], angles: {}, picked: { [example]: true }, groups: [], adopted: {}, brief: '' })}>{example}</button>
           ))}
         </div>
       ) : null}
 
       <section className="md-create-input">
+        <label className="md-create-brief">
+          <span>{t('想讲什么？（可留空）')}</span>
+          <textarea
+            rows={2}
+            maxLength={BRIEF_MAX}
+            value={brief}
+            onChange={event => patchCreate({ brief: event.target.value })}
+            placeholder={t('比如：讲期中卷上最爱丢分的那道题；或者家长总问「来得及吗」，我想正面回一次。')}
+          />
+        </label>
+        <div className="md-create-brief-foot">
+          <span className="md-muted">{t('写一句就直接出草稿；留空就先出 10 个选题，勾完再写。')}</span>
+          <span className="md-grow" />
+          {briefText ? <button type="button" className="md-inline-link" onClick={() => patchCreate({ brief: '' })}>{t('清空提示')}</button> : null}
+          <span className="md-muted">{brief.length}/{BRIEF_MAX}</span>
+        </div>
         <div className="md-create-actions">
           <span className="md-muted">
-            {topics.length ? t('已出 {n} 个选题，勾选后生成。', { n: topics.length }) : t('点右边先出 10 个选题。')}
+            {briefText
+              ? t('按上面这句写，不用先挑选题。')
+              : topics.length ? t('已出 {n} 个选题，勾选后生成。', { n: topics.length }) : t('点右边先出 10 个选题。')}
           </span>
           {source ? <span className={`md-source ${source === 'local' ? 'is-local' : ''}`}>{source === 'local' ? t('本地模板 · 模型没通') : t('模型生成')}</span> : null}
           <span className="md-grow" />
-          <button type="button" className="md-pill" onClick={() => { if (!startChat('content', { hint: selected[0] ?? '', profile: summary })) launchFailedToast(toast) }} disabled={!selected.length}>
+          {briefText ? (
+            <button type="button" className="md-inline-link" onClick={makeTopics} disabled={busy === 'topics' || !configured}>{t('先看 10 个选题')}</button>
+          ) : null}
+          <button type="button" className="md-pill" onClick={() => { if (!startChat('content', { hint: briefText || selected[0] || '', profile: summary, target: positioning.target })) launchFailedToast(toast) }} disabled={!selected.length && !briefText}>
             <Icon name="chat" size={14} />{t('去对话里写')}
           </button>
-          <button type="button" className="md-pill is-primary" onClick={makeTopics} disabled={busy === 'topics' || !configured}>
-            <Icon name="refresh" size={14} />{busy === 'topics' ? t('正在想…') : topics.length ? t('刷新选题') : t('生成 10 个选题')}
+          <button type="button" className="md-pill is-primary" onClick={generate} disabled={busy === 'topics' || busy === 'brief' || !configured}>
+            <Icon name={briefText ? 'bolt' : 'refresh'} size={14} />{busy === 'brief' ? t('正在写…') : busy === 'topics' ? t('正在想…') : briefText ? t('按提示生成草稿') : topics.length ? t('刷新选题') : t('生成 10 个选题')}
           </button>
         </div>
       </section>
@@ -221,16 +264,17 @@ export function CreateView() {
         <section className="md-script-box">
           <header>
             <b>{t('口播')}</b>
-            <span className="md-muted">{t('{n} 个选题 · 每个 3 条', { n: groups.length })}</span>
+            <span className="md-muted">{groups.some(group => group.source === 'brief') ? t('按你的提示 · 3 条') : t('{n} 个选题 · 每个 3 条', { n: groups.length })}</span>
             <span className="md-grow" />
-            <button type="button" className="md-pill is-small" onClick={makeScripts} disabled={busy === 'scripts'}>
+            <button type="button" className="md-pill is-small" onClick={() => (groups.every(group => group.source === 'brief') ? makeDrafts() : makeScripts())} disabled={busy === 'scripts' || busy === 'brief'}>
               <Icon name="refresh" size={13} />{t('全部重写')}
             </button>
           </header>
           {groups.map(group => (
             <div className="md-script-group" key={group.key ?? group.topic}>
               <div className="md-script-group-head">
-                <h3>{group.topic}</h3>
+                <h3>{group.source === 'brief' ? t('按你的提示写的') : group.topic}</h3>
+                {group.source === 'brief' ? <span className="md-brief-echo" title={group.topic}>{group.topic}</span> : null}
                 <span className="md-grow" />
                 <button type="button" className="md-inline-link" onClick={() => refreshGroup(group)} disabled={busy === `group-${group.topic}`}>
                   {busy === `group-${group.topic}` ? t('重写中…') : t('刷新这组')}

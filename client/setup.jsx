@@ -64,7 +64,7 @@ export function SetupView() {
       <header className="md-page-head">
         <div>
           <h1>{t('我的设定')}</h1>
-          <p className="md-page-sub">{t('先定一类家长，再谈内容。回私信、做内容、看数据都会照着它来，以后随时能改。')}</p>
+          <p className="md-page-sub">{t('先定一类家长，再谈内容。回私信、做内容、看数据都按这个来，以后随时能改。')}</p>
         </div>
         <span className="md-setup-saved">{savedAt ? t('已保存 {time}', { time: savedAt }) : t('改完自动保存')}</span>
       </header>
@@ -87,7 +87,7 @@ export function SetupView() {
 
       <section className="md-setup-card">
         <h2><span>2</span>{t('先抓哪类家长')}</h2>
-        <p className="md-setup-hint">{t('一个账号只面向一类家长；越窄越容易赚到钱。不知道选谁，就从下面的方向里挑一个。')}</p>
+        <p className="md-setup-hint">{t('一个账号只对一类家长说话，越窄越容易赚到钱。不知道选谁，就从下面点一个。')}</p>
         {positioningSentence(positioning) ? <p className="md-setup-sentence">{positioningSentence(positioning)}</p> : null}
         <div className="md-setup-cards">
           {cards.map(card => {
@@ -124,7 +124,7 @@ export function SetupView() {
 
       <section className="md-setup-card">
         <h2><span>3</span>{t('家长最愁什么')}</h2>
-        <p className="md-setup-hint">{t('写家长的原话，不写教学术语。选题和文案的钩子都从这里长出来。')}</p>
+        <p className="md-setup-hint">{t('写家长的原话，别写教学术语。视频的题目和开头就从这儿来。')}</p>
         <div className="md-setup-pains">
           {pains.length ? pains.map(point => (
             <span key={point} className="md-chip is-removable">
@@ -141,7 +141,7 @@ export function SetupView() {
 
       <section className="md-setup-card">
         <h2><span>4</span>{t('我平时怎么说话')}</h2>
-        <p className="md-setup-hint">{t('一句话就行。成稿和私信话术都会跟着这个口气写。')}</p>
+        <p className="md-setup-hint">{t('一句话就行。写出来的稿子和回私信都照这个口气。')}</p>
         <label className="md-field">
           <textarea rows={3} defaultValue={positioning.voice ?? ''} placeholder={t('比如：先接住家长的焦虑，再用一个具体数字说清楚，不喊口号')} onBlur={event => save('voice', event.target.value)} />
         </label>
@@ -177,7 +177,7 @@ export function SetupView() {
 
       <section className="md-setup-card md-setup-reset">
         <h2>{t('想从头再来')}</h2>
-        <p className="md-setup-hint">{t('清空设定和家长痛点，重新做一遍问卷。线索表、账号数据和已经做出来的内容都不会动。')}</p>
+        <p className="md-setup-hint">{t('清空设定和家长痛点，重新做一遍问卷。线索表、内容和数据都不会动。')}</p>
         <button type="button" className="md-pill" onClick={() => {
           dispatchOps([
             { op: 'update_positioning', subject: '', grade: '', city: '', target: '', entry: '', fear: '', only: '', notDo: '', voice: '', redline: '' },

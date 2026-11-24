@@ -6,7 +6,7 @@ const BASE = 'media-desk/'
 
 // 做内容页面的中间结果：选题、勾选、口播几组、采用标记。
 // 放在全局快照里，切到别的页面再回来不会丢；再存一份 sessionStorage，刷新也能捡回来。
-export const EMPTY_CREATE = { topics: [], angles: {}, picked: {}, groups: [], adopted: {}, batch: '', lessons: '', source: '', examples: [] }
+export const EMPTY_CREATE = { topics: [], angles: {}, picked: {}, groups: [], adopted: {}, batch: '', lessons: '', source: '', examples: [], brief: '' }
 const CREATE_DRAFT_KEY = 'youtulh:create:v1'
 
 let snapshot = {
@@ -31,8 +31,8 @@ export function patchCreate(patch) {
   const next = { ...snapshot.create, ...(typeof patch === 'function' ? patch(snapshot.create) : patch) }
   setDesk({ create: next })
   try {
-    const { topics, angles, picked, groups, adopted, batch, lessons, source, examples } = next
-    sessionStorage.setItem(CREATE_DRAFT_KEY, JSON.stringify({ topics, angles, picked, groups, adopted, batch, lessons, source, examples }))
+    const { topics, angles, picked, groups, adopted, batch, lessons, source, examples, brief } = next
+    sessionStorage.setItem(CREATE_DRAFT_KEY, JSON.stringify({ topics, angles, picked, groups, adopted, batch, lessons, source, examples, brief }))
   } catch { /* 隐私模式下写不进去就算了 */ }
 }
 
@@ -54,6 +54,7 @@ export function startFromTopic(topic) {
     lessons: '',
     source: '',
     examples: state.examples,
+    brief: '',
   }))
   setDesk({ view: 'content', focusId: null })
 }
