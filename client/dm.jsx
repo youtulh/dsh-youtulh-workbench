@@ -7,8 +7,12 @@ import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS, dayKey } from './util.js'
 
+const todayKey = () => dayKey(new Date())
+const isDue = lead => Boolean(lead.nextAt) && lead.nextAt <= todayKey() && !['已报课', '流失'].includes(lead.stage)
+
 const FILTERS = [
   { id: 'all', label: '全部', test: () => true },
+  { id: 'due', label: '该跟进', test: isDue },
   { id: 'lead', label: '私信', test: lead => lead.stage === '私信' },
   { id: 'wechat', label: '已加微信', test: lead => lead.stage === '已加微信' || lead.stage === '已进群' },
   { id: 'trial', label: '约试听', test: lead => lead.stage === '约试听' },
@@ -679,6 +683,7 @@ export function DmView() {
                   <span className="md-muted">{row.date}</span>
                   <span className="md-grow" />
                   <button type="button" className="md-inline-link" onClick={() => {
+                    if (!window.confirm(t('删掉这条案例？以后给建议就不会再参考它。'))) return
                     removeChatCase(index)
                       .then(data => { setCases(data.cases ?? []); toast(t('案例删掉了')) })
                       .catch(err => toast(err.message, { error: true }))
