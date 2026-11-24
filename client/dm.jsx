@@ -276,7 +276,7 @@ export function DmView() {
   const filtered = leads.filter(lead => {
     const pass = (FILTERS.find(row => row.id === filter) ?? FILTERS[0]).test(lead)
     const q = query.trim()
-    const hit = !q || [lead.name, lead.grade, lead.painPoint, lead.raw].some(value => String(value ?? '').includes(q))
+    const hit = !q || [lead.name, lead.grade, lead.painPoint, lead.raw, lead.next, lead.nextAt, lead.source].some(value => String(value ?? '').includes(q))
     return pass && hit
   }).sort((a, b) => {
     // 看「该跟进」时按日期从早到晚，越拖越久的人排前面
@@ -350,6 +350,7 @@ export function DmView() {
             rows={4}
             value={raw}
             onChange={event => setRaw(event.target.value)}
+            onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); run() } }}
             placeholder={channel === '微信'
               ? t('老师，一节课多少钱？孩子高二物理四十多分，还来得及吗？')
               : t('老师你好，我孩子高一，化学期中才 58 分，还能补上来吗？')}
@@ -365,7 +366,7 @@ export function DmView() {
           ))}
         </div>
         <div className="md-dm-actions">
-          <span className="md-muted">{t('点「判断一下」就在这页出结果，不用跳到对话。')}</span>
+          <span className="md-muted">{t('⌘ + Enter 直接给下一句；结果就在这页出，不用跳到对话。')}</span>
           <span className="md-grow" />
           <button type="button" className="md-pill is-primary" onClick={run} disabled={!raw.trim() || busy === 'draft'}>
             <Icon name="chat" size={14} />{busy === 'draft' ? t('正在判断…') : t('判断一下')}

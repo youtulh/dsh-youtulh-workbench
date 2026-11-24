@@ -100,7 +100,7 @@ function RosterPanel({ students, classes, onChanged, focusName = '' }) {
     const pass = filter === 'none' ? !row.className : !filter || row.className === filter
     if (!pass) return false
     const q = query.trim()
-    return !q || [row.name, row.school, row.layer, row.note].some(value => String(value ?? '').includes(q))
+    return !q || [row.name, row.school, row.layer, row.note, row.className, row.source].some(value => String(value ?? '').includes(q))
   })
 
   const open = (student) => {
