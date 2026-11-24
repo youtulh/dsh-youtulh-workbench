@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, readSettingsMarkdown, settingsMarkdown, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, readAccounts, readSettingsMarkdown, settingsMarkdown, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -55,4 +55,25 @@ test('settingsMarkdown 不带时间戳时内容稳定', () => {
   const a = settingsMarkdown({ subject: '化学' }, ['痛点']).replace(/> 更新于 .+/, '')
   const b = settingsMarkdown({ subject: '化学' }, ['痛点']).replace(/> 更新于 .+/, '')
   assert.equal(a, b)
+})
+
+test('账号数据.csv：写出来能读回来，带逗号的备注不会串列', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-acc-'))
+  try {
+    const file = writeAccounts(root, [
+      { platform: '小红书', handle: '示例号', followers: 8620, url: 'https://example.com/x', note: '主号，带逗号, 和引号"', fetchedAt: '2026-11-24T00:00:00.000Z' },
+      { platform: '抖音', handle: '另一个', followers: null, url: null, note: '', fetchedAt: null },
+    ])
+    assert.match(file, /账号数据\.csv$/)
+    const back = readAccounts(root)
+    assert.equal(back.length, 2)
+    assert.equal(back[0].platform, '小红书')
+    assert.equal(back[0].followers, 8620)
+    assert.match(back[0].note, /带逗号/)
+    assert.equal(back[1].followers, null)
+    // 没有文件时读回 null，不会当成空表覆盖状态
+    assert.equal(readAccounts(join(root, 'nope')), null)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
 })

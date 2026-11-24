@@ -179,3 +179,47 @@ export function listTree(root) {
   }
   return groups
 }
+
+// ---- 账号数据 ----
+
+export const accountsPath = root => join(root, '账号数据.csv')
+
+const ACCOUNT_COLUMNS = ['平台', '账号', '粉丝数', '主页', '备注', '更新时间']
+
+function csvCell2(value) {
+  return `"${String(value ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
+}
+
+/** 把账号列表写成 CSV（Excel 能开），整表覆盖，不做增量。 */
+export function writeAccounts(root, accounts = []) {
+  ensureLayout(root)
+  const file = accountsPath(root)
+  const rows = accounts.map(account => [
+    account.platform, account.handle, account.followers, account.url, account.note, account.fetchedAt ?? account.updatedAt,
+  ].map(csvCell2).join(','))
+  writeFileSync(file, [ACCOUNT_COLUMNS.map(csvCell2).join(','), ...rows].join('\n') + '\n')
+  return file
+}
+
+/** 读账号表：认表头，缺列就当空。 */
+export function readAccounts(root) {
+  const file = accountsPath(root)
+  if (!existsSync(file)) return null
+  const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  if (lines.length <= 1) return []
+  const head = parseCsvLine(lines[0])
+  const at = (cells, name) => cells[head.indexOf(name)] ?? ''
+  return lines.slice(1).map(line => {
+    const cells = parseCsvLine(line)
+    const rawFollowers = at(cells, '粉丝数').trim()
+    const followers = rawFollowers === '' ? null : Number(rawFollowers)
+    return {
+      platform: at(cells, '平台'),
+      handle: at(cells, '账号'),
+      followers: Number.isFinite(followers) ? followers : null,
+      url: at(cells, '主页') || null,
+      note: at(cells, '备注'),
+      fetchedAt: at(cells, '更新时间') || null,
+    }
+  }).filter(row => row.platform || row.handle)
+}

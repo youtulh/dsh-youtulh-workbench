@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
 import { createTools } from './tools.js'
-import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readLeads, readSettingsMarkdown, resolveRoot, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
 import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
 import { harvest, harvestText } from './harvest.js'
@@ -319,6 +319,15 @@ async function route(ctx, store, desk, req, res) {
             state = merged
           }
         }
+        // 账号数据同样以工作区文件为准（有文件才覆盖，避免把空表写回去）
+        const accounts = readAccounts(resolveRoot((await desk.settings.read()).saveRoot))
+        if (accounts?.length && JSON.stringify(accounts.map(a => [a.platform, a.handle, a.followers])) !== JSON.stringify((state.accounts ?? []).map(a => [a.platform, a.handle, a.followers]))) {
+          const merged = await store.mutate('从文件读取账号', (draft) => {
+            draft.accounts = accounts.map(row => ({ ...row, id: `file_${row.platform}_${row.handle}` }))
+            return draft
+          }, { undoable: false })
+          state = merged
+        }
       } catch { /* 读不到就按状态里的来 */ }
       // 示例数据跟着界面语言走；用户自己的内容不动
       if (samplesNeedLocale(state, currentLang())) state = await store.mutate('', draft => (localizeSamples(draft, currentLang()), draft), { undoable: false })
@@ -401,6 +410,10 @@ async function route(ctx, store, desk, req, res) {
         if (names.includes('update_positioning') || names.includes('set_pain_points')) {
           const state = await store.read()
           writeSettingsMarkdown(root, state.positioning ?? {}, state.painPoints ?? [])
+        }
+        if (names.some(name => /account/.test(String(name)))) {
+          const state = await store.read()
+          writeAccounts(root, state.accounts ?? [])
         }
         if (names.includes('add_lead')) {
           const state = await store.read()
