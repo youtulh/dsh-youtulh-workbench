@@ -1,6 +1,7 @@
 // 做内容：只做口播视频。给一句话 → 标题 / 口播文案 / 标签三组候选，挑一版复制走。
 import React from 'react'
 import { createContent, saveOutput, setDesk, toast, useDesk } from './desk.js'
+import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 
@@ -80,7 +81,7 @@ export function CreateView() {
       <header className="md-page-head">
         <div>
           <h1>{t('做内容')}</h1>
-          <p className="md-page-sub">{t('只做口播视频。写一句你想讲的，剩下三样一起给你挑。')}</p>
+          <p className="md-page-sub">{t('只做口播视频。写一句你想讲的，交给对话里的助教，他会把稿子写好并落成文件。')}</p>
         </div>
       </header>
 
@@ -106,8 +107,11 @@ export function CreateView() {
           <span className="md-grow" />
           {creative ? <button type="button" className="md-pill" onClick={() => copy(all, t('全部'))}><Icon name="copy" size={14} />{t('复制选中的三样')}</button> : null}
           {creative ? <button type="button" className="md-pill" onClick={save} disabled={saving}><Icon name="save" size={14} />{saving ? t('保存中…') : t('保存成 Word')}</button> : null}
-          <button type="button" className="md-pill is-primary" onClick={generate} disabled={busy || !hint.trim()}>
-            <Icon name="spark" size={14} />{busy ? t('生成中…') : creative ? t('换一批') : t('生成')}
+          <button type="button" className="md-pill is-primary" onClick={() => { if (!startChat('content', { hint })) launchFailedToast(toast) }} disabled={!hint.trim()}>
+            <Icon name="chat" size={14} />{t('让助教在对话里做')}
+          </button>
+          <button type="button" className="md-pill" onClick={generate} disabled={busy || !hint.trim()}>
+            <Icon name="spark" size={14} />{busy ? t('生成中…') : creative ? t('换一批') : t('在这里生成')}
           </button>
         </div>
       </section>

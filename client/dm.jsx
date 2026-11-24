@@ -2,6 +2,7 @@
 // 这不是聊天窗，是分诊台：先判断，再给话。话术是原句，肖月改两个词就能发。
 import React from 'react'
 import { dispatchOps, fetchLeads, revealDir, saveOutput, toast, triageDm, useDesk } from './desk.js'
+import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { fmtDate } from './util.js'
@@ -122,8 +123,11 @@ export function DmView() {
           </label>
           <div className="md-dm-actions">
             <span className="md-grow" />
-            <button type="button" className="md-pill is-primary" onClick={submit} disabled={busy || !raw.trim()}>
-              <Icon name="spark" size={14} />{busy ? t('判断中…') : t('分诊')}
+            <button type="button" className="md-pill is-primary" onClick={() => { if (!startChat('dm', { raw })) launchFailedToast(toast) }} disabled={!raw.trim()}>
+              <Icon name="chat" size={14} />{t('让助教在对话里分诊')}
+            </button>
+            <button type="button" className="md-pill" onClick={submit} disabled={busy || !raw.trim()}>
+              <Icon name="spark" size={14} />{busy ? t('判断中…') : t('在这里分诊')}
             </button>
           </div>
           {engine && engine !== 'local' ? <p className="md-dm-engine">{t('由 {model} 判断', { model: engine })}</p> : null}

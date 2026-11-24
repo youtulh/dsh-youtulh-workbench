@@ -5,6 +5,7 @@ import { CreateView } from './create.jsx'
 import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { InsightsView } from './insights.jsx'
 import { DmView } from './dm.jsx'
+import { setAppCtx } from './launch.js'
 import { SetupView } from './setup.jsx'
 import { WorksView } from './works.jsx'
 import { WelcomeView } from './welcome.jsx'
@@ -204,9 +205,10 @@ function PanelIcon({ size }) {
   return <Icon name="scatter" size={size} />
 }
 
-export const inject = ['slots']
+export const inject = ['slots', 'uiWorkspace']
 
 export function apply(ctx) {
+  setAppCtx(ctx)
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: PANEL_ID }, Desk))
   // 侧栏的名字只在注册时读一次，换语言时重新注册
   ctx.effect(() => {
