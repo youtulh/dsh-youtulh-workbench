@@ -416,6 +416,8 @@ export const PAGES = {
   '还没有导入案例。点上面「导入案例」，粘一段真实对话进来。': 'No cases yet. Use “Import case” above to paste a real chat.',
   没写场景: 'No scene',
   案例删掉了: 'Case deleted',
+  场景改好了: 'Scene updated',
+  结果改好了: 'Outcome updated',
   去聊天台: 'Open chat desk',
   '还没有和 {name} 的对话': 'No chats with {name} yet',
   这个筛选下没有对话: 'No chats match this filter',

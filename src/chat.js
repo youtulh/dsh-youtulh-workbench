@@ -71,6 +71,21 @@ export function appendCase(root, input = {}) {
   return readCases(root)
 }
 
+/** 改一条案例的场景 / 结果（导入了但标签写错了）。 */
+export function updateCase(root, index, patch = {}) {
+  const rows = readTable(root, LAYOUT.cases).rows
+  const at = Number(index)
+  if (!Number.isInteger(at) || at < 0 || at >= rows.length) return null
+  const row = { ...rows[at] }
+  if (CHANNELS.includes(patch.channel)) row['渠道'] = patch.channel
+  if (typeof patch.scene === 'string') row['场景'] = text(patch.scene, 60)
+  if (CHAT_RESULTS.includes(patch.result)) row['结果'] = patch.result
+  if (typeof patch.text === 'string' && patch.text.trim()) row['对话'] = text(patch.text, 6000)
+  rows[at] = row
+  writeTable(root, LAYOUT.cases, CASE_COLUMNS, rows)
+  return readCases(root)
+}
+
 /** 删掉一条导入的案例（导错了、不适用了）。 */
 export function removeCase(root, index) {
   const rows = readTable(root, LAYOUT.cases).rows

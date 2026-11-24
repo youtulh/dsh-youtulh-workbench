@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, removeCase, updateChatRow, writePlatformWords } from '../src/chat.js'
+import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from '../src/chat.js'
 
 const state = { positioning: { subject: '物理', grade: '高二', city: '北京' }, painPoints: ['期中 58 分还能补吗'] }
 const temp = () => mkdtemp(join(tmpdir(), 'workbench-chat-'))
@@ -100,6 +100,12 @@ test('对话记录和案例库：写进去能读回来，案例按渠道取', as
     appendCase(root, { channel: '微信', scene: '没聊成', result: '流失', text: '家长：太贵了。' })
     const cases = readCases(root)
     assert.equal(cases.length, 3)
+    // 标签写错了能改（改的是第二条，别把成交案例改成流失影响下面的经验断言）
+    const edited = updateCase(root, 1, { scene: '引流·改过', result: '流失' })
+    assert.equal(edited[1].scene, '引流·改过')
+    assert.equal(edited[1].result, '流失')
+    assert.equal(updateCase(root, 99, { scene: 'x' }), null)
+
     // 导错了能删掉
     const left = removeCase(root, 2)
     assert.equal(left.length, 2)

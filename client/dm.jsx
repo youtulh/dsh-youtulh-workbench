@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -186,9 +186,11 @@ export function DmView() {
       if (chatFilter !== 'all' && row.channel !== chatFilter) continue
       const key = row.name || ''
       const name = row.name || t('没写名字')
-      const item = map.get(key) ?? { key, name, turns: 0, lastDate: '', lastResult: '', channel: row.channel, lastIncoming: '' }
+      const stamp = row.updatedAt || row.date || ''
+      const item = map.get(key) ?? { key, name, turns: 0, lastDate: '', lastAt: '', lastResult: '', channel: row.channel, lastIncoming: '' }
       item.turns += 1
-      if (row.date >= item.lastDate) {
+      if (stamp >= item.lastAt) {
+        item.lastAt = stamp
         item.lastDate = row.date
         item.lastResult = row.result || '未定'
         item.lastIncoming = row.incoming || row.outgoing || ''
@@ -197,9 +199,9 @@ export function DmView() {
     }
     const won = { 成交: 0, 约试听: 1, 加微: 2, 未定: 3, 流失: 4 }
     return [...map.values()].sort((a, b) => {
-      if (peopleSort === 'turns') return b.turns - a.turns || String(b.lastDate).localeCompare(String(a.lastDate))
-      if (peopleSort === 'result') return (won[a.lastResult] ?? 9) - (won[b.lastResult] ?? 9) || String(b.lastDate).localeCompare(String(a.lastDate))
-      return String(b.lastDate).localeCompare(String(a.lastDate))
+      if (peopleSort === 'turns') return b.turns - a.turns || String(b.lastAt).localeCompare(String(a.lastAt))
+      if (peopleSort === 'result') return (won[a.lastResult] ?? 9) - (won[b.lastResult] ?? 9) || String(b.lastAt).localeCompare(String(a.lastAt))
+      return String(b.lastAt).localeCompare(String(a.lastAt))
     })
   })()
   const chatRows = chats.slice().reverse()
@@ -636,8 +638,24 @@ export function DmView() {
               {cases.map((row, index) => (
                 <li key={`${row.date}-${index}`}>
                   <span className="md-chat-channel">{t(row.channel)}</span>
-                  <b>{row.scene || t('没写场景')}</b>
-                  <em className={`is-${['成交', '加微', '约试听'].includes(row.result) ? 'won' : row.result === '流失' ? 'lost' : 'plain'}`}>{t(row.result || '未定')}</em>
+                  <input
+                    className="md-case-scene"
+                    defaultValue={row.scene || ''}
+                    placeholder={t('没写场景')}
+                    onBlur={event => {
+                      if (event.target.value === (row.scene || '')) return
+                      updateChatCase(index, { scene: event.target.value })
+                        .then(data => { setCases(data.cases ?? []); toast(t('场景改好了')) })
+                        .catch(err => toast(err.message, { error: true }))
+                    }}
+                  />
+                  <select className="md-case-result" value={row.result || '未定'} onChange={event => {
+                    updateChatCase(index, { result: event.target.value })
+                      .then(data => { setCases(data.cases ?? []); toast(t('结果改好了')) })
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>
+                    {['成交', '约试听', '加微', '流失', '未定'].map(value => <option key={value} value={value}>{t(value)}</option>)}
+                  </select>
                   <span className="md-muted">{row.date}</span>
                   <span className="md-grow" />
                   <button type="button" className="md-inline-link" onClick={() => {
