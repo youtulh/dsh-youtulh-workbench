@@ -11,6 +11,16 @@ const WHO = [
   ['city', '在哪个城市', '比如：北京；只做线上就写线上'],
 ]
 
+const SECTIONS = [
+  ['setup-teach', '我教什么'],
+  ['setup-target', '先抓哪类家长'],
+  ['setup-pains', '家长最愁什么'],
+  ['setup-voice', '说话方式'],
+  ['setup-samples', '原话样本'],
+  ['setup-words', '平台词表'],
+  ['setup-advice', '定位体检'],
+]
+
 const BOUNDARY = [
   ['only', '只做', '北京、高一、化学、开学后掉队'],
   ['notDo', '不做', '高二高三、外地、竞赛、只求押题'],
@@ -111,7 +121,13 @@ export function SetupView() {
         {advice.ready ? t('定位完整：人群、切入点、顾虑都写了') : t('还差 {n} 项：{list}', { n: advice.gaps.length, list: advice.gaps.slice(0, 3).map(row => t(row.label)).join('、') })}
       </p>
 
-      <section className="md-setup-card">
+      <nav className="md-setup-nav" aria-label={t('本页目录')}>
+        {SECTIONS.map(([id, label]) => (
+          <button type="button" key={id} onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>{t(label)}</button>
+        ))}
+      </nav>
+
+      <section className="md-setup-card" id="setup-teach">
         <h2><span>1</span>{t('我教什么')}</h2>
         <div className="md-setup-grid">
           {WHO.map(([key, label, hint]) => (
@@ -123,7 +139,7 @@ export function SetupView() {
         </div>
       </section>
 
-      <section className="md-setup-card">
+      <section className="md-setup-card" id="setup-target">
         <h2><span>2</span>{t('先抓哪类家长')}</h2>
         <p className="md-setup-hint">{t('一个账号只对一类家长说话，越窄越容易赚到钱。不知道选谁，就从下面点一个。')}</p>
         {positioningSentence(positioning) ? <p className="md-setup-sentence">{positioningSentence(positioning)}</p> : null}
@@ -160,7 +176,7 @@ export function SetupView() {
         </div>
       </section>
 
-      <section className="md-setup-card">
+      <section className="md-setup-card" id="setup-pains">
         <h2><span>3</span>{t('家长最愁什么')}</h2>
         <p className="md-setup-hint">{t('写家长的原话，别写教学术语。视频的题目和开头就从这儿来。')}</p>
         <div className="md-setup-pains">
@@ -177,7 +193,7 @@ export function SetupView() {
         </form>
       </section>
 
-      <section className="md-setup-card">
+      <section className="md-setup-card" id="setup-voice">
         <h2><span>4</span>{t('我平时怎么说话')}</h2>
         <p className="md-setup-hint">{t('一句话就行。写出来的稿子和回私信都照这个口气。')}</p>
         <label className="md-field">
@@ -185,7 +201,7 @@ export function SetupView() {
         </label>
       </section>
 
-      <section className="md-setup-card">
+      <section className="md-setup-card" id="setup-samples">
         <h2><span>5</span>{t('我的原话样本')}</h2>
         <p className="md-setup-hint">{t('一行一句，写你平时怎么跟家长说话，3 到 5 句就够。口播、按提示改、回私信都照这个口气；不填也不会套用别人的科目和例子。')}</p>
         <label className="md-field">
@@ -205,7 +221,7 @@ export function SetupView() {
         </div>
       </section>
 
-      <section className="md-setup-card">
+      <section className="md-setup-card" id="setup-words">
         <h2><span>6</span>{t('平台话术词表')}</h2>
         <p className="md-setup-hint">{t('只影响平台私信阶段：小红书 / 抖音 / B站里哪些说法可以用、哪些不要出现。一行一个，存进 平台词表.md。')}</p>
         <div className="md-setup-words">
@@ -227,7 +243,7 @@ export function SetupView() {
         </div>
       </section>
 
-      <section className="md-setup-card md-advice">
+      <section className="md-setup-card md-advice" id="setup-advice">
         <h2>{t('定位体检')}</h2>
         <p className="md-advice-headline">{advice.headline}</p>
         {advice.gaps.length ? (

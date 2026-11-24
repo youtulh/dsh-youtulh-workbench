@@ -1,7 +1,7 @@
 // 线索漏斗：一条线索从私信走到报课，拖一下就换个阶段。
 // 数据就是工作区里的 线索表.csv，页面只是换个看法。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchLeadsWithLessons, setDesk, setLeadStage, toast, updateLead } from './desk.js'
+import { appendLeadRow, convertLead, fetchChatRecords, fetchLeadsWithLessons, setDesk, setLeadStage, toast, updateLead } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { LEAD_CATEGORIES, LEAD_STAGES, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
@@ -11,12 +11,20 @@ const stageIndex = stage => (LEAD_STAGES.includes(stage) ? LEAD_STAGES.indexOf(s
 export function FunnelPanel({ students = [], onChanged }) {
   useLang()
   const [leads, setLeads] = React.useState(null)
+  const [chatCounts, setChatCounts] = React.useState({})
   const [busy, setBusy] = React.useState('')
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
 
-  const load = () => fetchLeadsWithLessons()
-    .then(({ leads: rows }) => setLeads(rows))
+  const load = () => Promise.all([fetchLeadsWithLessons(), fetchChatRecords()])
+    .then(([{ leads: rows }, chatData]) => {
+      setLeads(rows)
+      const counts = {}
+      for (const chat of chatData.rows ?? []) {
+        if (chat.name) counts[chat.name] = (counts[chat.name] ?? 0) + 1
+      }
+      setChatCounts(counts)
+    })
     .catch(err => toast(err.message, { error: true }))
   React.useEffect(() => { load() }, [])
 
@@ -125,6 +133,7 @@ export function FunnelPanel({ students = [], onChanged }) {
                     {lead.painPoint ? <p>{lead.painPoint}</p> : null}
                     <footer>
                       {lead.source ? <span className="md-pipeline-source">{lead.source}</span> : null}
+                      {lead.name && chatCounts[lead.name] ? <span className="md-pipeline-chat">{t('聊过 {n} 轮', { n: chatCounts[lead.name] })}</span> : null}
                       <span className="md-grow" />
                       <time>{lead.updatedAt || lead.date}</time>
                     </footer>

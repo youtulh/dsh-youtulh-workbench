@@ -389,6 +389,8 @@ export const PAGES = {
   每次课: 'Lessons',
   平台私信: 'Platform DM',
   平台话术词表: 'Platform wording',
+  本页目录: 'On this page',
+  '聊过 {n} 轮': '{n} chat turns',
   '只影响平台私信阶段：小红书 / 抖音 / B站里哪些说法可以用、哪些不要出现。一行一个，存进 平台词表.md。': 'Only affects platform DMs (Xiaohongshu / Douyin / Bilibili): which words are allowed and which to avoid. One per line, saved to 平台词表.md.',
   可以出现: 'Allowed',
   不要出现: 'Avoid',

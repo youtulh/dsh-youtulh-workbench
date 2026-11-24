@@ -1729,3 +1729,12 @@ body[data-ds-dark-theme] .md-root {
 .md-chat-person-row em.is-won { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
 .md-chat-person-row em.is-lost { background: var(--hover); color: var(--ink3); }
 .md-chat-person-row em.is-plain { color: var(--ink3); }
+
+/* 我的设定：本页目录 */
+.md-setup-nav { position: sticky; top: 68px; z-index: 20; display: flex; gap: 6px; overflow-x: auto; padding: 8px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px) saturate(150%); box-shadow: var(--dsw-elevation-soft); scrollbar-width: none; }
+.md-setup-nav button { flex: none; padding: 3px 10px; border-radius: 999px; color: var(--ink3); font-size: 12px; line-height: 20px; white-space: nowrap; }
+.md-setup-nav button:hover { color: var(--ink); background: var(--hover); }
+@media (max-width: 700px) { .md-setup-nav { top: 58px; } }
+
+/* 漏斗卡片：来自聊天 */
+.md-pipeline-chat { padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-size: 10.5px; line-height: 17px; white-space: nowrap; }
