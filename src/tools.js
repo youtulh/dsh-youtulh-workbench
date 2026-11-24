@@ -1,7 +1,7 @@
 // 注册给对话里 agent 的工具：产出落盘、线索入表。
 // agent 在聊天里写好东西后调用这两个工具，文件就真的写到工作区，聊天里也留一份。
 import { join } from 'node:path'
-import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, recordContent, resolveRoot } from './workspace.js'
+import { LAYOUT, LEAD_STAGES, appendLead, dayStamp, ensureLayout, folderName, recordContent, resolveRoot } from './workspace.js'
 import { savePiece } from './export.js'
 
 const str = (description, extra = {}) => ({ type: 'string', description, ...extra })
@@ -71,7 +71,10 @@ export function createTools({ settings }) {
         school: str('学校，没说就留空'),
         painPoint: str('卡点：哪一章、什么症状'),
         source: str('来源：哪条视频带来的'),
-        next: str('下一步：待加微 / 已加微 / 已进群 / 约了试听 / 待跟进'),
+        stage: str('漏斗阶段：私信 / 已加微信 / 已进群 / 约试听 / 已报课 / 流失', { enum: LEAD_STAGES }),
+        next: str('具体下一步：比如「周四晚 8 点试听」「发补漏清单」；没有就留空'),
+        nextAt: str('下次跟进日期，YYYY-MM-DD；没定就留空'),
+        followUps: { type: 'number', description: '已经跟进过几次；没跟过就不填' },
         draft: str('实际发给家长的那段话术（选中的那条），没有就留空'),
         type: str('类型：家长 / 学生本人 / 同行 / 广告'),
         category: str('分类：A 价格 / B 能不能提分 / C 怎么补 / D 时间形式'),
