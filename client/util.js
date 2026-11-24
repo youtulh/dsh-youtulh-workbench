@@ -228,6 +228,8 @@ export const LEAD_TYPES = ['家长', '学生本人', '同行', '广告']
 export const LEAD_CATEGORIES = ['A 价格', 'B 能不能提分', 'C 怎么补', 'D 时间形式']
 // 线索漏斗的阶段：和 线索表.csv 的「阶段」列同值
 export const LEAD_STAGES = ['私信', '已加微信', '已进群', '约试听', '已报课', '流失']
+// 聊天台的两个阶段：平台引流 / 微信成交
+export const CHANNELS = ['平台私信', '微信']
 // 学生管理：出勤 / 掌握 / 作业 三态，和 课次记录.csv 同值
 export const ATTEND_OPTIONS = ['到', '缺']
 export const MASTERY_OPTIONS = ['会', '半会', '不会']

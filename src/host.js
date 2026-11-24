@@ -11,7 +11,7 @@ import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
-import { dmPrompt, localDm, normalizeDm } from './dm.js'
+import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats } from './chat.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -277,6 +277,10 @@ async function route(ctx, store, desk, req, res) {
         stats: { count: rows.length, hits, views, follows: sum('涨粉'), dms, added, per10k, addRate },
         lessons: buildLessonBlock(root),
       })
+    }
+    if (path === 'chat/records') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { rows: readChats(root), cases: readCases(root) })
     }
     if (path === 'voice') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -608,22 +612,38 @@ async function route(ctx, store, desk, req, res) {
       return json(res, 200, { row: fresh })
     }
     case 'dm/draft': {
-      // 页内分诊：判断是谁、问什么，给两条话术 + 台账字段，不离开页面
+      // 页内聊天台：平台私信只负责引流，微信阶段负责把人聊到诊断 / 试听
       const raw = String(body.raw ?? '').trim().slice(0, 2000)
-      if (!raw) return json(res, 400, { error: tr('先粘一条私信') })
+      if (!raw) return json(res, 400, { error: tr('先粘一条消息') })
+      const channel = CHANNELS.includes(body.channel) ? body.channel : CHANNELS[0]
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      const lessons = leadLessons(root).map(row => `- ${row}`).join('\n')
-      const voice = readVoiceSamples(root)
+      const cases = chatLessons(root, channel)
       let result = null
       let from = 'local'
       try {
-        const { text: out } = await callModel(ctx, { ...dmPrompt(state, raw, { lessons, contentLessons: buildLessonBlock(root), samples: voice }), maxTokens: 1200, light: true })
-        const normalized = normalizeDm(extractJson(out))
+        const { text: out } = await callModel(ctx, { ...chatPrompt(state, { channel, raw, cases }), maxTokens: 1200, light: true })
+        const normalized = normalizeChat(extractJson(out))
         if (normalized.drafts.length) { result = normalized; from = 'model' }
       } catch { /* 没模型就本地兜底 */ }
-      if (!result) result = localDm(state, raw)
-      return json(res, 200, { ...result, source: from })
+      if (!result) result = localChat(state, { channel, raw })
+      return json(res, 200, { ...result, source: from, channel })
+    }
+    case 'chat/log': {
+      // 这句我发出去了：记进 对话记录.csv，后面用来复盘和给建议
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const rows = appendChat(root, {
+        channel: body.channel, name: body.name, incoming: body.incoming, outgoing: body.outgoing,
+        stage: body.stage, result: body.result, note: body.note,
+      })
+      return json(res, 200, { rows })
+    }
+    case 'chat/cases': {
+      // 人工聊天案例：平台引流 / 微信成交都可以，聊成的会进提示词
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      if (!String(body.text ?? '').trim()) return json(res, 400, { error: tr('先把对话粘进来') })
+      const cases = appendCase(root, { channel: body.channel, scene: body.scene, result: body.result, text: body.text })
+      return json(res, 200, { cases })
     }
     case 'lead/append': {
       // 话术定了：这一条线索连同话术一起写进 线索表.csv

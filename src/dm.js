@@ -8,7 +8,7 @@ export const DM_CATEGORIES = ['A 价格', 'B 能不能提分', 'C 怎么补', 'D
 
 const text = (value, max = 200) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
 
-function settingBlock(state) {
+export function settingBlock(state) {
   const p = state?.positioning ?? {}
   const rows = [
     ['他教什么', [p.subject, p.grade, p.city].filter(Boolean).join(' · ')],

@@ -1,11 +1,11 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { appendLeadRow, draftDm, fetchLeadsWithLessons, fetchWorkspace, profileSummary, revealDir, setDesk, toast, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, draftDm, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, revealDir, setDesk, toast, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
-import { LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS } from './util.js'
+import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS } from './util.js'
 
 const FILTERS = [
   { id: 'all', label: '全部', test: () => true },
@@ -24,6 +24,7 @@ export function DmView() {
   const summary = profileSummary({ positioning, painPoints: pains })
   const [root, setRoot] = React.useState('')
   const [raw, setRaw] = React.useState('')
+  const [channel, setChannel] = React.useState('平台私信')
   const [busy, setBusy] = React.useState('')
   const [result, setResult] = React.useState(null)
   const [chosen, setChosen] = React.useState(0)
@@ -48,7 +49,7 @@ export function DmView() {
     if (!raw.trim()) return
     setBusy('draft')
     try {
-      const data = await draftDm(raw.trim())
+      const data = await draftDm(raw.trim(), channel)
       const judged = { ...data, type: data.type || LEAD_TYPES[0], category: data.category || LEAD_CATEGORIES[2] }
       setResult(judged)
       setChosen(0)
@@ -107,7 +108,7 @@ export function DmView() {
       <header className="md-page-head">
         <div>
           <h1>{t('回私信')}</h1>
-          <p className="md-page-sub">{t('粘一条家长私信：这里判断是谁、问什么，给两条话术（第二条引导加微信），挑一条改成你的话，连同台账一起记进线索表。')}</p>
+          <p className="md-page-sub">{t('平台私信先接住、一两句挪到私信；微信里再给判断、约诊断或试听。挑一句话发出去，顺手记一笔，后面才有的复盘。')}</p>
         </div>
       </header>
 
@@ -122,13 +123,39 @@ export function DmView() {
       ) : null}
 
       <section className="md-dm-input">
+        <div className="md-channel-tabs">
+          {CHANNELS.map(item => (
+            <button type="button" key={item} className={channel === item ? 'is-on' : ''} onClick={() => setChannel(item)}>
+              {t(item)}
+            </button>
+          ))}
+          <span className="md-grow" />
+          <button type="button" className="md-inline-link" onClick={() => setDesk({
+            dialog: {
+              title: t('导入一段人工聊天案例'),
+              submitLabel: t('存进案例库'),
+              initial: { channel, result: '成交' },
+              fields: [
+                { name: 'channel', label: t('渠道'), type: 'select', options: CHANNELS.map(value => ({ value, label: t(value) })) },
+                { name: 'scene', label: t('这段是在聊什么'), placeholder: t('比如：家长问价格怎么办') },
+                { name: 'result', label: t('最后结果'), type: 'select', options: ['加微', '约试听', '成交', '流失', '未定'].map(value => ({ value, label: t(value) })) },
+                { name: 'text', label: t('把对话粘进来（谁说的都保留）'), type: 'textarea', rows: 6, required: true },
+              ],
+              onSubmit: values => {
+                addChatCase(values).then(() => toast(t('案例存好了，以后给建议会参考'))).catch(err => toast(err.message, { error: true }))
+              },
+            },
+          })}>{t('导入案例')}</button>
+        </div>
         <label className="md-field">
-          <span>{t('私信原文')}</span>
+          <span>{channel === '微信' ? t('对方最后一句（可以把前面几句一起粘）') : t('对方在平台上的最后一句（或几条）')}</span>
           <textarea
             rows={4}
             value={raw}
             onChange={event => setRaw(event.target.value)}
-            placeholder={t('老师你好，我孩子高一，化学期中才 58 分，还能补上来吗？')}
+            placeholder={channel === '微信'
+              ? t('老师，一节课多少钱？孩子高二物理四十多分，还来得及吗？')
+              : t('老师你好，我孩子高一，化学期中才 58 分，还能补上来吗？')}
           />
         </label>
         <div className="md-dm-actions">
@@ -147,6 +174,7 @@ export function DmView() {
             <span className="md-dm-chips">
               <b>{result.type || t('没判断出来')}</b>
               <b className="is-3">{result.category || t('未分类')}</b>
+              {result.judge ? <span className="md-dm-judge">{result.judge}</span> : null}
             </span>
             <span className="md-grow" />
             {result.source === 'local'
@@ -165,6 +193,15 @@ export function DmView() {
                 <div className="md-dm-draft-actions">
                   <button type="button" className={`md-pill is-small ${chosen === index ? 'is-primary' : ''}`} onClick={() => pick(index)}>{chosen === index ? t('用这条') : t('用这条')}</button>
                   <button type="button" className="md-inline-link" onClick={() => copy(draft.text)}>{t('复制')}</button>
+                  <button type="button" className="md-inline-link" onClick={async () => {
+                    try {
+                      await logChat({
+                        channel, name: fields.name || result.fields?.name || '', incoming: raw.trim(),
+                        outgoing: draft.text, stage: result.stage || (channel === '微信' ? '成交' : '引流'), result: '未定',
+                      })
+                      toast(t('记进对话记录了'))
+                    } catch (err) { toast(err.message, { error: true }) }
+                  }}>{t('我发了，记一笔')}</button>
                 </div>
               </li>
             ))}

@@ -1660,3 +1660,9 @@ body[data-ds-dark-theme] .md-root {
 .md-seg button.is-on:hover { color: var(--on-primary); }
 .md-student-card, .md-class-card { transition: transform .2s, box-shadow .2s; }
 .md-student-card:hover { transform: translateY(-1px); box-shadow: var(--dsw-elevation-prominent); }
+
+/* 聊天台：平台私信 / 微信 两个阶段 */
+.md-channel-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.md-channel-tabs > button:not(.md-inline-link) { padding: 4px 12px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-size: 12.5px; line-height: 20px; transition: color .15s, background .15s; }
+.md-channel-tabs > button.is-on:not(.md-inline-link) { background: var(--primary); color: var(--on-primary); }
+.md-dm-judge { flex-basis: 100%; margin-top: 2px; color: var(--ink2); font-size: 12px; line-height: 18px; }

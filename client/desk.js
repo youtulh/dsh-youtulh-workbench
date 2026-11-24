@@ -207,9 +207,19 @@ export async function fetchLeadsWithLessons() {
   return { leads: data.leads ?? [], lessons: data.lessons ?? [] }
 }
 
-/** 页内分诊：判断 + 两条话术 + 台账字段。 */
-export async function draftDm(raw) {
-  return request('dm/draft', { raw })
+/** 页内聊天台：按渠道（平台私信 / 微信）给判断 + 两条下一句 + 台账字段。 */
+export async function draftDm(raw, channel = '平台私信') {
+  return request('dm/draft', { raw, channel })
+}
+
+/** 这句发出去了：记进 对话记录.csv。 */
+export async function logChat(payload) {
+  return request('chat/log', payload)
+}
+
+/** 人工聊天案例，聊成的会进提示词。 */
+export async function addChatCase(payload) {
+  return request('chat/cases', payload)
 }
 
 /** 话术定了，连同台账一起写进线索表。 */
