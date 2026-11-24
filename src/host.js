@@ -9,7 +9,7 @@ import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { creativeText, localScript, localTopics, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt } from './topics.js'
-import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, leadLessons, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
 import { Store } from './store.js'
@@ -175,7 +175,8 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
-      return json(res, 200, { leads: readLeads(resolveRoot(settings.saveRoot)) })
+      const root = resolveRoot(settings.saveRoot)
+      return json(res, 200, { leads: readLeads(root), lessons: leadLessons(root) })
     }
     if (path === 'workspace/file') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -340,6 +341,15 @@ async function route(ctx, store, desk, req, res) {
       const formats = Array.isArray(body.formats) && body.formats.length ? body.formats : (kind === 'data' ? ['csv'] : ['docx', 'md'])
       const saved = await savePiece({ dir: join(root, sub), title, text: content, formats })
       return json(res, 200, { dir: saved.dir, files: saved.files, summary: String(body.summary ?? '').slice(0, 120) })
+    }
+    case 'workspace/lead/update': {
+      // 家长有反应了：按行号改这一条的「反应 / 结果 / 下一步 / 话术」
+      const index = Number(body.index)
+      if (!Number.isInteger(index) || index < 0) return json(res, 400, { error: tr('行号不对') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const leads = updateLeadRow(root, index, body.patch ?? {})
+      if (!leads) return json(res, 404, { error: tr('没找到这一行') })
+      return json(res, 200, { leads, lessons: leadLessons(root) })
     }
     case 'workspace/reveal': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

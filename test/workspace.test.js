@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, readAccounts, readSettingsMarkdown, settingsMarkdown, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, leadLessons, readAccounts, readLeads, readSettingsMarkdown, settingsMarkdown, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -73,6 +73,39 @@ test('账号数据.csv：写出来能读回来，带逗号的备注不会串列'
     assert.equal(back[1].followers, null)
     // 没有文件时读回 null，不会当成空表覆盖状态
     assert.equal(readAccounts(join(root, 'nope')), null)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('线索表：记录话术、反应、结果；改了反应自动推下一步，加微即成功', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-leads-'))
+  try {
+    const base = { raw: '老师你好，我孩子高一 58 分', name: '王', grade: '高一', type: '家长', category: 'C 怎么补', draft: '家长您好，先别急着刷题…' }
+    appendLead(root, base)
+    appendLead(root, { ...base, name: '李' })
+    let rows = readLeads(root)
+    assert.equal(rows.length, 2)
+    assert.equal(rows[0].draft, '家长您好，先别急着刷题…')
+    assert.equal(rows[0].result, '待定')
+    assert.equal(rows[0].rowIndex, 1)  // 最新一行在文件里是第 2 条数据
+
+    // 王（文件第一行）：家长加了微信 → 下一步和结果一起变
+    rows = updateLeadRow(root, 0, { reaction: '已加微' })
+    const wang = rows.find(row => row.name === '王')
+    assert.equal(wang.next, '已加微')
+    assert.equal(wang.result, '加微成功')
+
+    // 经验里能捞到这条
+    const lessons = leadLessons(root)
+    assert.equal(lessons.length, 1)
+    assert.match(lessons[0], /加了微信/)
+    assert.match(lessons[0], /王|高一 58 分|家长您好/)
+
+    // 手动改成失败
+    rows = updateLeadRow(root, 0, { result: '失败' })
+    assert.equal(rows.find(row => row.name === '王').result, '失败')
+    assert.equal(leadLessons(root).length, 0)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

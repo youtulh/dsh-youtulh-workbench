@@ -53,6 +53,7 @@ export function buildPrompt(kind, payload = {}) {
       '4. 抽出台账七个字段：姓名、年级、学校、卡点、来源、下一步（私信没说过的一律留空，不许编）',
       '',
       '话术要贴着我的设定写：只说我在教的科目、年级、城市范围内的事，碰到「不做」的范围就礼貌收住。',
+      payload.lessons?.length ? `\n以前成功加到微信的例子（照着这种感觉写）：\n${payload.lessons.map(row => `- ${row}`).join('\n')}` : '',
       '',
       '私信原文：',
       payload.raw || '（还没粘，请先问我）',

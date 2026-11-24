@@ -62,6 +62,7 @@ export function createTools({ settings }) {
         painPoint: str('卡点：哪一章、什么症状'),
         source: str('来源：哪条视频带来的'),
         next: str('下一步：待加微 / 已加微 / 已进群 / 约了试听 / 待跟进'),
+        draft: str('实际发给家长的那段话术（选中的那条），没有就留空'),
         type: str('类型：家长 / 学生本人 / 同行 / 广告'),
         category: str('分类：A 价格 / B 能不能提分 / C 怎么补 / D 时间形式'),
       },

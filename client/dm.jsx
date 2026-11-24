@@ -1,9 +1,10 @@
 // 回私信：这里只负责收原文，判断和话术交给对话里的助教；线索表是工作区里的 CSV。
 import React from 'react'
-import { fetchLeads, fetchWorkspace, profileSummary, revealDir, toast, useDesk } from './desk.js'
+import { fetchLeadsWithLessons, fetchWorkspace, profileSummary, revealDir, toast, updateLead, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
+import { REACTIONS, RESULTS } from './util.js'
 
 export function DmView() {
   useLang()
@@ -14,11 +15,24 @@ export function DmView() {
   const summary = profileSummary({ positioning, painPoints: pains })
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   const [leads, setLeads] = React.useState([])
-  const reload = React.useCallback(() => { fetchLeads().then(setLeads).catch(() => {}) }, [])
+  const [lessons, setLessons] = React.useState([])
+  const reload = React.useCallback(() => {
+    fetchLeadsWithLessons().then(({ leads: rows, lessons: hints }) => { setLeads(rows); setLessons(hints) }).catch(() => {})
+  }, [])
   React.useEffect(() => { reload() }, [reload])
 
+  const mark = async (lead, patch) => {
+    try {
+      const result = await updateLead(lead.rowIndex, patch)
+      setLeads(result.leads ?? [])
+      setLessons(result.lessons ?? [])
+    } catch (err) {
+      toast(err.message, { error: true })
+    }
+  }
+
   const launch = () => {
-    if (!startChat('dm', { raw, root, profile: summary })) launchFailedToast(toast)
+    if (!startChat('dm', { raw, root, profile: summary, lessons })) launchFailedToast(toast)
   }
   const copy = (text) => {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
@@ -34,6 +48,14 @@ export function DmView() {
       </header>
 
       {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
+
+      {lessons.length ? (
+        <div className="md-lessons">
+          <b>{t('已经加到微信的经验')}</b>
+          <ul>{lessons.map(row => <li key={row}>{row}</li>)}</ul>
+          <small>{t('点「开始」时，这些会一起交给助教参考。')}</small>
+        </div>
+      ) : null}
 
       <section className="md-dm-input">
         <label className="md-field">
@@ -66,15 +88,24 @@ export function DmView() {
         {leads.length ? (
           <div className="md-i-table">
             <table className="md-table is-plain">
-              <thead><tr><th>{t('日期')}</th><th>{t('姓名')}</th><th>{t('年级')}</th><th>{t('卡点')}</th><th>{t('下一步')}</th><th /></tr></thead>
+              <thead><tr><th>{t('日期')}</th><th>{t('家长')}</th><th>{t('卡点')}</th><th>{t('家长反应')}</th><th>{t('结果')}</th><th /></tr></thead>
               <tbody>
                 {leads.map(lead => (
                   <tr key={`${lead.date}-${lead.name}-${lead.raw.slice(0, 8)}`}>
                     <td>{lead.date}</td>
-                    <td>{lead.name || <span className="md-muted">{t('未填')}</span>}</td>
-                    <td>{lead.grade || '—'}</td>
+                    <td>{lead.name || lead.grade || <span className="md-muted">{t('未填')}</span>}</td>
                     <td className="md-dm-wrap">{lead.painPoint || '—'}</td>
-                    <td><span className="md-chip">{lead.next || '—'}</span></td>
+                    <td>
+                      <select value={lead.reaction || ''} onChange={event => mark(lead, { reaction: event.target.value })}>
+                        <option value="">{t('还没回')}</option>
+                        {REACTIONS.filter(row => row !== '没回').map(row => <option key={row} value={row}>{t(row)}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <select value={lead.result || '待定'} onChange={event => mark(lead, { result: event.target.value })}>
+                        {RESULTS.map(row => <option key={row} value={row}>{t(row)}</option>)}
+                      </select>
+                    </td>
                     <td className="is-num"><button type="button" className="md-inline-link" onClick={() => copy(lead.raw)}>{t('复制原文')}</button></td>
                   </tr>
                 ))}

@@ -87,7 +87,8 @@ export function readSettingsMarkdown(root) {
 
 // ---- 线索表.csv ----
 
-const LEAD_COLUMNS = ['日期', '姓名', '年级', '学校', '卡点', '来源', '下一步', '类型', '分类', '原文']
+// 话术 = 实际发给家长的那段；反应 = 家长怎么回的；结果 = 加微成功 / 失败 / 待定
+const LEAD_COLUMNS = ['日期', '姓名', '年级', '学校', '卡点', '来源', '类型', '分类', '原文', '话术', '反应', '结果', '下一步', '更新时间']
 
 function csvCell(value) {
   return `"${String(value ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
@@ -103,7 +104,9 @@ export function appendLead(root, lead) {
   const file = leadsCsvPath(root)
   const exists = existsSync(file)
   const row = [
-    dayStamp(new Date(lead.createdAt ?? Date.now())), lead.name, lead.grade, lead.school, lead.painPoint, lead.source, lead.next, lead.type, lead.category, lead.raw,
+    dayStamp(new Date(lead.createdAt ?? Date.now())), lead.name, lead.grade, lead.school, lead.painPoint, lead.source,
+    lead.type, lead.category, lead.raw, lead.draft, lead.reaction ?? '', lead.result ?? '待定', lead.next ?? '待加微',
+    new Date().toISOString().slice(0, 16).replace('T', ' '),
   ].map(csvCell).join(',')
   if (exists) {
     const current = readFileSync(file, 'utf8')
@@ -142,12 +145,13 @@ export function readLeads(root) {
   if (!lines.length) return []
   const head = parseCsvLine(lines[0])
   const index = name => head.indexOf(name)
-  const rows = lines.slice(1).map(line => {
+  const rows = lines.slice(1).map((line, rowIndex) => {
     const cells = parseCsvLine(line)
     const at = name => cells[index(name)] ?? ''
     return {
       date: at('日期'), name: at('姓名'), grade: at('年级'), school: at('学校'), painPoint: at('卡点'),
-      source: at('来源'), next: at('下一步'), type: at('类型'), category: at('分类'), raw: at('原文'),
+      source: at('来源'), type: at('类型'), category: at('分类'), raw: at('原文'), draft: at('话术'),
+      reaction: at('反应'), result: at('结果') || '待定', next: at('下一步') || '待加微', updatedAt: at('更新时间'), rowIndex,
     }
   })
   return rows.reverse()
@@ -222,4 +226,59 @@ export function readAccounts(root) {
       fetchedAt: at(cells, '更新时间') || null,
     }
   }).filter(row => row.platform || row.handle)
+}
+
+/** 反应 → 建议的下一步。页面会用它给一个默认值，人还能改。 */
+export const REACTION_NEXT = {
+  '没回': '待跟进',
+  '回了但没继续': '待跟进',
+  '问价格': '待加微',
+  '问细节': '待加微',
+  '说要考虑': '待跟进',
+  '已加微': '已加微',
+  '约了试听': '约了试听',
+  '拒绝': '待跟进',
+  '同行/广告': '待跟进',
+}
+
+export const REACTIONS = Object.keys(REACTION_NEXT)
+export const RESULTS = ['待定', '加微成功', '失败']
+
+/** 按行号改一条线索（行号从 0 开始，按文件里的数据行算）。 */
+export function updateLeadRow(root, index, patch = {}) {
+  const file = leadsCsvPath(root)
+  if (!existsSync(file)) return null
+  const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+  const head = lines[0]
+  const dataStart = 1
+  const at = dataStart + index
+  if (!lines[at]) return null
+  const headCells = parseCsvLine(head)
+  const cells = parseCsvLine(lines[at])
+  const set = (name, value) => {
+    const col = headCells.indexOf(name)
+    if (col >= 0) cells[col] = value
+  }
+  for (const [key, value] of Object.entries(patch)) {
+    if (key === 'reaction') {
+      set('反应', value)
+      if (!patch.next) set('下一步', REACTION_NEXT[value] ?? '待跟进')
+      if (value === '已加微' && !patch.result) set('结果', '加微成功')
+    } else if (key === 'result') set('结果', value)
+    else if (key === 'next') set('下一步', value)
+    else if (key === 'draft') set('话术', value)
+  }
+  set('更新时间', new Date().toISOString().slice(0, 16).replace('T', ' '))
+  lines[at] = cells.map(csvCell).join(',')
+  writeFileSync(file, lines.join('\n'))
+  return readLeads(root)
+}
+
+/** 成功经验：加微成功（或已加微）的线索摘要，给分诊 prompt 当参考。 */
+export function leadLessons(root, limit = 3) {
+  return readLeads(root)
+    // 明确标了失败的就不算成功经验，哪怕下一步还写着已加微
+    .filter(row => row.result !== '失败' && (row.result === '加微成功' || row.next === '已加微'))
+    .slice(0, limit)
+    .map(row => `${row.type || '家长'} · ${row.category || '未分类'}｜家长说「${(row.raw || '').slice(0, 24)}」｜我们回「${(row.draft || '').slice(0, 40)}」→ 加了微信`)
 }

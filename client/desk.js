@@ -136,10 +136,21 @@ export function profileSummary(state) {
   return [who, tail].filter(Boolean).join('；')
 }
 
-/** 读工作区里的线索表（CSV）。 */
+/** 读工作区里的线索表（CSV）和成功经验。 */
 export async function fetchLeads() {
   const data = await request('workspace/leads')
   return data.leads ?? []
+}
+
+/** 连经验一起读：{ leads, lessons }。 */
+export async function fetchLeadsWithLessons() {
+  const data = await request('workspace/leads')
+  return { leads: data.leads ?? [], lessons: data.lessons ?? [] }
+}
+
+/** 家长有反应了：按行号更新那条线索。 */
+export async function updateLead(index, patch) {
+  return request('workspace/lead/update', { index, patch })
 }
 
 /** 在 Finder 里打开工作区里的某个目录。 */

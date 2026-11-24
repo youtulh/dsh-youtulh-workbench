@@ -1083,3 +1083,10 @@ body[data-ds-dark-theme] .md-root {
 .md-script-tags span { padding: 0 7px; border-radius: var(--r-xs); color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12px; line-height: 20px; }
 .md-script-actions { display: flex; gap: 14px; margin-top: 10px; font-size: 12.5px; }
 @media (max-width: 720px) { .md-topic-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* 回私信：成功经验 + 反应下拉 */
+.md-lessons { padding: 12px 14px; border-radius: var(--r-md); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--ink2); font-size: 12.5px; line-height: 19px; }
+.md-lessons b { display: block; margin-bottom: 6px; color: var(--accent); font-weight: 500; }
+.md-lessons ul { display: grid; gap: 4px; }
+.md-lessons small { display: block; margin-top: 6px; color: var(--ink3); }
+.md-dm-leads select { padding: 3px 6px; border: .5px solid var(--line); border-radius: var(--r-xs); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12px; }

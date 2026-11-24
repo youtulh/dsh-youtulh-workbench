@@ -217,3 +217,8 @@ export function textLength(text) {
   return (text.match(/[\u4e00-\u9fff]|[A-Za-z0-9][A-Za-z0-9'’-]*/g) || []).length
 }
 
+
+
+// 私信线索的「家长反应」和「结果」。跟宿主侧 workspace.js 的 REACTION_NEXT 对应
+export const REACTIONS = ['没回', '回了但没继续', '问价格', '问细节', '说要考虑', '已加微', '约了试听', '拒绝', '同行/广告']
+export const RESULTS = ['待定', '加微成功', '失败']
