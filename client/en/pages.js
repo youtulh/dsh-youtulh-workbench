@@ -448,6 +448,8 @@ export const PAGES = {
   '还没有导入案例。点上面「导入案例」，粘一段真实对话进来。': 'No cases yet. Use “Import case” above to paste a real chat.',
   没写场景: 'No scene',
   '搜场景、对话内容': 'Search scene or text',
+  '搜标题、选题、平台': 'Search title, topic, platform',
+  没搜到相关内容: 'Nothing matches your search.',
   这个筛选下没有案例: 'No cases match this filter',
   案例删掉了: 'Case deleted',
   '你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去回私信页管理。': 'Your imported real chats. Successful ones guide the next suggestion; see how many you have here and manage them in the chat desk.',

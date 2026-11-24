@@ -29,6 +29,7 @@ export function DataView() {
   const [tab, setTab] = React.useState('content')
   const [leads, setLeads] = React.useState([])
   const [bizRange, setBizRange] = React.useState('all')
+  const [query, setQuery] = React.useState('')
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -102,7 +103,9 @@ export function DataView() {
   ]
   const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
   const scopedLeads = leads.filter(row => bizRange === 'all' || (row.date && row.date >= weekStart))
-  const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row))
+  const q = query.trim()
+  const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row)
+    && (!q || [row['标题'], row['选题'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
   const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
 
   return (
@@ -217,6 +220,13 @@ export function DataView() {
       ) : null}
 
       {rows?.length ? (
+        <div className="md-content-tools">
+          <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜标题、选题、平台')} />
+          <span className="md-muted">{t('{n} 条', { n: list.length })}</span>
+        </div>
+      ) : null}
+
+      {rows?.length ? (
         <div className="md-content-tabs">
           {FILTERS.map(item => (
             <button type="button" key={item.id} className={filter === item.id ? 'is-on' : ''} onClick={() => setFilter(item.id)}>
@@ -226,7 +236,7 @@ export function DataView() {
         </div>
       ) : null}
 
-      {rows?.length && !list.length ? <p className="md-muted">{t('这个筛选下没有内容。')}</p> : null}
+      {rows?.length && !list.length ? <p className="md-muted">{q ? t('没搜到相关内容。') : t('这个筛选下没有内容。')}</p> : null}
 
       {list.length ? (
         <ul className="md-content-list">
