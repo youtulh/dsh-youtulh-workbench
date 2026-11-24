@@ -278,6 +278,10 @@ async function route(ctx, store, desk, req, res) {
         lessons: buildLessonBlock(root),
       })
     }
+    if (path === 'voice') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { samples: readVoiceSamples(root), file: join(root, LAYOUT.style) })
+    }
     if (path === 'suggest') {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -726,6 +730,17 @@ async function route(ctx, store, desk, req, res) {
       const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
       execFile(command, [dir], () => {})
       return json(res, 200, { path: dir })
+    }
+    case 'voice': {
+      // 原话样本只收「一行一句」，写回 说话样本.md 的规范模板里，规则和结构不会被改坏
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const samples = (Array.isArray(body.samples) ? body.samples : [])
+        .map(value => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, 300))
+        .filter(Boolean)
+        .slice(0, 8)
+      ensureLayout(root)
+      await writeFile(join(root, LAYOUT.style), styleMarkdown(samples))
+      return json(res, 200, { samples })
     }
     case 'settings': {
       const before = modelInfo(ctx)

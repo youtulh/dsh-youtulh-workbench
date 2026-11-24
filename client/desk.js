@@ -253,6 +253,15 @@ export async function removeClassRow(name) {
   return request('classes/remove', { name })
 }
 
+/** 我的原话样本（说话样本.md 里的「原话样本」）。 */
+export async function fetchVoice() {
+  return request('voice')
+}
+
+export async function saveVoice(samples) {
+  return request('voice', { samples })
+}
+
 /** 某个班的全部课次记录。 */
 export async function fetchLessons(className) {
   const data = await request(`lessons?class=${encodeURIComponent(String(className ?? ''))}`)

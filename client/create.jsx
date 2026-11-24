@@ -56,7 +56,7 @@ export function CreateView() {
       const data = await post('topics', { count: TOPIC_COUNT })
       patchCreate({
         topics: data.topics ?? [], angles: data.angles ?? {}, batch: data.batch ?? '', lessons: data.lessons ?? '',
-        source: data.source ?? '', picked: {}, groups: [], adopted: {},
+        source: data.source ?? '', picked: {}, groups: [], adopted: {}, dirs: {},
       })
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -69,7 +69,7 @@ export function CreateView() {
     try {
       const data = await post('scripts', { brief: briefText, batch })
       patchCreate({
-        topics: [], angles: {}, picked: {}, adopted: {},
+        topics: [], angles: {}, picked: {}, adopted: {}, dirs: {},
         groups: (data.groups ?? []).map((group, index) => ({ ...group, key: `${group.topic}-${index}` })),
         source: data.source ?? '',
       })
@@ -88,6 +88,7 @@ export function CreateView() {
       const data = await post('scripts', { topics: selected, batch })
       patchCreate({
         groups: (data.groups ?? []).map((group, index) => ({ ...group, key: `${group.topic}-${index}` })),
+        adopted: {}, dirs: {},
         source: data.source ?? '',
       })
       toast(t('每个选题出了 3 个版本，挑一条'))
@@ -105,8 +106,9 @@ export function CreateView() {
       if (next) {
         patchCreate(state => ({
           groups: state.groups.map(item => (item.topic === group.topic ? { ...next, key: `${next.topic}-${Date.now()}` } : item)),
-          // 这一组换了新稿子，之前那条「已采用」不再算数
+          // 这一组换了新稿子，之前那条「已采用」不再算数，旧目录映射也清掉
           adopted: Object.fromEntries(Object.entries(state.adopted).filter(([key]) => !key.startsWith(`${group.topic}|`))),
+          dirs: Object.fromEntries(Object.entries(state.dirs ?? {}).filter(([key]) => !key.startsWith(`${group.topic}|`))),
           source: data.source ?? state.source,
         }))
       }
@@ -128,8 +130,9 @@ export function CreateView() {
       }
       patchCreate(state => ({
         groups: state.groups.map(item => (item.topic === group.topic ? { ...item, variants } : item)),
-        // 稿子换了，这一组之前「已采用」的标记不再算数
+        // 稿子换了，这一组之前「已采用」的标记和旧目录映射都不再算数
         adopted: Object.fromEntries(Object.entries(state.adopted).filter(([key]) => !key.startsWith(`${group.topic}|`))),
+        dirs: Object.fromEntries(Object.entries(state.dirs ?? {}).filter(([key]) => !key.startsWith(`${group.topic}|`))),
         notes: { ...state.notes, [group.topic]: '' },
         source: data.source ?? state.source,
       }))
@@ -224,7 +227,7 @@ export function CreateView() {
         <div className="md-create-pains">
           <span>{t('没方向就点一条：')}</span>
           {examples.slice(0, 4).map(example => (
-            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], angles: {}, picked: { [example]: true }, groups: [], adopted: {}, brief: '' })}>{example}</button>
+            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], angles: {}, picked: { [example]: true }, groups: [], adopted: {}, dirs: {}, brief: '' })}>{example}</button>
           ))}
         </div>
       ) : null}

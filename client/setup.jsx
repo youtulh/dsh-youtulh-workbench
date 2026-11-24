@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { dispatchOps, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { dispatchOps, fetchVoice, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -23,6 +23,24 @@ export function SetupView() {
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const [draft, setDraft] = React.useState('')
   const [savedAt, setSavedAt] = React.useState('')
+  const [voiceText, setVoiceText] = React.useState('')
+  const [voiceBusy, setVoiceBusy] = React.useState(false)
+
+  React.useEffect(() => {
+    fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
+  }, [])
+
+  const saveVoiceSamples = async () => {
+    const samples = voiceText.split(/\n+/).map(row => row.trim()).filter(Boolean).slice(0, 8)
+    setVoiceBusy(true)
+    try {
+      const data = await saveVoice(samples)
+      setVoiceText((data.samples ?? []).join('\n'))
+      markSaved()
+      toast(t('原话样本存好了，下次生成会照这个口气'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setVoiceBusy(false)
+  }
 
   const markSaved = () => setSavedAt(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }))
   const save = async (key, value) => {
@@ -145,6 +163,26 @@ export function SetupView() {
         <label className="md-field">
           <textarea rows={3} defaultValue={positioning.voice ?? ''} placeholder={t('比如：先接住家长的焦虑，再用一个具体数字说清楚，不喊口号')} onBlur={event => save('voice', event.target.value)} />
         </label>
+      </section>
+
+      <section className="md-setup-card">
+        <h2><span>5</span>{t('我的原话样本')}</h2>
+        <p className="md-setup-hint">{t('一行一句，写你平时怎么跟家长说话，3 到 5 句就够。口播、按提示改、回私信都照这个口气；不填也不会套用别人的科目和例子。')}</p>
+        <label className="md-field">
+          <textarea
+            rows={6}
+            value={voiceText}
+            onChange={event => setVoiceText(event.target.value)}
+            placeholder={t('比如：孩子这块不是笨，是前面那一章没接上。')}
+          />
+        </label>
+        <div className="md-setup-samples-foot">
+          <span className="md-muted">{t('存进工作区的 说话样本.md；改这个文件也一样生效。')}</span>
+          <span className="md-grow" />
+          <button type="button" className="md-pill is-small" onClick={saveVoiceSamples} disabled={voiceBusy}>
+            {voiceBusy ? t('保存中…') : t('保存原话')}
+          </button>
+        </div>
       </section>
 
       <section className="md-setup-card md-advice">

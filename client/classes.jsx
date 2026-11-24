@@ -104,6 +104,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
   const [date, setDate] = React.useState(dayKey(new Date()))
   const [draft, setDraft] = React.useState({})
   const [busy, setBusy] = React.useState('')
+  const [openStudent, setOpenStudent] = React.useState('')
 
   const loadLessons = React.useCallback(() => fetchLessons(klass.name)
     .then(rows => { setLessons(rows); onLessons?.(klass.name, rows) })
@@ -284,7 +285,24 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
                   {state.missed ? <span className="md-roster-warn">{t('缺 {n} 次', { n: state.missed })}</span> : null}
                   {state.homeworkMissing ? <span className="md-roster-warn">{t('作业 {n} 次没交', { n: state.homeworkMissing })}</span> : null}
                   <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => setOpenStudent(openStudent === student.name ? '' : student.name)}>
+                    {openStudent === student.name ? t('收起记录') : t('每次课')}
+                  </button>
                   <button type="button" className="md-inline-link" onClick={() => moveOut(student)}>{t('移出班')}</button>
+                  {openStudent === student.name ? (
+                    <ul className="md-student-history">
+                      {(lessons ?? []).filter(row => row.name === student.name).sort((a, b) => a.no - b.no).map(row => (
+                        <li key={row.no}>
+                          <b>{t('第 {n} 次', { n: row.no })}</b>
+                          <span className="md-muted">{row.date || t('没填日期')}</span>
+                          <span>{row.attend || '—'}</span>
+                          <span>{row.mastery || '—'}</span>
+                          <span>{row.homework || '—'}</span>
+                        </li>
+                      ))}
+                      {!(lessons ?? []).some(row => row.name === student.name) ? <li className="md-muted">{t('还没有课次记录')}</li> : null}
+                    </ul>
+                  ) : null}
                 </li>
               )
             })}
