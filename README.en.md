@@ -1,48 +1,58 @@
 # Youtulh workbench
 
-A DeepSeek Harness plugin: one workbench for people who publish. Capture a topic in one sentence, generate the whole draft, triage a parent's DM, and check what actually brought people in.
+A DeepSeek Harness plugin: a traffic tool for teachers who run small online classes — **answer DMs, make content, read the numbers**. Nothing is hidden in a database: everything you make is written as files on your own machine, openable in Word and Excel.
 
 ## Install
 
 Requires DeepSeek Harness 0.2.x (`engines.dsh` is `>=0.2.1-rc.5 <0.3.0`).
 
-Either of these, from the DSH **Plugins** page → install a plugin:
-
-- npm: `dsh-youtulh-workbench`
+- npm: `dsh-youtulh-workbench` from the DSH **Plugins** page
 - GitHub: `github:youtulh/dsh-youtulh-workbench`
 
-## Six pages
+## First run: a six-question survey
 
-| Page | What it does |
-|---|---|
-| Ideas | Notes, links, images, videos, and quotes, one card each. Record a pain point and a shooting stage (not shot / shot / published); click the chip to move on |
-| DMs | Paste a parent's message → decide who they are and what they ask → two replies (one that catches them, one that moves them to the next step) → seven ledger fields extracted → saved to the lead list |
-| Content | The draft workspace: title, script, cover, illustrations, and a six-panel storyboard fill in together. Ask for a change on the left, the right side updates, with undo |
-| Schedule | Drag finished drafts onto the calendar |
-| Insights | Record views, DMs, WeChat adds, and trial bookings; two rankings — what travels, and what actually brings people in |
-| Styles | A **positioning card** on top (only do / never do / wording / red lines), then the writing styles and rules learned from your own account |
+1. Six questions — subject, grade, city, what your students struggle with, who you do not take, what parents say most
+2. A summary screen: this is your positioning
+3. Then straight into your first spoken-video script
 
-## Three things you will notice
+Afterwards the home page is a three-step workflow.
 
-**Positioning card** — fill it once and it governs three places: topics must come from "only do", drafts follow the wording, DM replies never cross the red lines.
+## Three things it does
 
-**Publish package** — a finished draft shows three publishing fields under the title (Rednote short title, hashtags, a three-platform caption), with one button to copy the whole sheet. Saving also writes `publish-package.txt` with title, short title, hashtags, caption, and publishing order.
+| Feature | What it does | What it leaves behind |
+|---|---|---|
+| **Answer DMs** | Paste a parent's message → decide who they are and what they ask → two replies (one that catches them, one that moves them to WeChat) → seven ledger fields | A Word file under `私信/<date name>/`, plus a row in `线索表.csv` |
+| **Make content** | Spoken video only. One line of input → 3 titles, 2 scripts (45s direct / 60s story), 2 tag sets; pick one of each | `.docx` + `.md` under `内容/<date title>/` |
+| **Read the numbers** | Record views, DMs, WeChat adds, trial bookings → two rankings | `数据/复盘 <date>.csv` |
 
-**Lead list** — each triaged DM becomes a row: name, grade, school, pain point, source, next step. Click the next step to move it along, and copy the whole list as CSV.
+Plus **我的产出** (list the real files in your workspace, preview and reveal them) and **我的设定** (edit `我的设定.md` visually, or edit the file directly and refresh).
 
-The interface is available in Chinese and English, following the DSH language by default. Data lives at `~/.dsh/media-desk/state.json`; saved drafts go to `~/Documents/Youtulh Workbench/`.
+## Where your data lives
+
+```
+~/Documents/Youtulh 工作台/
+├── 我的设定.md
+├── 线索表.csv
+├── 内容/<date title>/
+├── 私信/<date name>/
+└── 数据/复盘 <date>.csv
+```
+
+The folder is configurable. Files are the only source of truth.
+
+## Red lines, applied to every generation
+
+No promised score gains, no guarantees, no prices, no invented facts about a child.
 
 ## Development
 
 ```bash
-node scripts/build.mjs          # bundle client/ into dist/client.js
-node scripts/build.mjs --watch  # keep rebuilding while editing the UI
-node --test test/*.test.js      # tests
+node scripts/build.mjs
+node scripts/build.mjs --watch
+node --test test/*.test.js
 ```
 
-`client/` is the UI (JSX), `src/` is the host half (Node ESM), and `dist/client.js` is build output, not committed.
-
-Rebuild and refresh the page for UI changes. Host changes need the plugin reinstalled or toggled once to reload.
+Word export (`src/word.js`) has no third-party dependency: it writes the zip container and WordprocessingML by hand.
 
 ## License
 
