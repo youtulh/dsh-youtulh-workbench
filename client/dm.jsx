@@ -22,7 +22,7 @@ const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
   raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
   fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
-  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns',
+  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent',
 }
 const DM_DRAFT = (() => {
   try {
@@ -56,6 +56,8 @@ export function DmView() {
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
   const [chatTotal, setChatTotal] = React.useState(0)
+  const [chatsReady, setChatsReady] = React.useState(false)
+  const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
   const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
@@ -66,9 +68,9 @@ export function DmView() {
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => {
-    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView })
+    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort })
     try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
-  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView])
+  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
@@ -78,7 +80,10 @@ export function DmView() {
   React.useEffect(() => { reload() }, [reload])
 
   const reloadChats = React.useCallback(() => {
-    fetchChatRecords().then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length) }).catch(() => {})
+    fetchChatRecords()
+      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length) })
+      .catch(() => {})
+      .finally(() => setChatsReady(true))
   }, [])
   React.useEffect(() => { reloadChats() }, [reloadChats])
 
@@ -180,7 +185,12 @@ export function DmView() {
       }
       map.set(name, item)
     }
-    return [...map.values()].sort((a, b) => String(b.lastDate).localeCompare(String(a.lastDate)))
+    const won = { 成交: 0, 约试听: 1, 加微: 2, 未定: 3, 流失: 4 }
+    return [...map.values()].sort((a, b) => {
+      if (peopleSort === 'turns') return b.turns - a.turns || String(b.lastDate).localeCompare(String(a.lastDate))
+      if (peopleSort === 'result') return (won[a.lastResult] ?? 9) - (won[b.lastResult] ?? 9) || String(b.lastDate).localeCompare(String(a.lastDate))
+      return String(b.lastDate).localeCompare(String(a.lastDate))
+    })
   })()
   const chatRows = chats.slice().reverse()
     .filter(row => (chatFilter === 'all' || row.channel === chatFilter)
@@ -474,6 +484,13 @@ export function DmView() {
               <button type="button" key={id} className={chatView === id ? 'is-on' : ''} onClick={() => setChatView(id)}>{t(label)}</button>
             ))}
           </div>
+          {chatView === 'people' && !chatPerson ? (
+            <select className="md-chat-result-filter" value={peopleSort} onChange={event => setPeopleSort(event.target.value)}>
+              {[['recent', '按最近聊'], ['turns', '按轮数'], ['result', '按结果']].map(([id, label]) => (
+                <option key={id} value={id}>{t(label)}</option>
+              ))}
+            </select>
+          ) : null}
           <select className="md-chat-result-filter" value={chatResult} onChange={event => setChatResult(event.target.value)}>
             {[['all', '全部结果'], ['未定', '未定'], ['成交', '成交'], ['约试听', '约试听'], ['加微', '加微'], ['流失', '流失']].map(([id, label]) => (
               <option key={id} value={id}>{t(label)}</option>
@@ -490,7 +507,9 @@ export function DmView() {
             </button>
           ) : null}
         </header>
-        {chats.length === 0 ? (
+        {!chatsReady && chats.length === 0 ? (
+          <p className="md-muted md-dm-empty">{t('读取中…')}</p>
+        ) : chats.length === 0 ? (
           <div className="md-works-empty">
             <p>{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
             <button type="button" className="md-pill" onClick={() => document.querySelector('.md-dm-input textarea')?.focus()}>{t('去写第一句')}</button>
