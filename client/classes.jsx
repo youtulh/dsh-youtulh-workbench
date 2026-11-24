@@ -24,6 +24,7 @@ const emptyDraft = () => ({ attend: '', mastery: '', homework: '', note: '' })
 export function ClassesPanel({ classes, students, lessons = [], onChanged, onLessons }) {
   useLang()
   const [selected, setSelected] = React.useState('')
+  const [showEnded, setShowEnded] = React.useState(false)
   const klass = classes.find(row => row.name === selected)
 
   const createClass = () => setDesk({
@@ -52,6 +53,11 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
         <div className="md-pipeline-tools">
           <span className="md-muted">{t('一个班 4–6 个人；每个班可以有自己的分层。')}</span>
           <span className="md-grow" />
+          {classes.some(row => row.status === '结课') ? (
+            <button type="button" className="md-inline-link" onClick={() => setShowEnded(value => !value)}>
+              {showEnded ? t('隐藏已结课') : t('显示已结课（{n}）', { n: classes.filter(row => row.status === '结课').length })}
+            </button>
+          ) : null}
           <button type="button" className="md-pill is-small is-primary" onClick={createClass}><Icon name="plus" size={13} />{t('建班')}</button>
         </div>
         {classes.length === 0 ? (
@@ -60,14 +66,17 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
             <button type="button" className="md-pill is-primary" onClick={createClass}>{t('建第一个班')}</button>
           </div>
         ) : (
+          <>
+          {classes.filter(row => showEnded || row.status !== '结课').length === 0 ? <p className="md-muted">{t('现在没有在读的班，点「显示已结课」可以看以前的。')}</p> : null}
           <ul className="md-class-list">
-            {classes.map(row => {
+            {classes.filter(row => showEnded || row.status !== '结课').map(row => {
               const roster = classRoster(students, row.name)
               const done = new Set(lessons.filter(item => item.className === row.name).map(item => item.no)).size
               return (
                 <li key={row.name}>
                   <button type="button" className="md-class-card" onClick={() => setSelected(row.name)}>
                     <b>{row.name}</b>
+                    {row.status === '结课' ? <em className="md-class-ended">{t('已结课')}</em> : null}
                     <small>{row.time || t('还没填上课时间')}</small>
                     <span className="md-class-meta">
                       <span>{t('{n} 人', { n: roster.length })}</span>
@@ -79,6 +88,7 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
               )
             })}
           </ul>
+          </>
         )}
       </div>
     )
@@ -192,6 +202,17 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
     },
   })
 
+  const toggleStatus = () => {
+    const next = klass.status === '结课' ? '在读' : '结课'
+    saveClassRow({ name: klass.name, time: klass.time, total: klass.total, layers: klass.layers, note: klass.note, status: next }, klass.name)
+      .then(data => {
+        onChanged?.(data)
+        toast(next === '结课' ? t('班结课了') : t('班重新开班了'))
+        if (next === '结课') onBack()
+      })
+      .catch(err => toast(err.message, { error: true }))
+  }
+
   const removeClass = () => {
     if (!window.confirm(t('删掉这个班？学生档案不会删，课次记录会一起删。'))) return
     removeClassRow(klass.name)
@@ -253,13 +274,14 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
       <div className="md-pipeline-tools">
         <button type="button" className="md-inline-link" onClick={onBack}>{t('← 返回班列表')}</button>
         <span className="md-grow" />
+        <button type="button" className="md-pill is-small" onClick={toggleStatus}>{klass.status === '结课' ? t('重新开班') : t('结课')}</button>
         <button type="button" className="md-pill is-small" onClick={editClass}>{t('改班')}</button>
         <button type="button" className="md-inline-link" onClick={removeClass}>{t('删班')}</button>
       </div>
 
       <header className="md-class-head">
         <div>
-          <h2>{klass.name}</h2>
+          <h2>{klass.name}{klass.status === '结课' ? <em className="md-class-ended">{t('已结课')}</em> : null}</h2>
           <p className="md-muted">{klass.time || t('还没填上课时间')} · {t('{n} 人', { n: roster.length })} · {t('共 {n} 次课', { n: klass.total })}</p>
           {klass.layers.length ? <p className="md-layer-chips">{klass.layers.map(layer => <em key={layer}>{layer}</em>)}</p> : <p className="md-muted">{t('还没填分层，去「改班」里填上，就能看谁卡在哪。')}</p>}
         </div>

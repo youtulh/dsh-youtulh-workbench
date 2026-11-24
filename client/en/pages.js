@@ -655,4 +655,12 @@ export const PAGES = {
   打开: 'Open',
   复制路径: 'Copy path',
   复制了路径: 'Path copied',
+  结课: 'Finish class',
+  已结课: 'Finished',
+  重新开班: 'Reopen class',
+  班结课了: 'Class finished',
+  班重新开班了: 'Class reopened',
+  '显示已结课（{n}）': 'Show finished ({n})',
+  隐藏已结课: 'Hide finished',
+  '现在没有在读的班，点「显示已结课」可以看以前的。': 'No active classes right now — use “Show finished” to see past ones.',
 }

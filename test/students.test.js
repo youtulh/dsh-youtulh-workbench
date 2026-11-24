@@ -66,6 +66,7 @@ test('学生档案：同姓名同年级是同一个学生，改名连课次记�
   const root = await temp()
   try {
     saveClass(root, { name: '高一 11 月班', total: 8, layers: '化合价，配平' })
+    assert.equal(readClasses(root)[0].status, '在读')
     let students = saveStudent(root, { name: '王小明', grade: '高一', school: '某中学', className: '高一 11 月班', layer: '配平' })
     assert.equal(students.length, 1)
     assert.equal(students[0].className, '高一 11 月班')
@@ -108,7 +109,8 @@ test('班课：同名班不能重复，改班名带上学生和课次，名册�
     saveStudent(root, { name: '王', grade: '高一', className: 'A 班' })
     saveLessonRows(root, { className: 'A 班', no: 1, rows: [{ name: '王', attend: '到' }] })
 
-    saveClass(root, { name: 'B 班', total: 8 }, 'A 班')
+    saveClass(root, { name: 'B 班', total: 8, status: '结课' }, 'A 班')
+    assert.equal(readClasses(root)[0].status, '结课')
     assert.equal(readClasses(root)[0].name, 'B 班')
     assert.equal(readStudents(root)[0].className, 'B 班')
     assert.equal(readLessons(root, 'B 班')[0].className, 'B 班')

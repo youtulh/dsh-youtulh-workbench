@@ -9,14 +9,14 @@ export const DEFAULT_TOTAL = 8
 export const MAX_TOTAL = 30
 
 export const STUDENT_COLUMNS = ['姓名', '年级', '学校', '微信', '卡点层', '班', '来源', '报课日期', '备注', '创建时间', '更新时间']
-export const CLASS_COLUMNS = ['班名', '上课时间', '总次数', '分层', '备注', '创建时间', '更新时间']
+export const CLASS_COLUMNS = ['班名', '上课时间', '总次数', '状态', '分层', '备注', '创建时间', '更新时间']
 export const LESSON_COLUMNS = ['班', '课次', '日期', '姓名', '出勤', '掌握', '作业', '备注', '更新时间']
 
 const STUDENT_FIELDS = {
   name: '姓名', grade: '年级', school: '学校', contact: '微信', layer: '卡点层', className: '班',
   source: '来源', enrolledAt: '报课日期', note: '备注', createdAt: '创建时间', updatedAt: '更新时间',
 }
-const CLASS_FIELDS = { name: '班名', time: '上课时间', total: '总次数', layers: '分层', note: '备注', createdAt: '创建时间', updatedAt: '更新时间' }
+const CLASS_FIELDS = { name: '班名', time: '上课时间', total: '总次数', status: '状态', layers: '分层', note: '备注', createdAt: '创建时间', updatedAt: '更新时间' }
 const LESSON_FIELDS = { className: '班', no: '课次', date: '日期', name: '姓名', attend: '出勤', mastery: '掌握', homework: '作业', note: '备注', updatedAt: '更新时间' }
 
 const text = (value, max = 80) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
@@ -45,11 +45,12 @@ const toStudentRow = (student) => Object.fromEntries(Object.entries(STUDENT_FIEL
 
 const toClass = (row) => ({
   name: row['班名'] ?? '', time: row['上课时间'] ?? '', total: Number(row['总次数']) || DEFAULT_TOTAL,
+  status: row['状态'] === '结课' ? '结课' : '在读',
   layers: parseLayers(row['分层']), layerText: row['分层'] ?? '', note: row['备注'] ?? '',
   createdAt: row['创建时间'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
 const toClassRow = (klass) => ({
-  '班名': klass.name, '上课时间': klass.time ?? '', '总次数': String(klass.total ?? DEFAULT_TOTAL),
+  '班名': klass.name, '上课时间': klass.time ?? '', '总次数': String(klass.total ?? DEFAULT_TOTAL), '状态': klass.status === '结课' ? '结课' : '在读',
   '分层': layersText(klass.layers), '备注': klass.note ?? '', '创建时间': klass.createdAt ?? '', '更新时间': klass.updatedAt ?? '',
 })
 
@@ -120,7 +121,7 @@ export function saveClass(root, input = {}, original = null) {
   const name = text(input.name, 60)
   if (!name) throw new Error('班名不能为空')
   const total = Math.min(MAX_TOTAL, Math.max(1, Number(input.total) || DEFAULT_TOTAL))
-  const klass = { name, time: text(input.time, 60), total, layers: parseLayers(input.layers), note: text(input.note, 200) }
+  const klass = { name, time: text(input.time, 60), total, status: input.status === '结课' ? '结课' : '在读', layers: parseLayers(input.layers), note: text(input.note, 200) }
   const from = original ? text(original, 60) : name
   const at = classes.findIndex(row => row.name === from)
   if (original == null && at >= 0) throw new Error('已经有一个同名的班')

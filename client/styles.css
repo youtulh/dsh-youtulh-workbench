@@ -1935,3 +1935,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 @media (max-width: 640px) {
   .md-page { animation: none; }
 }
+
+/* 班课：结课状态 */
+.md-class-ended { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-style: normal; font-size: 10.5px; line-height: 17px; }
