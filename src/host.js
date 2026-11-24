@@ -419,8 +419,36 @@ async function route(ctx, store, desk, req, res) {
   switch (path) {
     case 'ops': {
       const label = typeof body.label === 'string' ? body.label : tr('操作')
+      const ops = Array.isArray(body.ops) ? body.ops : []
+      // 用户在编辑器里手改过 我的设定.md 时，保存前先把他改过的字段捞回来，
+      // 只搬「文件里有、状态里空」的字段，本次要改的字段仍以本次为准。
+      if (ops.some(op => ['update_positioning', 'set_pain_points'].includes(op?.op))) {
+        try {
+          const fromFile = readSettingsMarkdown(resolveRoot((await desk.settings.read()).saveRoot))
+          const current = await store.read()
+          if (fromFile) {
+            const touched = new Set(ops.flatMap(op => Object.keys(op ?? {}).filter(key => key !== 'op' && key !== 'points')))
+            const merge = {}
+            for (const [key, value] of Object.entries(fromFile.positioning ?? {})) {
+              if (!touched.has(key) && value && !current.positioning?.[key]) merge[key] = value
+            }
+            if (Object.keys(merge).length) {
+              await store.mutate('同步文件里的设定', (draft) => {
+                draft.positioning = { ...(draft.positioning ?? {}), ...merge }
+                return draft
+              }, { undoable: false })
+            }
+            if (!touched.has('points') && fromFile.painPoints?.length && !(current.painPoints?.length)) {
+              await store.mutate('同步文件里的痛点', (draft) => {
+                draft.painPoints = fromFile.painPoints
+                return draft
+              }, { undoable: false })
+            }
+          }
+        } catch { /* 读文件失败就用现有状态，不挡这次保存 */ }
+      }
       const result = await store.mutate(label, (draft) => {
-        const applied = applyOps(draft, body.ops)
+        const applied = applyOps(draft, ops)
         return { ...applied, state: draft }
       }, { undoable: body.undoable !== false })
       // 数据和本地文件是同一份真相：改了设定就写回 md，加了线索就追加 CSV
