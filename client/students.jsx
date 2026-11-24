@@ -73,7 +73,7 @@ export function StudentsView() {
       </div>
 
       {tab === 'funnel' ? <FunnelPanel students={students ?? []} onChanged={onChanged} /> : null}
-      {tab === 'roster' ? <RosterPanel students={students} classes={classes} onChanged={onChanged} focusName={studentFocus} /> : null}
+      {tab === 'roster' ? <RosterPanel students={students} classes={classes} lessons={lessons} onChanged={onChanged} focusName={studentFocus} /> : null}
       {tab === 'classes' ? <ClassesPanel classes={classes} students={students ?? []} lessons={lessons} onChanged={onChanged} onLessons={onLessons} /> : null}
     </div>
   )
@@ -82,10 +82,11 @@ export function StudentsView() {
 // 学生页的搜索/筛选：切到别的页面再回来不重置
 const ROSTER_UI = { query: '', filter: '' }
 
-function RosterPanel({ students, classes, onChanged, focusName = '' }) {
+function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '' }) {
   useLang()
   const [query, setQuery] = React.useState(ROSTER_UI.query)
   const [filter, setFilter] = React.useState(ROSTER_UI.filter)
+  const [openStudent, setOpenStudent] = React.useState('')
   React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter }) }, [query, filter])
   React.useEffect(() => {
     if (!focusName) return
@@ -178,9 +179,29 @@ function RosterPanel({ students, classes, onChanged, focusName = '' }) {
               <footer>
                 <span className="md-muted">{student.enrolledAt ? t('报课于 {date}', { date: student.enrolledAt }) : ''}</span>
                 <span className="md-grow" />
+                <button type="button" className="md-inline-link" onClick={() => setOpenStudent(openStudent === `${student.name}-${student.grade}` ? '' : `${student.name}-${student.grade}`)}>
+                  {openStudent === `${student.name}-${student.grade}` ? t('收起课次') : t('课次')}
+                </button>
                 <button type="button" className="md-inline-link" onClick={() => open(student)}>{t('改')}</button>
                 <button type="button" className="md-inline-link" onClick={() => remove(student)}>{t('删除')}</button>
               </footer>
+              {openStudent === `${student.name}-${student.grade}` ? (
+                <ul className="md-student-records">
+                  {lessons.filter(row => row.name === student.name && (!student.className || row.className === student.className))
+                    .sort((a, b) => a.no - b.no)
+                    .map(row => (
+                      <li key={`${row.className}-${row.no}`}>
+                        <span className="md-muted">{row.className}</span>
+                        <b>{t('第 {n} 次', { n: row.no })}</b>
+                        <span>{row.date || t('没填日期')}</span>
+                        <span>{row.attend || '—'}</span>
+                        <span>{row.mastery || '—'}</span>
+                        <span>{row.homework || '—'}</span>
+                      </li>
+                    ))}
+                  {!lessons.some(row => row.name === student.name && (!student.className || row.className === student.className)) ? <li className="md-muted">{t('还没有课次记录')}</li> : null}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>

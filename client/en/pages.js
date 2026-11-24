@@ -402,6 +402,8 @@ export const PAGES = {
   保存原话: 'Save my words',
   '原话样本存好了，下次生成会照这个口气': 'Saved — the next generation will follow this voice',
   每次课: 'Lessons',
+  课次: 'Lessons',
+  收起课次: 'Hide lessons',
   平台私信: 'Platform DM',
   '不知道粘什么？点一条示例：': 'Not sure what to paste? Try an example:',
   问价格: 'Price',
