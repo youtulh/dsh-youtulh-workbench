@@ -644,10 +644,17 @@ export function DmView() {
             ))}
           </div>
           {chatPerson ? (
-            <button type="button" className="md-chat-person" onClick={() => setChatPerson('')}>
-              {t('只看 {name}', { name: chatPerson })}<span>×</span>
-            </button>
+            <>
+              <button type="button" className="md-chat-person" onClick={() => setChatPerson('')}>
+                {t('只看 {name}', { name: chatPerson })}<span>×</span>
+              </button>
+              <button type="button" className="md-inline-link" onClick={() => copy(chatRows
+                .filter(row => row.name === chatPerson)
+                .map(row => `${t('对方')}：${row.incoming}\n${t('我方')}：${row.outgoing}`)
+                .join('\n\n'))}>{t('复制整段')}</button>
+            </>
           ) : null}
+          <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
         </header>
         {!chatsReady && chats.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('读取中…')}</p>
