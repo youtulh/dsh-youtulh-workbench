@@ -618,4 +618,11 @@ export const PAGES = {
   '读取失败：{msg}': 'Failed to load: {msg}',
   '读取中…': 'Loading…',
   重试: 'Retry',
+  '写反馈': 'Write parent update',
+  '给 {name} 家长的反馈': "Update for {name}'s parent",
+  '正在写…': 'Writing…',
+  '依据最近 {n} 次课记录写的，发之前自己看一眼': 'Based on the last {n} lessons — read it before sending',
+  '还没有课次记录，这条是按学生档案写的': 'No lesson records yet; this is based on the student profile',
+  复制反馈: 'Copy update',
+  复制了反馈: 'Update copied',
 }

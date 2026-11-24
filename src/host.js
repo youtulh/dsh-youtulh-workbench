@@ -12,6 +12,7 @@ import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
+import { feedbackPrompt, localFeedback } from './feedback.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -800,6 +801,27 @@ async function route(ctx, store, desk, req, res) {
         return json(res, 400, { error: tr(err.message) })
       }
       return json(res, 200, { classes: readClasses(root), students: readStudents(root) })
+    }
+    case 'student/feedback': {
+      const name = String(body.name ?? '').trim()
+      if (!name) return json(res, 400, { error: tr('先选一个学生') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const student = readStudents(root).find(row => row.name === name && (!body.grade || row.grade === body.grade))
+      if (!student) return json(res, 404, { error: tr('没找到这个学生') })
+      let rows = readLessons(root, body.className ?? '').filter(row => row.name === name)
+      if (!rows.length) rows = readLessons(root).filter(row => row.name === name)
+      rows.sort((a, b) => b.no - a.no || String(b.date).localeCompare(String(a.date)))
+      const recent = rows.slice(0, 4)
+      const state = await store.read()
+      let text = ''
+      let from = 'local'
+      try {
+        const { text: out } = await callModel(ctx, { ...feedbackPrompt(state, student, recent, readVoiceSamples(root)), maxTokens: 600, light: true })
+        text = String(out ?? '').trim()
+        if (text) from = 'model'
+      } catch { /* 没模型就本地兜底 */ }
+      if (!text) text = localFeedback(student, recent, state?.positioning?.subject)
+      return json(res, 200, { text, source: from, student, lessons: recent.length })
     }
     case 'lessons/save': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

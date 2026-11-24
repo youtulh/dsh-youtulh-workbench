@@ -1,6 +1,6 @@
 // 学生：线索漏斗 / 学生档案 / 班课 三个 tab。数据都在工作区的 CSV 里。
 import React from 'react'
-import { fetchLessons, fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
+import { fetchLessons, fetchStudentFeedback, fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ClassesPanel } from './classes.jsx'
 import { FunnelPanel } from './funnel.jsx'
@@ -98,6 +98,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
   const [query, setQuery] = React.useState(ROSTER_UI.query)
   const [filter, setFilter] = React.useState(ROSTER_UI.filter)
   const [openStudent, setOpenStudent] = React.useState('')
+  const [feedback, setFeedback] = React.useState(null)
   React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter }) }, [query, filter])
   React.useEffect(() => {
     if (!focusName) return
@@ -142,6 +143,14 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         },
       },
     })
+  }
+
+  const writeFeedback = (student) => {
+    setFeedback({ name: student.name, text: '', busy: true, lessons: 0 })
+    fetchStudentFeedback({ name: student.name, grade: student.grade, className: student.className }).then(data => {
+      setFeedback({ name: student.name, text: data.text || '', busy: false, lessons: data.lessons ?? 0 })
+      requestAnimationFrame(() => document.getElementById('student-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+    }).catch(err => { setFeedback(null); toast(err.message, { error: true }) })
   }
 
   const remove = (student) => {
@@ -200,6 +209,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
               <footer>
                 <span className="md-muted">{student.enrolledAt ? t('报课于 {date}', { date: student.enrolledAt }) : ''}</span>
                 <span className="md-grow" />
+                <button type="button" className="md-inline-link" onClick={() => writeFeedback(student)}>{t('写反馈')}</button>
                 <button type="button" className="md-inline-link" onClick={() => setOpenStudent(openStudent === `${student.name}-${student.grade}` ? '' : `${student.name}-${student.grade}`)}>
                   {openStudent === `${student.name}-${student.grade}` ? t('收起课次') : t('课次')}
                 </button>
@@ -227,6 +237,32 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           ))}
         </ul>
       )}
+      {feedback ? (
+        <section className="md-tile md-feedback" id="student-feedback">
+          <header className="md-tile-head">
+            <h2>{t('给 {name} 家长的反馈', { name: feedback.name })}</h2>
+            <span className="md-grow" />
+            <button type="button" className="md-inline-link" onClick={() => setFeedback(null)}>{t('关闭')}</button>
+          </header>
+          {feedback.busy ? <p className="md-muted">{t('正在写…')}</p> : (
+            <>
+              <textarea rows={6} value={feedback.text} onChange={event => setFeedback(prev => ({ ...prev, text: event.target.value }))} />
+              <div className="md-feedback-actions">
+                <span className="md-muted">{feedback.lessons ? t('依据最近 {n} 次课记录写的，发之前自己看一眼', { n: feedback.lessons }) : t('还没有课次记录，这条是按学生档案写的')}</span>
+                <span className="md-grow" />
+                <button type="button" className="md-pill is-small" onClick={() => {
+                  if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(feedback.text).then(() => toast(t('复制了反馈'))).catch(() => toast(t('复制失败'), { error: true }))
+                  } else {
+                    toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
+                  }
+                }}>{t('复制反馈')}</button>
+              </div>
+            </>
+          )}
+        </section>
+      ) : null}
+
       <p className="md-muted">{t('学生档案存在工作区的 学生档案.csv；卡点层跟着班走。')}</p>
     </div>
   )

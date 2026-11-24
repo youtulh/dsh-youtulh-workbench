@@ -263,6 +263,11 @@ export async function removeLead(index) {
   return request('lead/remove', { index })
 }
 
+/** 用学生最近几次课，写一条给家长的反馈。 */
+export async function fetchStudentFeedback({ name, grade = '', className = '' }) {
+  return request('student/feedback', { name, grade, className })
+}
+
 /** 家长有反应了：按行号更新那条线索。 */
 export async function updateLead(index, patch) {
   return request('workspace/lead/update', { index, patch })
