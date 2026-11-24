@@ -13,6 +13,9 @@ const rowKey = row => row['目录'] || row['创建时间'] || row['标题']
 
 const EMPTY_FORM = { title: '', topic: '', platform: '', publishedAt: '', views: '', follows: '', dms: '', added: '' }
 
+// 看数据页的筛选/搜索：切到别的页面再回来不重置
+const DATA_UI = { filter: 'all', query: '', bizRange: 'all' }
+
 export function DataView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
@@ -25,11 +28,11 @@ export function DataView() {
   const [busy, setBusy] = React.useState('')
   const [form, setForm] = React.useState(EMPTY_FORM)
   const [adding, setAdding] = React.useState(false)
-  const [filter, setFilter] = React.useState('all')
+  const [filter, setFilter] = React.useState(DATA_UI.filter)
   const [tab, setTab] = React.useState('content')
   const [leads, setLeads] = React.useState([])
-  const [bizRange, setBizRange] = React.useState('all')
-  const [query, setQuery] = React.useState('')
+  const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
+  const [query, setQuery] = React.useState(DATA_UI.query)
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -44,6 +47,7 @@ export function DataView() {
   React.useEffect(() => { load() }, [load])
   React.useEffect(() => { fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}) }, [])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
+  React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange }) }, [filter, query, bizRange])
 
   const patch = async (row, key, value) => {
     try {
