@@ -72,6 +72,6 @@ test('设置：protocol 默认 openai，切百炼时完整端点归一，无效�
     assert.ok(!JSON.stringify(open).includes(KEY))
     await assert.rejects(settings.update({ image: { protocol: 'unknown' } }), /协议/)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })

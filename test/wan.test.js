@@ -84,6 +84,6 @@ test('设置：protocol 支持 wan，完整提交地址归一，无效协议拒�
     assert.equal(taskUrl.image.baseUrl, 'https://dashscope.aliyuncs.com')
     await assert.rejects(settings.update({ image: { protocol: 'unknown' } }), /协议/)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })

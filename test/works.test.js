@@ -28,6 +28,6 @@ test('savePiece 写出 Word 和 Markdown，文件名来自标题', async () => {
     const docx = await readFile(join(saved.dir, '期中 58 分.docx'))
     assert.equal(docx.subarray(0, 2).toString(), 'PK')
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })

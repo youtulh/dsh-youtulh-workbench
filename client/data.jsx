@@ -1,7 +1,7 @@
 // 看数据 = 内容库：每一条口播的真实结果（播放/涨粉/私信），自动打分、自动标爆款。
 // 插件里做的稿子、以前发过的视频（手动补录 / 从后台导入），都记在 内容库.csv 这一张表里。
 import React from 'react'
-import { createContent, fetchContent, fetchWorkspace, importData, removeContent, revealDir, setDesk, toast, updateContentRow, useDesk } from './desk.js'
+import { createContent, fetchContent, fetchLeads, fetchWorkspace, importData, removeContent, revealDir, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS } from './util.js'
@@ -27,6 +27,7 @@ export function DataView() {
   const [adding, setAdding] = React.useState(false)
   const [filter, setFilter] = React.useState('all')
   const [tab, setTab] = React.useState('content')
+  const [leads, setLeads] = React.useState([])
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -39,6 +40,7 @@ export function DataView() {
       .catch(err => toast(err.message, { error: true }))
   }, [])
   React.useEffect(() => { load() }, [load])
+  React.useEffect(() => { fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}) }, [])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
   const patch = async (row, key, value) => {
@@ -119,6 +121,13 @@ export function DataView() {
         <button type="button" className={tab === 'content' ? 'is-on' : ''} onClick={() => setTab('content')}>{t('内容库')}</button>
         <button type="button" className={tab === 'files' ? 'is-on' : ''} onClick={() => setTab('files')}>{t('工作区文件')}</button>
       </div>
+
+      <section className="md-biz-strip">
+        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.length || '—'}</b><span>{t('私信线索')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.filter(row => ['已加微信', '已进群'].includes(row.stage)).length || '—'}</b><span>{t('已加微')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{leads.filter(row => row.stage === '约试听').length || '—'}</b><span>{t('约试听')}</span></button>
+        <button type="button" onClick={() => setDesk({ view: 'students', focusId: null })}><b>{leads.filter(row => row.stage === '已报课').length || '—'}</b><span>{t('报课')}</span></button>
+      </section>
 
       {tab === 'files' ? <WorksPanel /> : (
         <>

@@ -503,6 +503,7 @@ export const PAGES = {
   已加微信: 'On WeChat',
   已进群: 'In group',
   约试听: 'Trial booked',
+  私信线索: 'DM leads',
   已报课: 'Enrolled',
   流失: 'Lost',
   '私信 → 微信 → 试听 → 报课 → 班课，一条线看下来；开的班、每次课、谁卡在哪，都落在工作区的表格里。': 'DM → WeChat → trial → enrolled → class, in one line. Classes, lessons and who is stuck where all live in your workspace files.',

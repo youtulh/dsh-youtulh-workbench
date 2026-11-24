@@ -1856,3 +1856,10 @@ body[data-ds-dark-theme] .md-root {
 /* 线索卡：来源与内容库对不上的提示 */
 .md-lead-source { color: var(--ink3); font-size: 11px; }
 .md-lead-source.is-missing { color: var(--accent); }
+
+/* 看数据：私信漏斗概览 */
+.md-biz-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.md-biz-strip button { display: flex; align-items: baseline; gap: 6px; padding: 8px 14px; border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 .5px var(--hairline); cursor: pointer; }
+.md-biz-strip button:hover { background: var(--hover); }
+.md-biz-strip b { font-family: var(--display); font-size: 19px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.md-biz-strip span { color: var(--ink3); font-size: 11.5px; }

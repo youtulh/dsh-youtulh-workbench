@@ -120,7 +120,7 @@ test('PR #5 助手模型自选：指定后优先用，清空后跟随默认；�
     await settings.update({ voice: 'x' })
     assert.deepEqual((await settings.read()).assistant, { provider: 'opencode-go', model: 'm' })
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -168,7 +168,7 @@ test('#16 再次保存不冲掉文件夹里手改的稿子，标题相同的两�
     assert.match(await readFile(join(saved.path, '脚本.md'), 'utf8'), /第三版/)
     assert.equal((await saveProduction({ title: '同一个标题', article: '第三篇。' }, options)).path, join(dir, 'out', '同一个标题 3'))
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 

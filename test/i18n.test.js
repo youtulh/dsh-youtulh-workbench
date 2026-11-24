@@ -53,7 +53,7 @@ test('英文请求下生成英文示例，结构和中文版完全一致', async
     assert.equal(state.sampleLang, 'en')
     assert.equal(state.items[0].title, en.items[0].title)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -238,7 +238,7 @@ test('GET state 按请求头的语言换示例文字', async () => {
   } finally {
     if (previous === undefined) delete process.env.DSH_HOME
     else process.env.DSH_HOME = previous
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
