@@ -282,6 +282,19 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       return json(res, 200, { rows: readLessons(root, url.searchParams.get('class') ?? '') })
     }
+    if (path === 'workspace/stats') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, {
+        leads: readLeads(root).length,
+        students: readStudents(root).length,
+        classes: readClasses(root).length,
+        lessons: readLessons(root).length,
+        chats: readChats(root).length,
+        content: readContent(root).length,
+        feedback: readFeedback(root).length,
+        backups: listBackups(root).length,
+      })
+    }
     if (path === 'workspace/backups') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       return json(res, 200, { backups: listBackups(root) })

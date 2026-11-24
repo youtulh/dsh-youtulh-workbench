@@ -664,4 +664,5 @@ export const PAGES = {
   隐藏已结课: 'Hide finished',
   '现在没有在读的班，点「显示已结课」可以看以前的。': 'No active classes right now — use “Show finished” to see past ones.',
   '这个班已结课：还能补改以前的课次记录；要接着上，点上面「重新开班」。': 'This class is finished. You can still fix past lesson records; use “Reopen class” to keep teaching.',
+  '线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons} · 反馈 {feedback} · 备份 {backups}': 'Leads {leads} · Students {students} · Classes {classes} · Lessons {lessons} · Updates {feedback} · Backups {backups}',
 }

@@ -72,20 +72,32 @@ export function readStudents(root) {
 /** 新建或更新一个学生（键 = 姓名 + 年级）；改名时把课次记录里的名字一起改掉。 */
 export function saveStudent(root, input = {}, original = null) {
   const students = readStudents(root)
-  const student = {
-    name: text(input.name, 40), grade: text(input.grade, 20), school: text(input.school, 40), contact: text(input.contact, 40),
-    layer: text(input.layer, 30), className: text(input.className, 60), source: text(input.source, 60),
-    enrolledAt: text(input.enrolledAt, 20) || dayStamp(), note: text(input.note, 200),
-  }
-  if (!student.name) throw new Error('学生姓名不能为空')
+  // 只覆盖明确传进来的字段：聊天成交/线索转换只给姓名年级，不能把已有的学校、微信清空
+  const patch = {}
+  const put = (key, max) => { if (input[key] !== undefined) patch[key] = text(input[key], max) }
+  put('name', 40); put('grade', 20); put('school', 40); put('contact', 40)
+  put('layer', 30); put('className', 60); put('source', 60); put('enrolledAt', 20); put('note', 200)
+  const name = text(input.name, 40)
+  if (!name) throw new Error('学生姓名不能为空')
+  patch.name = name
   const from = original ? { name: text(original.name, 40), grade: text(original.grade, 20) } : null
-  const at = students.findIndex(row => (from ? sameStudent(row, from) : sameStudent(row, student)))
+  const grade = patch.grade !== undefined ? patch.grade : (from?.grade ?? '')
+  const at = students.findIndex(row => (from
+    ? sameStudent(row, from)
+    : text(row.name, 40) === name && (patch.grade === undefined || text(row.grade, 20) === grade)))
   if (at >= 0) {
     const old = students[at]
-    students[at] = { ...old, ...student, createdAt: old.createdAt || nowStamp(), updatedAt: nowStamp() }
-    if (from && (from.name !== student.name || from.grade !== student.grade)) renameLessonRows(root, from, student.name)
+    const next = { ...old, ...patch, createdAt: old.createdAt || nowStamp(), updatedAt: nowStamp() }
+    if (!next.enrolledAt) next.enrolledAt = dayStamp()
+    students[at] = next
+    if (from && (from.name !== name || from.grade !== (patch.grade ?? from.grade))) renameLessonRows(root, from, name)
   } else {
-    students.push({ ...student, createdAt: nowStamp(), updatedAt: nowStamp() })
+    const next = {
+      name, grade, school: '', contact: '', layer: '', className: '', source: '', enrolledAt: dayStamp(), note: '',
+      ...patch, createdAt: nowStamp(), updatedAt: nowStamp(),
+    }
+    if (!next.enrolledAt) next.enrolledAt = dayStamp()
+    students.push(next)
   }
   writeTable(root, LAYOUT.students, STUDENT_COLUMNS, students.map(toStudentRow))
   return readStudents(root)

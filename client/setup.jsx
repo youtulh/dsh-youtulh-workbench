@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchPlatformWords, fetchVoice, fetchWorkspace, revealDir, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchPlatformWords, fetchVoice, fetchWorkspace, fetchWorkspaceStats, revealDir, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -46,11 +46,13 @@ export function SetupView() {
   const [backupBusy, setBackupBusy] = React.useState(false)
   const [backups, setBackups] = React.useState([])
   const [root, setRoot] = React.useState('')
+  const [stats, setStats] = React.useState(null)
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
     fetchBackups().then(data => setBackups(data.backups ?? [])).catch(() => {})
     fetchWorkspace().then(data => setRoot(data.root ?? '')).catch(() => {})
+    fetchWorkspaceStats().then(setStats).catch(() => {})
     fetchChatRecords().then(data => {
       const cases = data.cases ?? []
       const latest = cases[cases.length - 1]
@@ -305,6 +307,11 @@ export function SetupView() {
               else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
             }}>{t('复制路径')}</button>
           </div>
+        ) : null}
+        {stats ? (
+          <p className="md-muted">
+            {t('线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons} · 反馈 {feedback} · 备份 {backups}', stats)}
+          </p>
         ) : null}
         <div className="md-setup-samples-foot">
           <span className="md-muted">{backup ? t('备份好了：{dir}', { dir: backup }) : t('建议每周点一次')}</span>

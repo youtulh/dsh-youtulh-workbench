@@ -233,3 +233,20 @@ test('老班课「期次」列：改一次班之后迁成「班名 / 状态」',
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('老学生表没有微信列：保存后补列，原数据不丢', async () => {
+  const root = await temp()
+  try {
+    await writeFile(join(root, '学生档案.csv'), '\uFEFF"姓名","年级","学校"\n"李","高一","某中学"\n')
+    saveStudent(root, { name: '李', grade: '高一', contact: 'wx-li' })
+    const raw = await readFile(join(root, '学生档案.csv'), 'utf8')
+    assert.match(raw, /微信/)
+    const rows = readStudents(root)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].school, '某中学')
+    assert.equal(rows[0].contact, 'wx-li')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
