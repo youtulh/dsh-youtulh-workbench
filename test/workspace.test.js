@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, backupWorkspace, listBackups, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
+import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, recordContent, recordPickedTopics, archiveTopics, backupWorkspace, listBackups, restoreWorkspace, removeContent, removeLeadRow, settingsMarkdown, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from '../src/workspace.js'
 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
@@ -291,6 +291,24 @@ test('备份：整个工作区复制到旁边，原文件不动', async () => {
     assert.equal(backups.length, 3)
     assert.ok(backups[0].name >= backups[2].name)
     assert.ok(backups[0].size > 0)
+  } finally {
+    await rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
+
+
+test('从备份还原：被改坏的文件能回到备份时的样子', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'workbench-restore-'))
+  const root = join(parent, '工作区')
+  try {
+    await mkdir(root)
+    await writeFile(join(root, '线索表.csv'), '\uFEFF"姓名"\n"王"\n')
+    const dir = backupWorkspace(root)
+    await writeFile(join(root, '线索表.csv'), '\uFEFF"姓名"\n"改坏了"\n')
+    restoreWorkspace(root, dir)
+    const raw = await readFile(join(root, '线索表.csv'), 'utf8')
+    assert.match(raw, /王/)
+    assert.doesNotMatch(raw, /改坏了/)
   } finally {
     await rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }

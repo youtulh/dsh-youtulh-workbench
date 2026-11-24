@@ -322,8 +322,12 @@ export function SetupView() {
                 .then(data => {
                   fetchWorkspaceStats().then(setStats).catch(() => {})
                   fetchBackups().then(next => setBackups(next.backups ?? [])).catch(() => {})
-                  if (data.sameCounts === false) {
-                    toast(t('升级后条数对不上，先别继续操作；已自动备份，请联系我排查'), { error: true })
+                  if (!data.sameCounts) {
+                    toast(t('升级后条数对不上，已自动还原到升级前的备份；请刷新后检查'), { error: true })
+                    return
+                  }
+                  if (data.restored) {
+                    toast(t('升级过程有异常，已自动还原；数据还是升级前的样子'), { error: true })
                     return
                   }
                   const base = data.upgraded?.length ? t('升级好了：{tables}', { tables: data.upgraded.join('、') }) : t('没有需要升级的表')

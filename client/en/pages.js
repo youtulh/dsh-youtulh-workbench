@@ -675,4 +675,6 @@ export const PAGES = {
   没有需要升级的表: 'Nothing to upgrade',
   '{base} · 已自动备份一份': '{base} · backed up automatically',
   '升级后条数对不上，先别继续操作；已自动备份，请联系我排查': 'Row counts changed after upgrading. Stop here; a backup exists — contact me to check.',
+  '升级后条数对不上，已自动还原到升级前的备份；请刷新后检查': 'Row counts changed after upgrading; restored the pre-upgrade backup. Refresh and check.',
+  '升级过程有异常，已自动还原；数据还是升级前的样子': 'Upgrade went wrong and was rolled back automatically; your data is unchanged.',
 }

@@ -459,6 +459,13 @@ function folderSize(dir) {
   return total
 }
 
+/** 从备份还原（升级条数对不上时兜底）。 */
+export function restoreWorkspace(root, backupDir) {
+  if (!existsSync(backupDir)) throw new Error('备份不存在')
+  cpSync(backupDir, root, { recursive: true, force: true })
+  return root
+}
+
 /** 已有的备份，最新在前，带大小。 */
 export function listBackups(root) {
   const parent = dirname(root)

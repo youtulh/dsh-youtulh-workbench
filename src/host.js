@@ -13,7 +13,7 @@ import { localSuggestions, normalizeSuggestions, suggestPrompts } from './sugges
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
-import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { legacyTables, readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -969,9 +969,16 @@ async function route(ctx, store, desk, req, res) {
       const hasLegacy = legacyTables(root).length > 0
       const backupDir = hasLegacy ? backupWorkspace(root) : null
       const upgraded = upgradeTables(root)
-      const after = counts()
-      const sameCounts = Object.keys(before).every(key => before[key] === after[key])
-      return json(res, 200, { upgraded, sameCounts, before, after, backupDir })
+      let after = counts()
+      let sameCounts = Object.keys(before).every(key => before[key] === after[key])
+      let restored = false
+      if (!sameCounts && backupDir) {
+        restoreWorkspace(root, backupDir)
+        after = counts()
+        sameCounts = Object.keys(before).every(key => before[key] === after[key])
+        restored = true
+      }
+      return json(res, 200, { upgraded, sameCounts, before, after, backupDir, restored })
     }
     case 'workspace/backup': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
