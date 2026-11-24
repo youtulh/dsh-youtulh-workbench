@@ -280,6 +280,10 @@ export async function removeLead(index) {
   return request('lead/remove', { index })
 }
 
+export async function importLeads(raw) {
+  return request('leads/import', { raw })
+}
+
 /** 用学生最近几次课，写一条给家长的反馈。 */
 export async function fetchStudentFeedback({ name, grade = '', className = '', limit = 4 }) {
   return request('student/feedback', { name, grade, className, limit })

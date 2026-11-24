@@ -100,6 +100,47 @@ const STUDENT_IMPORT_ALIAS = {
 }
 const STUDENT_IMPORT_KEYS = Object.keys(STUDENT_IMPORT_ALIAS)
 
+const LEAD_IMPORT_ALIAS = {
+  date: ['日期', '时间'],
+  name: ['姓名', '家长', '家长姓名'],
+  grade: ['年级'],
+  school: ['学校'],
+  painPoint: ['卡点', '痛点'],
+  source: ['来源'],
+  type: ['类型'],
+  category: ['分类'],
+  raw: ['原文', '私信原文', '对方说'],
+  draft: ['话术', '我方回'],
+  reaction: ['反应'],
+  result: ['结果'],
+  next: ['下一步', '下次做什么'],
+  stage: ['阶段'],
+  nextAt: ['下次跟进', '跟进日期'],
+  followUps: ['跟进次数'],
+}
+const LEAD_IMPORT_KEYS = Object.keys(LEAD_IMPORT_ALIAS)
+
+function leadImportColumn(cell) {
+  const name = String(cell ?? '').trim().replace(/[\s*]/g, '')
+  if (!name) return ''
+  for (const key of LEAD_IMPORT_KEYS) {
+    if (LEAD_IMPORT_ALIAS[key].includes(name)) return key
+  }
+  return ''
+}
+
+export function parseLeadTable(raw) {
+  const table = parsePastedTable(raw)
+  if (table.length < 2) return { cols: [], rows: [] }
+  const cols = table[0].map(leadImportColumn)
+  const rows = table.slice(1).map(cells => {
+    const row = {}
+    for (let i = 0; i < cols.length; i += 1) if (cols[i]) row[cols[i]] = cells[i] ?? ''
+    return row
+  }).filter(row => String(row.name ?? '').trim() || String(row.raw ?? '').trim())
+  return { cols, rows }
+}
+
 function studentImportColumn(cell) {
   const name = String(cell ?? '').trim().replace(/[\s*]/g, '')
   if (!name) return ''
@@ -839,6 +880,22 @@ async function route(ctx, store, desk, req, res) {
       }
       if (lead.stage !== '流失' && lead.stage !== '已报课') updateLeadRow(root, index, { stage: '已报课' })
       return json(res, 200, { students: readStudents(root), classes: readClasses(root), leads: readLeads(root) })
+    }
+    case 'leads/import': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const { cols, rows } = parseLeadTable(body.raw)
+      if (!cols.includes('name')) return json(res, 400, { error: tr('第一行要有「姓名」列') })
+      let imported = 0
+      for (const row of rows) {
+        const createdAt = row.date ? `${row.date}T12:00:00` : undefined
+        appendLead(root, {
+          ...row,
+          followUps: Number(row.followUps) || 0,
+          createdAt,
+        })
+        imported += 1
+      }
+      return json(res, 200, { leads: readLeads(root), imported })
     }
     case 'students/import': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

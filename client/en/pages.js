@@ -680,4 +680,9 @@ export const PAGES = {
   '升级后：线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons}': 'After upgrade: leads {leads} · students {students} · classes {classes} · lessons {lessons}',
   '升级前的备份：{dir}': 'Pre-upgrade backup: {dir}',
   '⌘ + Enter 保存': '⌘ + Enter to save',
+  导入线索: 'Import leads',
+  '从表格导入线索': 'Import leads from a table',
+  '把 Excel / 表格里的线索粘进来': 'Paste your leads from Excel / a table',
+  '第一行是表头：日期、姓名、年级、卡点、来源、阶段、下次跟进': 'The first row is the header: date, name, grade, weak point, source, stage, next follow-up',
+  '导入了 {n} 条线索': 'Imported {n} leads',
 }

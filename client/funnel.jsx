@@ -1,7 +1,7 @@
 // 线索漏斗：一条线索从私信走到报课，拖一下就换个阶段。
 // 数据就是工作区里的 线索表.csv，页面只是换个看法。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, removeLead, setDesk, setLeadStage, toast, updateLead } from './desk.js'
+import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, importLeads, removeLead, setDesk, setLeadStage, toast, updateLead } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { LEAD_CATEGORIES, LEAD_STAGES, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
@@ -65,6 +65,22 @@ export function FunnelPanel({ students = [], onChanged }) {
     setBusy('')
   }
 
+  const importLeadsDialog = () => setDesk({
+    dialog: {
+      title: t('从表格导入线索'),
+      submitLabel: t('导入'),
+      fields: [{
+        name: 'raw', label: t('把 Excel / 表格里的线索粘进来'), type: 'textarea', rows: 8,
+        placeholder: t('第一行是表头：日期、姓名、年级、卡点、来源、阶段、下次跟进'), required: true,
+      }],
+      onSubmit: values => {
+        importLeads(values.raw)
+          .then(data => { setLeads(data.leads ?? []); toast(t('导入了 {n} 条线索', { n: data.imported })) })
+          .catch(err => toast(err.message, { error: true }))
+      },
+    },
+  })
+
   const addLead = () => setDesk({
     dialog: {
       title: t('记一条线索'),
@@ -99,6 +115,7 @@ export function FunnelPanel({ students = [], onChanged }) {
         <span className="md-muted">{t('拖动卡片换阶段；也可以点开卡片用下拉改。')}</span>
         <span className="md-grow" />
         <span className="md-muted">{t('共 {n} 条', { n: leads.length })}</span>
+        <button type="button" className="md-pill is-small" onClick={importLeadsDialog}>{t('导入线索')}</button>
         <button type="button" className="md-pill is-small is-primary" onClick={addLead}><Icon name="plus" size={13} />{t('记一条线索')}</button>
       </div>
 
@@ -112,6 +129,7 @@ export function FunnelPanel({ students = [], onChanged }) {
       {leads.length === 0 ? (
         <div className="md-works-empty">
           <p>{t('还没有线索。回私信页判断完一条私信，或者点上面「记一条线索」。')}</p>
+          <button type="button" className="md-pill" onClick={importLeadsDialog}>{t('导入线索')}</button>
           <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>{t('去回私信')}</button>
         </div>
       ) : (
