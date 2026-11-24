@@ -194,6 +194,7 @@ export const PAGES = {
   全部: 'All',
   该跟进: 'Due now',
   明天再跟: 'Follow up tomorrow',
+  '3 天后': 'In 3 days',
   '下次跟进顺延到 {date}': 'Next follow-up moved to {date}',
   '删掉这条案例？以后给建议就不会再参考它。': 'Delete this case? Future suggestions will stop using it.',
   写作规则: 'Writing rules',

@@ -160,7 +160,9 @@ export function WelcomeView() {
         <dl>
           <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd></div>
           <div><dt>{t('待跟进')}</dt><dd>{todo || '—'}</dd></div>
-          <div><dt>{t('该跟进')}</dt><dd>{due || '—'}</dd></div>
+          <button type="button" className={`md-funnel-stat ${due ? 'is-due' : ''}`} disabled={!due} onClick={() => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' })}>
+            <dt>{t('该跟进')}</dt><dd>{due || '—'}</dd>
+          </button>
           <div><dt>{t('已加微')}</dt><dd>{added || '—'}</dd></div>
           <div><dt>{t('约试听')}</dt><dd>{trials || '—'}</dd></div>
         </dl>

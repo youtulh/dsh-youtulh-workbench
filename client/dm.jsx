@@ -73,6 +73,7 @@ export function DmView() {
   const [chatResult, setChatResult] = React.useState(DM_DRAFT.chatResult)
   const [chatView, setChatView] = React.useState(DM_DRAFT.chatView)
   const dmPerson = useDesk(s => s.dmPerson)
+  const dmFilter = useDesk(s => s.dmFilter)
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => {
@@ -99,6 +100,13 @@ export function DmView() {
   React.useEffect(() => { reloadChats() }, [reloadChats])
 
   // 从线索漏斗点「聊过 n 轮」过来：直接只看这个人，并滚到最近对话
+  React.useEffect(() => {
+    if (!dmFilter) return
+    setFilter(dmFilter)
+    setDesk({ dmFilter: '' })
+    requestAnimationFrame(() => document.getElementById('dm-leads')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [dmFilter])
+
   React.useEffect(() => {
     if (!dmPerson) return
     setChatPerson(dmPerson)
@@ -405,7 +413,7 @@ export function DmView() {
         </section>
       ) : null}
 
-      <section className="md-tile md-dm-leads">
+      <section className="md-tile md-dm-leads" id="dm-leads">
         <header className="md-tile-head">
           <h2>{t('线索表')}</h2>
           <span className="md-tile-meta">{t('{n} 条 · 工作区里的 线索表.csv', { n: leads.length })}</span>
@@ -500,6 +508,7 @@ export function DmView() {
                       .catch(err => toast(err.message, { error: true }))
                   }}>{t('记一次跟进')}</button>
                   <button type="button" className="md-inline-link" onClick={() => postpone(lead, 1)}>{t('明天再跟')}</button>
+                  <button type="button" className="md-inline-link" onClick={() => postpone(lead, 3)}>{t('3 天后')}</button>
                 </div>
                 {openDraft === lead.rowIndex ? (
                   <div className="md-lead-draft">
