@@ -87,6 +87,19 @@ test('学生档案：同姓名同年级是同一个学生，改名连课次记�
   }
 })
 
+test('学生档案：家长微信/手机能存能读，老表没有这一列读成空', async () => {
+  const root = await temp()
+  try {
+    saveStudent(root, { name: '王', grade: '高一', contact: 'wx-wang' })
+    assert.equal(readStudents(root)[0].contact, 'wx-wang')
+    // 老版本的学生档案.csv 没有「微信」列，不能报错
+    await writeFile(join(root, '学生档案.csv'), '姓名,年级,学校\n李,高二,某中学\n')
+    assert.equal(readStudents(root)[0].contact, '')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
+
 test('班课：同名班不能重复，改班名带上学生和课次，名册没清空不能删班', async () => {
   const root = await temp()
   try {

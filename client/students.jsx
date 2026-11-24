@@ -101,7 +101,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
     const pass = filter === 'none' ? !row.className : !filter || row.className === filter
     if (!pass) return false
     const q = query.trim()
-    return !q || [row.name, row.school, row.layer, row.note, row.className, row.source].some(value => String(value ?? '').includes(q))
+    return !q || [row.name, row.school, row.contact, row.layer, row.note, row.className, row.source].some(value => String(value ?? '').includes(q))
   })
 
   const open = (student) => {
@@ -112,12 +112,13 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         title: editing ? t('改学生档案') : t('加一个学生'),
         submitLabel: t('保存'),
         initial: editing
-          ? { name: student.name, grade: student.grade, school: student.school, className: student.className, layer: student.layer, source: student.source, note: student.note }
+          ? { name: student.name, grade: student.grade, school: student.school, contact: student.contact, className: student.className, layer: student.layer, source: student.source, note: student.note }
           : { className: filter && filter !== 'none' ? filter : '' },
         fields: [
           { name: 'name', label: t('姓名'), required: true },
           { name: 'grade', label: t('年级'), placeholder: t('高一') },
           { name: 'school', label: t('学校'), placeholder: t('可不填') },
+          { name: 'contact', label: t('微信 / 手机'), placeholder: t('家长的微信或电话，可不填') },
           { name: 'className', label: t('在哪个班'), type: 'select', options: [{ value: '', label: t('还没排班') }, ...classes.map(row => ({ value: row.name, label: row.name }))] },
           { name: 'layer', label: t('卡点层'), type: 'select', hint: t('选项来自各班的「分层」；也可以先在班里建好分层再选'), options: [{ value: '', label: t('还没标') }, ...layers.map(value => ({ value, label: t(value) }))] },
           { name: 'source', label: t('来源'), placeholder: t('哪条视频 / 谁介绍') },
@@ -166,6 +167,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
               <header>
                 <b>{student.name}</b>
                 {student.grade || student.school ? <small>{[student.grade, student.school].filter(Boolean).join(' · ')}</small> : null}
+                {student.contact ? <small className="md-student-contact" title={t('家长的微信 / 手机')}>{student.contact}</small> : null}
                 <span className="md-grow" />
                 {student.className ? <span className="md-student-class">{student.className}</span> : <span className="md-muted">{t('还没排班')}</span>}
               </header>

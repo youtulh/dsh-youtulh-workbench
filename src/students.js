@@ -8,12 +8,12 @@ export const HOMEWORK_OPTIONS = ['交', '未交']
 export const DEFAULT_TOTAL = 8
 export const MAX_TOTAL = 30
 
-export const STUDENT_COLUMNS = ['姓名', '年级', '学校', '卡点层', '班', '来源', '报课日期', '备注', '创建时间', '更新时间']
+export const STUDENT_COLUMNS = ['姓名', '年级', '学校', '微信', '卡点层', '班', '来源', '报课日期', '备注', '创建时间', '更新时间']
 export const CLASS_COLUMNS = ['班名', '上课时间', '总次数', '分层', '备注', '创建时间', '更新时间']
 export const LESSON_COLUMNS = ['班', '课次', '日期', '姓名', '出勤', '掌握', '作业', '备注', '更新时间']
 
 const STUDENT_FIELDS = {
-  name: '姓名', grade: '年级', school: '学校', layer: '卡点层', className: '班',
+  name: '姓名', grade: '年级', school: '学校', contact: '微信', layer: '卡点层', className: '班',
   source: '来源', enrolledAt: '报课日期', note: '备注', createdAt: '创建时间', updatedAt: '更新时间',
 }
 const CLASS_FIELDS = { name: '班名', time: '上课时间', total: '总次数', layers: '分层', note: '备注', createdAt: '创建时间', updatedAt: '更新时间' }
@@ -37,7 +37,7 @@ export function layersText(value) {
 }
 
 const toStudent = (row) => ({
-  name: row['姓名'] ?? '', grade: row['年级'] ?? '', school: row['学校'] ?? '', layer: row['卡点层'] ?? '',
+  name: row['姓名'] ?? '', grade: row['年级'] ?? '', school: row['学校'] ?? '', contact: row['微信'] ?? '', layer: row['卡点层'] ?? '',
   className: row['班'] ?? '', source: row['来源'] ?? '', enrolledAt: row['报课日期'] ?? '',
   note: row['备注'] ?? '', createdAt: row['创建时间'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
@@ -71,7 +71,7 @@ export function readStudents(root) {
 export function saveStudent(root, input = {}, original = null) {
   const students = readStudents(root)
   const student = {
-    name: text(input.name, 40), grade: text(input.grade, 20), school: text(input.school, 40),
+    name: text(input.name, 40), grade: text(input.grade, 20), school: text(input.school, 40), contact: text(input.contact, 40),
     layer: text(input.layer, 30), className: text(input.className, 60), source: text(input.source, 60),
     enrolledAt: text(input.enrolledAt, 20) || dayStamp(), note: text(input.note, 200),
   }
