@@ -171,11 +171,12 @@ export function DmView() {
       if (chatFilter !== 'all' && row.channel !== chatFilter) continue
       const key = row.name || ''
       const name = row.name || t('没写名字')
-      const item = map.get(key) ?? { key, name, turns: 0, lastDate: '', lastResult: '', channel: row.channel }
+      const item = map.get(key) ?? { key, name, turns: 0, lastDate: '', lastResult: '', channel: row.channel, lastIncoming: '' }
       item.turns += 1
       if (row.date >= item.lastDate) {
         item.lastDate = row.date
         item.lastResult = row.result || '未定'
+        item.lastIncoming = row.incoming || row.outgoing || ''
       }
       map.set(name, item)
     }
@@ -506,6 +507,7 @@ export function DmView() {
                     <span className="md-grow" />
                     <em className={`is-${['成交', '加微', '约试听'].includes(person.lastResult) ? 'won' : person.lastResult === '流失' ? 'lost' : 'plain'}`}>{t(person.lastResult)}</em>
                     <span className="md-muted">{person.lastDate}</span>
+                    {person.lastIncoming ? <span className="md-chat-person-preview">{person.lastIncoming.slice(0, 30)}</span> : null}
                   </button>
                 </li>
               ))}

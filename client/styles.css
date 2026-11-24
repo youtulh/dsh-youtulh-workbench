@@ -1761,3 +1761,15 @@ body[data-ds-dark-theme] .md-root {
 .md-dm-drafts p, .md-chat-full p { overflow-wrap: anywhere; }
 .md-chat-person-row:disabled { cursor: default; opacity: .7; }
 .md-chat-person-row:disabled:hover { background: none; }
+
+/* 按人列表：最后一句摘要 + 手机端聊天台 */
+.md-chat-person-preview { flex-basis: 100%; overflow: hidden; color: var(--ink3); font-size: 11.5px; line-height: 17px; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .md-dm .md-tile-head { gap: 6px; }
+  .md-dm .md-tile-head h2 { font-size: 15px; }
+  .md-dm .md-lead-tabs { flex-wrap: wrap; }
+  .md-dm-drafts li { padding: 9px 10px; }
+  .md-dm-drafts p { font-size: 13px; line-height: 21px; }
+  .md-dm-tag { margin-bottom: 4px; }
+  .md-dm .md-dm-input .md-field span { font-size: 12px; }
+}
