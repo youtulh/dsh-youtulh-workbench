@@ -167,7 +167,15 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
               <header>
                 <b>{student.name}</b>
                 {student.grade || student.school ? <small>{[student.grade, student.school].filter(Boolean).join(' · ')}</small> : null}
-                {student.contact ? <small className="md-student-contact" title={t('家长的微信 / 手机')}>{student.contact}</small> : null}
+                {student.contact ? (
+                  <button type="button" className="md-student-contact" title={t('点一下复制')} onClick={() => {
+                    if (navigator.clipboard?.writeText) {
+                      navigator.clipboard.writeText(student.contact).then(() => toast(t('复制了联系方式'))).catch(() => toast(t('复制失败'), { error: true }))
+                    } else {
+                      toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
+                    }
+                  }}>{student.contact}</button>
+                ) : null}
                 <span className="md-grow" />
                 {student.className ? <span className="md-student-class">{student.className}</span> : <span className="md-muted">{t('还没排班')}</span>}
               </header>

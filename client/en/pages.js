@@ -604,4 +604,8 @@ export const PAGES = {
   '还没有学生。聊天台标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。': 'No students yet. Marking “enrolled” in the chat desk creates one; you can also convert a lead in the pipeline or add one directly.',
   '⌘ + Enter 直接给下一句；结果就在这页出，不用跳到对话。': '⌘ + Enter suggests the next line right here — no need to jump to chat.',
   ' · 不在内容库': ' · not in content library',
+  点一下复制: 'Click to copy',
+  复制了联系方式: 'Contact copied',
+  复制失败: 'Copy failed',
+  '这个环境不能直接复制，去表格里复制吧': 'Clipboard unavailable here — copy from the CSV.',
 }
