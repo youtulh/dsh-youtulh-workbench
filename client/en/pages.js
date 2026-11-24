@@ -636,4 +636,6 @@ export const PAGES = {
   存进家长反馈了: 'Saved to parent updates',
   '以前写过的 {n} 条': '{n} saved updates',
   '删掉这条写过的反馈？': 'Delete this saved update?',
+  '复制该跟进（{n}）': 'Copy due list ({n})',
+  未写名字: 'No name',
 }

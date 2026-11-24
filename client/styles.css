@@ -1903,3 +1903,12 @@ body[data-ds-dark-theme] .md-root {
 
 .md-feedback-history-head { display: flex; align-items: center; gap: 8px; }
 .md-feedback-history-head .md-grow { flex: 1; }
+
+@media (max-width: 640px) {
+  .md-feedback .md-tile-head { flex-wrap: wrap; }
+  .md-feedback-actions { gap: 6px; }
+  .md-feedback-history-head { flex-wrap: wrap; }
+  .md-biz-strip button { flex: 1 1 calc(50% - 4px); justify-content: center; }
+  .md-biz-range { flex-wrap: wrap; }
+  .md-student-records li { gap: 6px 10px; }
+}

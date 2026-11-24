@@ -265,6 +265,7 @@ export function DmView() {
       .filter(({ row }) => (caseFilter === 'all' || (row.result || '未定') === caseFilter)
         && (!q || [row.scene, row.text].some(value => String(value ?? '').includes(q))))
   })()
+  const dueLeads = leads.filter(isDue)
   const leadChatCounts = (() => {
     const counts = {}
     for (const row of chats) if (row.name) counts[row.name] = (counts[row.name] ?? 0) + 1
@@ -547,6 +548,12 @@ export function DmView() {
           </div>
           <span className="md-grow" />
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜家长、卡点、原话')} />
+          {dueLeads.length ? (
+            <button type="button" className="md-inline-link" onClick={() => copy(dueLeads.map(lead => {
+              const bits = [lead.name || t('未写名字'), lead.grade, lead.painPoint].filter(Boolean).join(' · ')
+              return `${bits}｜${t('下次跟进')} ${lead.nextAt}`
+            }).join('\n'))}>{t('复制该跟进（{n}）', { n: dueLeads.length })}</button>
+          ) : null}
         </div>
 
         {leadsError ? (
