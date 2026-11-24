@@ -17,12 +17,21 @@ const FILTERS = [
 
 const EMPTY_FIELDS = { name: '', grade: '', school: '', painPoint: '', source: '' }
 
-// 切到别的页面再回来，粘了一半的消息和建议不要丢（只在当前会话里记得）
-const DM_DRAFT = {
+// 粘了一半的消息和建议不要丢：切页面记得，刷新页面也记得
+const DM_DRAFT_KEY = 'youtulh:dm:v1'
+const DM_DRAFT_DEFAULT = {
   raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
   fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
   chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns',
 }
+const DM_DRAFT = (() => {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(DM_DRAFT_KEY) || 'null')
+    return saved ? { ...DM_DRAFT_DEFAULT, ...saved, fields: { ...EMPTY_FIELDS, ...(saved.fields ?? {}) } } : { ...DM_DRAFT_DEFAULT }
+  } catch {
+    return { ...DM_DRAFT_DEFAULT }
+  }
+})()
 
 export function DmView() {
   useLang()
@@ -57,6 +66,7 @@ export function DmView() {
 
   React.useEffect(() => {
     Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView })
+    try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
   }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])

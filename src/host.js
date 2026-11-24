@@ -284,7 +284,9 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'chat/records') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      return json(res, 200, { rows: readChats(root), cases: readCases(root) })
+      const all = readChats(root)
+      // 记录会越攒越多，页面只要最近 300 轮；经验/案例还是读全量
+      return json(res, 200, { rows: all.slice(-300), total: all.length, cases: readCases(root) })
     }
     if (path === 'voice') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
