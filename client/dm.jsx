@@ -22,7 +22,7 @@ const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
   raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
   fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
-  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '',
+  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '', caseQuery: '', caseFilter: 'all',
 }
 const DM_DRAFT = (() => {
   try {
@@ -57,6 +57,8 @@ export function DmView() {
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
   const [cases, setCases] = React.useState([])
+  const [caseQuery, setCaseQuery] = React.useState(DM_DRAFT.caseQuery)
+  const [caseFilter, setCaseFilter] = React.useState(DM_DRAFT.caseFilter)
   const [chatTotal, setChatTotal] = React.useState(0)
   const [chatsReady, setChatsReady] = React.useState(false)
   const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
@@ -70,9 +72,9 @@ export function DmView() {
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => {
-    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query })
+    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, caseQuery, caseFilter })
     try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
-  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query])
+  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, caseQuery, caseFilter])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
@@ -175,6 +177,13 @@ export function DmView() {
     .map(result => ({ result, n: chats.filter(row => row.result === result).length }))
     .filter(item => item.n > 0)
   const leadOf = name => (name ? leads.find(row => row.name === name) : null)
+  const filteredCases = (() => {
+    const q = caseQuery.trim()
+    return cases
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => (caseFilter === 'all' || (row.result || '未定') === caseFilter)
+        && (!q || [row.scene, row.text].some(value => String(value ?? '').includes(q))))
+  })()
   const leadChatCounts = (() => {
     const counts = {}
     for (const row of chats) if (row.name) counts[row.name] = (counts[row.name] ?? 0) + 1
@@ -634,8 +643,19 @@ export function DmView() {
           {cases.length === 0 ? (
             <p className="md-muted">{t('还没有导入案例。点上面「导入案例」，粘一段真实对话进来。')}</p>
           ) : (
+            <>
+              <div className="md-case-tools">
+                <input value={caseQuery} onChange={event => setCaseQuery(event.target.value)} placeholder={t('搜场景、对话内容')} />
+                <select value={caseFilter} onChange={event => setCaseFilter(event.target.value)}>
+                  {[['all', '全部结果'], ['成交', '成交'], ['约试听', '约试听'], ['加微', '加微'], ['流失', '流失'], ['未定', '未定']].map(([id, label]) => (
+                    <option key={id} value={id}>{t(label)}</option>
+                  ))}
+                </select>
+                <span className="md-muted">{t('{n} 条', { n: filteredCases.length })}</span>
+              </div>
             <ul className="md-case-list">
-              {cases.map((row, index) => (
+              {filteredCases.length === 0 ? <li className="md-muted">{t('这个筛选下没有案例')}</li> : null}
+              {filteredCases.map(({ row, index }) => (
                 <li key={`${row.date}-${index}`}>
                   <span className="md-chat-channel">{t(row.channel)}</span>
                   <input
@@ -667,6 +687,7 @@ export function DmView() {
                 </li>
               ))}
             </ul>
+            </>
           )}
         </details>
       </section>

@@ -415,6 +415,8 @@ export const PAGES = {
   '案例库（{n}）· 聊成的会参考': 'Case library ({n}) · successful ones guide suggestions',
   '还没有导入案例。点上面「导入案例」，粘一段真实对话进来。': 'No cases yet. Use “Import case” above to paste a real chat.',
   没写场景: 'No scene',
+  '搜场景、对话内容': 'Search scene or text',
+  这个筛选下没有案例: 'No cases match this filter',
   案例删掉了: 'Case deleted',
   场景改好了: 'Scene updated',
   结果改好了: 'Outcome updated',
