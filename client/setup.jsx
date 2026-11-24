@@ -21,11 +21,14 @@ export function SetupView() {
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const [draft, setDraft] = React.useState('')
+  const [savedAt, setSavedAt] = React.useState('')
 
-  const save = (key, value) => {
+  const markSaved = () => setSavedAt(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }))
+  const save = async (key, value) => {
     const next = String(value ?? '').trim()
     if (next === (positioning[key] ?? '')) return
-    dispatchOps([{ op: 'update_positioning', [key]: next }], { label: t('保存设定'), silent: true })
+    const data = await dispatchOps([{ op: 'update_positioning', [key]: next }], { label: t('保存设定'), silent: true })
+    if (data) markSaved()
   }
 
   const addPain = (event) => {
@@ -36,10 +39,10 @@ export function SetupView() {
       toast(t('这条已经在了'))
       return
     }
-    dispatchOps([{ op: 'set_pain_points', points: [...pains, value] }], { label: t('加一条痛点') })
+    dispatchOps([{ op: 'set_pain_points', points: [...pains, value] }], { label: t('加一条痛点') }).then(data => { if (data) markSaved() })
     setDraft('')
   }
-  const removePain = point => dispatchOps([{ op: 'set_pain_points', points: pains.filter(row => row !== point) }], { label: t('删掉一条痛点') })
+  const removePain = point => dispatchOps([{ op: 'set_pain_points', points: pains.filter(row => row !== point) }], { label: t('删掉一条痛点') }).then(data => { if (data) markSaved() })
 
   return (
     <div className="md-page md-setup">
@@ -48,6 +51,7 @@ export function SetupView() {
           <h1>{t('我的设定')}</h1>
           <p className="md-page-sub">{t('填一次就够了。回私信、做内容、看数据都会照着它来，以后随时能改。')}</p>
         </div>
+        <span className="md-setup-saved">{savedAt ? t('已保存 {time}', { time: savedAt }) : t('改完自动保存')}</span>
       </header>
 
       <section className="md-setup-card">

@@ -10,7 +10,8 @@ import { createTools } from './tools.js'
 import { STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
-import { creativeText, localScript, localTopics, localVariants, normalizeScript, normalizeTopics, normalizeVariants, scriptPrompt, topicsPrompt, variantsPrompt } from './topics.js'
+import { fillTopicAngles, guessTopicAngle, localTopics, localVariants, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
+import { dmPrompt, localDm, normalizeDm } from './dm.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, appendTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, markTopicsPicked, readAccounts, readContent, readLeads, readSettingsMarkdown, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { publicSettings, Settings } from './settings.js'
@@ -249,7 +250,17 @@ async function route(ctx, store, desk, req, res) {
         .sort((a, b) => String(b['创建时间'] || b['日期']).localeCompare(String(a['创建时间'] || a['日期'])))
       const hits = rows.filter(row => row['爆款'] === '是').length
       const sum = key => rows.reduce((total, row) => total + (Number(row[key]) || 0), 0)
-      return json(res, 200, { rows, removed, stats: { count: rows.length, hits, views: sum('播放'), follows: sum('涨粉'), dms: sum('私信') }, lessons: buildLessonBlock(root) })
+      const views = sum('播放')
+      const dms = sum('私信')
+      const added = sum('加微')
+      // 每万播能带来几条私信、私信里有多少能加到微信 —— 比单纯看播放有用
+      const per10k = views ? Math.round((dms / views) * 10000 * 10) / 10 : 0
+      const addRate = dms ? Math.round((added / dms) * 1000) / 10 : 0
+      return json(res, 200, {
+        rows, removed,
+        stats: { count: rows.length, hits, views, follows: sum('涨粉'), dms, added, per10k, addRate },
+        lessons: buildLessonBlock(root),
+      })
     }
     if (path === 'suggest') {
       const state = await store.read()
@@ -350,20 +361,24 @@ async function route(ctx, store, desk, req, res) {
       const count = Math.min(40, Math.max(5, Number(body.count) || 30))
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      let topics = []
+      let entries = []
       let source = 'local'
       try {
         const lessons = buildLessonBlock(root)
         const { text: raw } = await callModel(ctx, { ...topicsPrompt(state, count, lessons), maxTokens: 1600, light: true })
-        topics = normalizeTopics(extractJson(raw), count)
-        if (topics.length) source = 'model'
+        entries = normalizeTopicEntries(extractJson(raw), count)
+        if (entries.length) source = 'model'
       } catch { /* 没模型就用本地模板 */ }
-      if (!topics.length) topics = localTopics(state, count)
+      if (!entries.length) entries = localTopics(state, count).map(text => ({ text, angle: guessTopicAngle(text) }))
+      // 同一意思的去掉，缺哪一类补哪一类，保证四类都在
+      entries = fillTopicAngles(entries, state, count)
+      const topics = entries.map(entry => entry.text)
+      const angles = Object.fromEntries(entries.map(entry => [entry.text, entry.angle]))
       // 记下这一批，后面才能算「哪些选题被勾中」
       const batch = batchId()
       appendTopics(root, batch, topics)
       writeLessonMarkdown(root)
-      return json(res, 200, { topics, source, batch, lessons: buildLessonBlock(root) })
+      return json(res, 200, { topics, angles, source, batch, lessons: buildLessonBlock(root) })
     }
     case 'topics/pick': {
       // 记录勾了哪些选题：这是学习「哪类选题被采纳」的信号
@@ -486,7 +501,7 @@ async function route(ctx, store, desk, req, res) {
     }
     case 'content/create': {
       // 手动补录：以前发过的视频也得能进内容库，不然数据永远只有插件里做的那几条
-      const title = String(body.title ?? '').trim()
+      const title = String(body.title ?? '').trim().slice(0, 120)
       if (!title) return json(res, 400, { error: tr('先写一个标题') })
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       ensureLayout(root)
@@ -526,6 +541,36 @@ async function route(ctx, store, desk, req, res) {
       writeLessonMarkdown(root)
       const fresh = readContent(root).find(item => contentKey(item) === key) ?? row
       return json(res, 200, { row: fresh })
+    }
+    case 'dm/draft': {
+      // 页内分诊：判断是谁、问什么，给两条话术 + 台账字段，不离开页面
+      const raw = String(body.raw ?? '').trim().slice(0, 2000)
+      if (!raw) return json(res, 400, { error: tr('先粘一条私信') })
+      const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const lessons = leadLessons(root).map(row => `- ${row}`).join('\n')
+      let result = null
+      let from = 'local'
+      try {
+        const { text: out } = await callModel(ctx, { ...dmPrompt(state, raw, { lessons, contentLessons: buildLessonBlock(root) }), maxTokens: 1200, light: true })
+        const normalized = normalizeDm(extractJson(out))
+        if (normalized.drafts.length) { result = normalized; from = 'model' }
+      } catch { /* 没模型就本地兜底 */ }
+      if (!result) result = localDm(state, raw)
+      return json(res, 200, { ...result, source: from })
+    }
+    case 'lead/append': {
+      // 话术定了：这一条线索连同话术一起写进 线索表.csv
+      const raw = String(body.raw ?? '').trim().slice(0, 2000)
+      if (!raw) return json(res, 400, { error: tr('私信原文不能为空') })
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      appendLead(root, {
+        raw,
+        name: body.name, grade: body.grade, school: body.school, painPoint: body.painPoint, source: body.source,
+        type: body.type, category: body.category, draft: body.draft, reaction: body.reaction, result: body.result, next: body.next,
+        createdAt: new Date().toISOString(),
+      })
+      return json(res, 200, { leads: readLeads(root), lessons: leadLessons(root) })
     }
     case 'workspace/lead/update': {
       // 家长有反应了：按行号改这一条的「反应 / 结果 / 下一步 / 话术」

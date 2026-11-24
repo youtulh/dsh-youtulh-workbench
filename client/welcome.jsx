@@ -59,6 +59,7 @@ export function WelcomeView() {
   }
 
   const total = leads.length
+  const todo = leads.filter(row => row.next === '待跟进' || row.next === '待加微').length
   const added = leads.filter(row => ['已加微', '已进群', '约了试听'].includes(row.next)).length
   const trials = leads.filter(row => row.next === '约了试听').length
 
@@ -97,6 +98,7 @@ export function WelcomeView() {
         </div>
         <dl>
           <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd></div>
+          <div><dt>{t('待跟进')}</dt><dd>{todo || '—'}</dd></div>
           <div><dt>{t('已加微')}</dt><dd>{added || '—'}</dd></div>
           <div><dt>{t('约试听')}</dt><dd>{trials || '—'}</dd></div>
         </dl>

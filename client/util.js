@@ -223,3 +223,7 @@ export function textLength(text) {
 export const REACTIONS = ['没回', '回了但没继续', '问价格', '问细节', '说要考虑', '已加微', '约了试听', '拒绝', '同行/广告']
 export const RESULTS = ['待定', '加微成功', '失败']
 export const ADOPT_OPTIONS = ['未定', '采用', '放弃']
+// 私信分诊的判断和下一步
+export const LEAD_TYPES = ['家长', '学生本人', '同行', '广告']
+export const LEAD_CATEGORIES = ['A 价格', 'B 能不能提分', 'C 怎么补', 'D 时间形式']
+export const NEXT_OPTIONS = ['待加微', '已加微', '已进群', '约了试听', '待跟进']

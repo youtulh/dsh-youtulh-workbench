@@ -6,7 +6,7 @@ const BASE = 'media-desk/'
 
 // 做内容页面的中间结果：选题、勾选、口播几组、采用标记。
 // 放在全局快照里，切到别的页面再回来不会丢；再存一份 sessionStorage，刷新也能捡回来。
-export const EMPTY_CREATE = { topics: [], picked: {}, groups: [], adopted: {}, batch: '', lessons: '', source: '', examples: [] }
+export const EMPTY_CREATE = { topics: [], angles: {}, picked: {}, groups: [], adopted: {}, batch: '', lessons: '', source: '', examples: [] }
 const CREATE_DRAFT_KEY = 'youtulh:create:v1'
 
 let snapshot = {
@@ -31,8 +31,8 @@ export function patchCreate(patch) {
   const next = { ...snapshot.create, ...(typeof patch === 'function' ? patch(snapshot.create) : patch) }
   setDesk({ create: next })
   try {
-    const { topics, picked, groups, adopted, batch, lessons, source, examples } = next
-    sessionStorage.setItem(CREATE_DRAFT_KEY, JSON.stringify({ topics, picked, groups, adopted, batch, lessons, source, examples }))
+    const { topics, angles, picked, groups, adopted, batch, lessons, source, examples } = next
+    sessionStorage.setItem(CREATE_DRAFT_KEY, JSON.stringify({ topics, angles, picked, groups, adopted, batch, lessons, source, examples }))
   } catch { /* 隐私模式下写不进去就算了 */ }
 }
 
@@ -207,6 +207,16 @@ export async function fetchLeads() {
 export async function fetchLeadsWithLessons() {
   const data = await request('workspace/leads')
   return { leads: data.leads ?? [], lessons: data.lessons ?? [] }
+}
+
+/** 页内分诊：判断 + 两条话术 + 台账字段。 */
+export async function draftDm(raw) {
+  return request('dm/draft', { raw })
+}
+
+/** 话术定了，连同台账一起写进线索表。 */
+export async function appendLeadRow(payload) {
+  return request('lead/append', payload)
 }
 
 /** 家长有反应了：按行号更新那条线索。 */

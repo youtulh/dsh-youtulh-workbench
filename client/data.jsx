@@ -24,6 +24,7 @@ export function DataView() {
   const [busy, setBusy] = React.useState('')
   const [form, setForm] = React.useState(EMPTY_FORM)
   const [adding, setAdding] = React.useState(false)
+  const [filter, setFilter] = React.useState('all')
 
   const load = React.useCallback(() => {
     fetchContent()
@@ -88,6 +89,15 @@ export function DataView() {
 
   const setField = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
 
+  const FILTERS = [
+    { id: 'all', label: t('全部'), test: () => true },
+    { id: 'draft', label: t('未发布'), test: row => row['状态'] !== '已发布' },
+    { id: 'published', label: t('已发布'), test: row => row['状态'] === '已发布' },
+    { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
+  ]
+  const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row))
+  const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
+
   return (
     <div className="md-page md-data">
       <header className="md-page-head">
@@ -106,6 +116,9 @@ export function DataView() {
         <div><b>{stats.hits ?? 0}</b><span>{t('条爆款')}</span></div>
         <div><b>{stats.follows || '—'}</b><span>{t('总涨粉')}</span></div>
         <div><b>{stats.dms || '—'}</b><span>{t('总私信')}</span></div>
+        <div><b>{stats.added || '—'}</b><span>{t('总加微')}</span></div>
+        <div><b>{stats.per10k ? stats.per10k : '—'}</b><span>{t('每万播私信')}</span></div>
+        <div><b>{stats.addRate ? `${stats.addRate}%` : '—'}</b><span>{t('私信→加微')}</span></div>
       </section>
 
       {lessons ? (
@@ -171,8 +184,20 @@ export function DataView() {
       ) : null}
 
       {rows?.length ? (
+        <div className="md-content-tabs">
+          {FILTERS.map(item => (
+            <button type="button" key={item.id} className={filter === item.id ? 'is-on' : ''} onClick={() => setFilter(item.id)}>
+              {item.label}<em>{countOf(item.id)}</em>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {rows?.length && !list.length ? <p className="md-muted">{t('这个筛选下没有内容。')}</p> : null}
+
+      {list.length ? (
         <ul className="md-content-list">
-          {rows.map(row => (
+          {list.map(row => (
             <li className="md-content-card" key={rowKey(row)}>
               <header className="md-card-head">
                 <h3>{row['标题']}</h3>
@@ -184,7 +209,7 @@ export function DataView() {
               {row['状态'] === '已发布' ? (
                 <>
                   <div className="md-card-metrics">
-                    {['播放', '涨粉', '私信'].map(key => (
+                    {['播放', '涨粉', '私信', '加微'].map(key => (
                       <label key={key}>
                         <span>{t(key)}</span>
                         <input

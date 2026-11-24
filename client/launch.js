@@ -55,6 +55,7 @@ export function buildPrompt(kind, payload = {}) {
       '话术要贴着我的设定写：只说我在教的科目、年级、城市范围内的事，碰到「不做」的范围就礼貌收住。',
       '',
       '口气照「说话样本.md」来（先读它）：用「您」直接对家长说，一句一个意思、平均 20 到 25 字，多用「其实、所以、但是、你看」这类口语连接词；不喊口号、不堆排比、不用「首先其次总之」、不用「赋能闭环底层逻辑」。',
+      payload.drafts?.length ? `\n现在页面上已经有两版草稿，接着改就行，不用从零写：\n${payload.drafts.map((row, index) => `${index + 1}. ${row}`).join('\n')}` : '',
       payload.lessons?.length ? `\n以前成功加到微信的例子（照着这种感觉写）：\n${payload.lessons.map(row => `- ${row}`).join('\n')}` : '',
       payload.contentLessons ? `\n${payload.contentLessons}` : '',
       '',
@@ -63,7 +64,7 @@ export function buildPrompt(kind, payload = {}) {
       '',
       RED_LINE,
       '',
-      '做完以后调用 youtulh_save_output（kind=dm）把话术落盘，再调用 youtulh_append_lead 把台账追加进线索表。',
+      '这是深聊，不要自己往线索表追加：等我说「记下来」再调用 youtulh_append_lead；要落盘再用 youtulh_save_output（kind=dm）。',
     ].join('\n')
   }
 

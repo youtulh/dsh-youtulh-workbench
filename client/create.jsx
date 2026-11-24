@@ -30,7 +30,7 @@ export function CreateView() {
   const create = useDesk(s => s.create)
   const modelOk = useDesk(s => s.modelOk)
   const modelError = useDesk(s => s.modelError)
-  const { topics, picked, groups, adopted, batch, lessons, source, examples } = create
+  const { topics, angles, picked, groups, adopted, batch, lessons, source, examples } = create
   const [busy, setBusy] = React.useState('')
 
   // 刷新页面后把上一次的选题和口播捡回来
@@ -48,7 +48,7 @@ export function CreateView() {
     try {
       const data = await post('topics', { count: TOPIC_COUNT })
       patchCreate({
-        topics: data.topics ?? [], batch: data.batch ?? '', lessons: data.lessons ?? '',
+        topics: data.topics ?? [], angles: data.angles ?? {}, batch: data.batch ?? '', lessons: data.lessons ?? '',
         source: data.source ?? '', picked: {}, groups: [], adopted: {},
       })
     } catch (err) { toast(err.message, { error: true }) }
@@ -140,7 +140,7 @@ export function CreateView() {
         <div className="md-create-pains">
           <span>{t('没方向就点一条：')}</span>
           {examples.slice(0, 4).map(example => (
-            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], picked: { [example]: true }, groups: [], adopted: {} })}>{example}</button>
+            <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], angles: {}, picked: { [example]: true }, groups: [], adopted: {} })}>{example}</button>
           ))}
         </div>
       ) : null}
@@ -175,7 +175,8 @@ export function CreateView() {
             {topics.map(topic => (
               <li key={topic}>
                 <button type="button" className={`md-topic ${picked[topic] ? 'is-on' : ''}`} onClick={() => patchCreate(state => ({ picked: { ...state.picked, [topic]: !state.picked[topic] } }))}>
-                  <span className="md-topic-dot" aria-hidden="true" />{topic}
+                  <span className="md-topic-dot" aria-hidden="true" /><span className="md-topic-text">{topic}</span>
+                  {angles?.[topic] ? <em className="md-topic-angle">{angles[topic]}</em> : null}
                 </button>
               </li>
             ))}

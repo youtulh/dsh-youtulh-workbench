@@ -42,9 +42,11 @@ ${settingBlock(state)}${pains.length ? `\n家长常愁的（都要用上，别�
 - 不重复、不换皮同一个意思${lessons}
 - 红线：${RED_LINES.slice(0, 2).join('；')}；不报价
 
-出完自己检查一遍：把「换成任何科目、任何年级都成立」的题删掉重写；凑够 ${count} 条再输出。
+出完自己检查一遍：把「换成任何科目、任何年级都成立」的题删掉重写；同一个意思只留一条；凑够 ${count} 条再输出。
 
-只输出 JSON：{"topics":["…","…"]}`
+每条选题都要标一个 angle，只能是这四个之一：知识点 / 家庭 / 考情 / 本地。
+
+只输出 JSON：{"topics":[{"text":"一句话选题","angle":"知识点"}]}`
   return { system, user: `请给出 ${count} 个选题。` }
 }
 
@@ -94,8 +96,8 @@ const EXAM_FRAMES = [
 
 const localExam = (who) => EXAM_FRAMES.map(frame => frame.replaceAll('{who}', who))
 
-/** 没有模型时的选题：按 3:3:3:1 配额拼，凑够 count 条。 */
-export function localTopics(state, count = 10) {
+/** 四类选题池：知识点 / 家庭 / 考情 / 本地。本地没有（纯线上）就是空数组。 */
+export function localTopicPools(state) {
   const p = state?.positioning ?? {}
   const who = `${text(p.grade, 10)}${text(p.subject, 10)}`.trim() || tr('这门课')
   const city = text(p.city, 12)
@@ -114,7 +116,12 @@ export function localTopics(state, count = 10) {
   const local = /线上|全国|网课/.test(city) || !city
     ? []
     : [`${city}的${text(p.grade, 8)}家长，最常问我的三个问题`, `${city}${text(p.subject, 8)}，学校讲到哪了`, `${city}中考分数线，家长容易看错哪个数`]
+  return { 知识点: subject, 家庭: family, 考情: exam, 本地: local }
+}
 
+/** 没有模型时的选题：按 3:3:3:1 配额拼，凑够 count 条。 */
+export function localTopics(state, count = 10) {
+  const { 知识点: subject, 家庭: family, 考情: exam, 本地: local } = localTopicPools(state)
   const quota = [Math.round(count * 0.3), Math.round(count * 0.3), Math.round(count * 0.3), Math.max(1, count - Math.round(count * 0.9))]
   const pick = (list, n) => list.slice(0, n)
   const out = [...pick(subject, quota[0]), ...pick(family, quota[1]), ...pick(exam, quota[2]), ...pick(local, quota[3])]
@@ -122,6 +129,88 @@ export function localTopics(state, count = 10) {
   for (const title of [...subject, ...family, ...exam, ...local]) {
     if (out.length >= count) break
     if (!out.includes(title)) out.push(title)
+  }
+  return out.slice(0, count)
+}
+
+// ---- 选题的角度与去重 ----
+// 模型经常把同一句话说三遍（换皮），也经常把四类写成一样多。这两件事在这里兜底。
+
+export const TOPIC_ANGLES = ['知识点', '家庭', '考情', '本地']
+const ANGLE_ALIAS = {
+  知识点: '知识点', 学科: '知识点', 方法: '知识点', 干货: '知识点',
+  家庭: '家庭', 习惯: '家庭', 亲子: '家庭', 沟通: '家庭',
+  考情: '考情', 考试: '考情', 分数: '考情',
+  本地: '本地', 同城: '本地', 地区: '本地',
+}
+
+function angleOf(value) {
+  const key = String(value ?? '').trim()
+  return ANGLE_ALIAS[key] ?? ''
+}
+
+/** 按字面猜一下角度（模型没给的时候用）。 */
+export function guessTopicAngle(title) {
+  const row = String(title ?? '')
+  if (/手机|写作业|拖拉|沟通|吵架|不想学|躺平|叛逆|盯着|放手|家里/.test(row)) return '家庭'
+  if (/期中|期末|一模|二模|中考|高考|分数线|志愿|命题|考试|分数出来/.test(row)) return '考情'
+  return '知识点'
+}
+
+const bigrams = (value) => {
+  const chars = String(value ?? '').replace(/[^\u4e00-\u9fa5a-z0-9]/gi, '')
+  const out = new Set()
+  for (let i = 0; i < chars.length - 1; i++) out.add(chars.slice(i, i + 2))
+  return out
+}
+
+/** 两条选题是不是同一个意思（2-gram 重叠超过 0.6 就算换皮）。 */
+export function similarTopic(a, b) {
+  const left = bigrams(a)
+  const right = bigrams(b)
+  if (!left.size || !right.size) return String(a).trim() === String(b).trim()
+  let overlap = 0
+  for (const gram of left) if (right.has(gram)) overlap++
+  return overlap / (left.size + right.size - overlap) > 0.6
+}
+
+/**
+ * 模型的选题输出归一化：兼容纯字符串和 {text, angle}，
+ * 同一意思的只留第一条，角度按模型给的或字面猜。
+ */
+export function normalizeTopicEntries(json, max = 40) {
+  const raw = Array.isArray(json?.topics) ? json.topics : []
+  const out = []
+  for (const row of raw) {
+    const value = typeof row === 'string' ? row : (row && typeof row === 'object' ? row.text : '')
+    const title = text(value, 40)
+    if (!title) continue
+    if (out.some(item => item.text === title || similarTopic(item.text, title))) continue
+    const angle = (row && typeof row === 'object' ? angleOf(row.angle) : '') || guessTopicAngle(title)
+    out.push({ text: title, angle })
+  }
+  return out.slice(0, max)
+}
+
+/** 缺哪一类就从本地池里补，保证四类都有，最后凑够 count 条。 */
+export function fillTopicAngles(entries, state, count = 10) {
+  const pools = localTopicPools(state)
+  const out = entries.slice(0, count)
+  const has = title => out.some(item => item.text === title || similarTopic(item.text, title))
+  const target = Math.max(1, Math.round(count * 0.2))
+  for (const angle of TOPIC_ANGLES) {
+    let filled = out.filter(item => item.angle === angle).length
+    for (const title of pools[angle] ?? []) {
+      if (filled >= target || out.length >= count) break
+      if (has(title)) continue
+      out.push({ text: title, angle })
+      filled++
+    }
+  }
+  for (const title of TOPIC_ANGLES.flatMap(angle => pools[angle] ?? [])) {
+    if (out.length >= count) break
+    if (has(title)) continue
+    out.push({ text: title, angle: guessTopicAngle(title) })
   }
   return out.slice(0, count)
 }

@@ -129,3 +129,33 @@ test('一个选题出三个版本：标题和开头各不相同，本地兜底�
   assert.equal(normalized.length, 3)
   assert.deepEqual(normalized.map(item => item.title), ['a', 'b', 'c'])
 })
+
+test('选题去重与配比：换皮的去掉，缺的类补上，四类都要有', async () => {
+  const { normalizeTopicEntries, fillTopicAngles, similarTopic } = await import('../src/topics.js')
+
+  // 两句只差一个字，算换皮
+  assert.equal(similarTopic('高二物理听不懂，先看受力分析', '高二物理听不懂，先看受力分析题'), true)
+  assert.equal(similarTopic('孩子一写作业就看手机', '期中物理掉到及格线'), false)
+
+  const entries = normalizeTopicEntries({ topics: [
+    { text: '高二物理听不懂，先看受力分析', angle: '知识点' },
+    { text: '高二物理听不懂，先看受力分析题', angle: '知识点' },
+    '孩子一写作业就看手机',
+    { text: '期中物理掉到及格线', angle: '考情' },
+  ] }, 10)
+  assert.equal(entries.length, 3)
+  assert.equal(entries.find(row => row.text === '孩子一写作业就看手机').angle, '家庭')
+
+  const filled = fillTopicAngles(entries, state, 10)
+  assert.equal(filled.length, 10)
+  const angles = new Set(filled.map(row => row.angle))
+  for (const angle of ['知识点', '家庭', '考情', '本地']) assert.ok(angles.has(angle), angle)
+  assert.equal(new Set(filled.map(row => row.text)).size, 10)
+})
+
+test('选题 prompt 要求每条带角度，只有四种角度', () => {
+  const { system } = topicsPrompt(state, 10)
+  assert.match(system, /angle/)
+  assert.match(system, /知识点 \/ 家庭 \/ 考情 \/ 本地/)
+  assert.match(system, /同一个意思只留一条/)
+})
