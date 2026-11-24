@@ -149,7 +149,7 @@ test('Store 持久化、撤销，并能感知另一进程的写入', async () =>
     await b.mutate('b', s => applyOps(s, [{ op: 'add_item', title: '来自桌面端' }]))
     assert.equal((await a.read()).items[0].title, '来自桌面端')
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -213,7 +213,7 @@ test('exportSkill 不导出示例规则和示例人物', async () => {
     assert.doesNotMatch(body, /开头先给数字/)
     assert.doesNotMatch(body, /想入门的小林/)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -296,7 +296,7 @@ test('Settings 权限 600，密钥不外泄，空密钥不覆盖', async () => {
     await settings.update({ image: { clearKey: true } })
     assert.equal(publicSettings(await settings.read()).imageReady, false)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -436,7 +436,7 @@ test('Producer 跑完整条线：文章、规划、全部图片，语气进入�
     assert.ok(isPlan(systems[0]))
     assert.equal((await stat(join(dir, 'files', p.cover.src.split('/').pop()))).size, PNG.length)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -470,7 +470,7 @@ test('Producer 关闭生图时只写文字，资产全部 skipped，之后可以
     assert.equal(p.cover.status, 'done')
     assert.equal(generated, 1)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -497,7 +497,7 @@ test('设置里的默认生图开关生效，单次选择可以覆盖', async ()
     assert.equal(p.withImages, true)
     assert.ok(generated > 0)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -512,7 +512,7 @@ test('Producer 模型漏掉分镜时用模板补齐', async () => {
     assert.equal(p.shots.length, 2)
     assert.deepEqual(p.shots.map(s => s.no), [1, 2])
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -551,7 +551,7 @@ test('Producer 文章和图片同时开工，策划案流式露出标题和分�
     assert.equal(p.article, '正文')
     assert.equal(p.title, '最终标题')
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -578,7 +578,7 @@ test('Producer 一张图失败不影响其他，可以单独重画', async () =>
     assert.equal(p.shots[0].status, 'done')
     await assert.rejects(producer.regenerate('seed_2', '../x'), /目标无效/)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -597,7 +597,7 @@ test('Producer 没接生图时只出文字和分镜文案，没有模型时给�
     assert.equal(p.cover.status, 'skipped')
     assert.equal(p.shots.length, 2)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -616,7 +616,7 @@ test('Producer 可以取消，重启后卡住的任务会被标记为中断', as
     assert.equal(p.status, 'failed')
     assert.equal(p.cover.status, 'idle')
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -692,7 +692,7 @@ test('saveProduction 写出文章、脚本和素材，标题里的路径字符�
     p.savedPath = saved.path
     assert.equal((await saveProduction({ ...p, title: '改名了' }, { filesDir, exportDir: join(dir, 'out') })).path, saved.path)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -836,7 +836,7 @@ test('Monid：从 .cmd shim 找到真正的 CLI 入口（含转发壳）', async
     assert.equal(await resolveMonidEntry(forwarder), entry)
     assert.equal(await resolveMonidEntry(join(dir, 'no-such-dir', 'missing.cmd')), null)
   } finally {
-    await rm(dir, { recursive: true, force: true })
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -979,7 +979,7 @@ test('Monid：封面存到本地，内网地址、非图片和已有封面都跳
   assert.match(saved.get('ok'), /^media-desk\/files\/c_[\w]+\.png$/)
   assert.equal(requested.some(url => url.includes('127.0.0.1') || url.includes('known')), false)
   assert.equal((await readdir(dir)).length, 1)
-  await rm(dir, { recursive: true })
+  await rm(dir, { recursive: true, maxRetries: 10, retryDelay: 50 })
 })
 
 test('排期：排上日历就是待发布，取消排期退回草稿，已发布不动', () => {
@@ -1018,7 +1018,7 @@ test('生图被限流（429）时会等一会儿再试，最多三次', async ()
     assert.equal(p.shots[0].status, 'done')
     assert.ok(p.shots.every(row => row.status === 'done'))
   } finally {
-    await rm(dir, { recursive: true })
+    await rm(dir, { recursive: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
@@ -1067,7 +1067,7 @@ test('撤销只撤回那一步：之后生成的成稿和画好的图不受影�
 
     assert.deepEqual(revertChange({ a: 1 }, { a: 2 }, { a: 3 }), { a: 3 }, '之后又被改过就保留现在的值')
   } finally {
-    await rm(dir, { recursive: true })
+    await rm(dir, { recursive: true, maxRetries: 10, retryDelay: 50 })
   }
 })
 
