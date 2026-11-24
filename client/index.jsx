@@ -18,12 +18,12 @@ const PANEL_ID = 'media-desk'
 
 // navKey：同一个中文在别处意思不同（单数的“灵感”“风格”），英文导航另查一条
 const NAV = [
-  { id: 'home', label: '首页' },
-  { id: 'dm', label: '回私信' },
-  { id: 'content', label: '做内容' },
-  { id: 'data', label: '看数据' },
-  { id: 'works', label: '我的产出' },
-  { id: 'setup', label: '我的设定' },
+  { id: 'home', label: '首页', icon: 'wall' },
+  { id: 'dm', label: '回私信', icon: 'chat' },
+  { id: 'content', label: '做内容', icon: 'pen' },
+  { id: 'data', label: '看数据', icon: 'list' },
+  { id: 'works', label: '我的产出', icon: 'folder' },
+  { id: 'setup', label: '我的设定', icon: 'user' },
 ]
 
 const VIEWS = { home: WelcomeView, dm: DmView, content: CreateView, data: DataView, works: WorksView, setup: SetupView }
@@ -98,6 +98,30 @@ function Desk() {
     <div className={`md-root ${narrow ? 'is-narrow' : ''} ${width < 780 ? 'is-compact' : ''} ${showDock ? 'has-dock' : ''}`} ref={rootRef}>
       <style>{css}</style>
       <div className="md-ambient" aria-hidden="true"><i /><i /><i /></div>
+      <aside className="md-rail">
+        <div className="md-brand">
+          <span className="md-brand-mark"><Icon name="scatter" size={15} /></span>
+          <span className="md-brand-text"><b>Youtulh</b><small>{t('工作台')}</small></span>
+        </div>
+        <nav className="md-rail-nav" aria-label={t('推流工具导航')}>
+          {NAV.map(entry => (
+            <button
+              type="button"
+              key={entry.id}
+              className={view === entry.id ? 'is-on' : ''}
+              aria-current={view === entry.id ? 'page' : undefined}
+              onClick={() => setDesk({ view: entry.id, focusId: null })}
+            >
+              <Icon name={entry.icon} size={15} />
+              <span>{entry.navKey && lang() === 'en' ? t(entry.navKey) : t(entry.label)}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="md-rail-foot">
+          {ready ? <SampleBadge /> : null}
+          {ready ? <UpdateBadge /> : null}
+        </div>
+      </aside>
       <div className="md-main">
         <header className="md-topbar" data-window-drag="">
           <nav className="md-nav" aria-label={t('推流工具导航')}>
@@ -106,9 +130,7 @@ function Desk() {
             ))}
           </nav>
           <span style={{ flex: 1 }} />
-          {ready ? <SampleBadge /> : null}
           {canUndo ? <IconButton icon="undo" label={t('撤销上一步')} onClick={undo} /> : null}
-          {ready ? <UpdateBadge /> : null}
           <IconButton icon="gear" label={t('设置')} onClick={() => setDesk({ settingsOpen: true })} />
         </header>
         <main className="md-content" key={view}>
