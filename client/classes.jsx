@@ -136,7 +136,8 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
     }
     setDraft(next)
     const first = lessons.find(row => row.no === no)
-    if (first?.date) setDate(first.date)
+    // 记过的课带出原来的日期；没记过的默认今天，别沿用上一节的日期
+    setDate(first?.date || dayKey(new Date()))
   }, [lessons, no, rosterKey])
 
   const progress = (student) => {
