@@ -193,6 +193,8 @@ export const PAGES = {
   博主类型: 'Creator type',
   全部: 'All',
   该跟进: 'Due now',
+  明天再跟: 'Follow up tomorrow',
+  '下次跟进顺延到 {date}': 'Next follow-up moved to {date}',
   '删掉这条案例？以后给建议就不会再参考它。': 'Delete this case? Future suggestions will stop using it.',
   写作规则: 'Writing rules',
   每种风格都会遵守: 'Applied to every style',

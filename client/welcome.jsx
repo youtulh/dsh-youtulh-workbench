@@ -3,6 +3,7 @@ import React from 'react'
 import { dispatchOps, fetchLeads, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { diagnosePositioning, positioningSentence, suggestTargets } from '../src/targets.js'
+import { dayKey } from './util.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
 
@@ -93,6 +94,7 @@ export function WelcomeView() {
   const todo = leads.filter(row => row.stage === '私信').length
   const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
   const trials = leads.filter(row => row.stage === '约试听').length
+  const due = leads.filter(row => row.nextAt && row.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(row.stage)).length
 
   return (
     <div className="md-page md-welcome md-workflow">
@@ -158,6 +160,7 @@ export function WelcomeView() {
         <dl>
           <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd></div>
           <div><dt>{t('待跟进')}</dt><dd>{todo || '—'}</dd></div>
+          <div><dt>{t('该跟进')}</dt><dd>{due || '—'}</dd></div>
           <div><dt>{t('已加微')}</dt><dd>{added || '—'}</dd></div>
           <div><dt>{t('约试听')}</dt><dd>{trials || '—'}</dd></div>
         </dl>

@@ -165,6 +165,13 @@ export function DmView() {
     finally { setReviseBusy(false) }
   }
 
+  const postpone = (lead, days) => {
+    const at = new Date(Date.now() + days * 86400000)
+    updateLead(lead.rowIndex, { nextAt: dayKey(at) })
+      .then(data => { if (data.leads) setLeads(data.leads); toast(t('下次跟进顺延到 {date}', { date: dayKey(at) })) })
+      .catch(err => toast(err.message, { error: true }))
+  }
+
   const mark = async (lead, patch) => {
     try {
       const data = await updateLead(lead.rowIndex, patch)
@@ -492,6 +499,7 @@ export function DmView() {
                       .then(data => { if (data.leads) setLeads(data.leads); toast(t('跟进记了一次')) })
                       .catch(err => toast(err.message, { error: true }))
                   }}>{t('记一次跟进')}</button>
+                  <button type="button" className="md-inline-link" onClick={() => postpone(lead, 1)}>{t('明天再跟')}</button>
                 </div>
                 {openDraft === lead.rowIndex ? (
                   <div className="md-lead-draft">
