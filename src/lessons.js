@@ -106,6 +106,9 @@ export function buildLessonBlock(root, limit = 3) {
       lines.push(`- ${bits.join('，')}`)
     }
   }
+  // 你自己标了「采用」的内容，比任何规则都准
+  const adopted = readContent(root).filter(row => row['采用'] === '采用').slice(0, 3).map(row => `「${row['标题']}」`)
+  if (adopted.length) lines.push(`你标过「采用」的：${adopted.join('、')}`)
   if (themes.length) lines.push(`被采纳最多的选题方向：${themes.map(item => item.word).join('、')}`)
   if (dms.length) lines.push(`加到微信的话术：${dms.map(row => row.slice(0, 60)).join('；')}`)
   return lines.join('\n').slice(0, 900)

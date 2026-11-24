@@ -101,45 +101,39 @@ export function DataView() {
       ) : null}
 
       {rows?.length ? (
-        <div className="md-i-table">
-          <table className="md-table is-plain md-content-table">
-            <thead>
-              <tr>
-                <th>{t('标题')}</th>
-                <th>{t('采用')}</th>
-                <th>{t('播放')}</th>
-                <th>{t('涨粉')}</th>
-                <th>{t('私信')}</th>
-                <th>{t('分数')}</th>
-                <th>{t('爆款')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(row => (
-                <tr key={row['目录'] || row['标题']}>
-                  <td className="md-content-title">{row['标题']}<small>{row['选题']}</small></td>
-                  <td>
-                    <select value={row['采用'] || '未定'} onChange={event => patch(row, '采用', event.target.value)}>
-                      {ADOPT_OPTIONS.map(option => <option key={option} value={option}>{t(option)}</option>)}
-                    </select>
-                  </td>
-                  {['播放', '涨粉', '私信'].map(key => (
-                    <td key={key} className="is-num">
-                      <input
-                        className="md-cell-input"
-                        defaultValue={row[key] ?? ''}
-                        placeholder="—"
-                        onBlur={event => { if (event.target.value !== (row[key] ?? '')) patch(row, key, event.target.value) }}
-                      />
-                    </td>
-                  ))}
-                  <td className="is-num">{row['分数'] || '—'}</td>
-                  <td>{row['爆款'] === '是' ? <b className="md-hit">{t('爆款')}</b> : row['爆款'] === '否' ? <span className="md-muted">{t('否')}</span> : <span className="md-muted">—</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="md-content-list">
+          {rows.map(row => (
+            <li className="md-content-card" key={row['目录'] || row['标题']}>
+              <header className="md-card-head">
+                <h3>{row['标题']}</h3>
+                {row['爆款'] === '是' ? <b className="md-hit">{t('爆款')}</b> : null}
+                <span className="md-grow" />
+                <span className="md-card-score" title={t('分数')}>{row['分数'] || '—'}</span>
+              </header>
+              {row['选题'] ? <p className="md-card-topic">{row['选题']}</p> : null}
+              <div className="md-card-metrics">
+                {['播放', '涨粉', '私信'].map(key => (
+                  <label key={key}>
+                    <span>{t(key)}</span>
+                    <input
+                      defaultValue={row[key] ?? ''}
+                      placeholder="—"
+                      inputMode="numeric"
+                      onBlur={event => { if (event.target.value !== (row[key] ?? '')) patch(row, key, event.target.value) }}
+                    />
+                  </label>
+                ))}
+              </div>
+              <footer className="md-card-foot">
+                <select value={row['采用'] || '未定'} onChange={event => patch(row, '采用', event.target.value)}>
+                  {ADOPT_OPTIONS.map(option => <option key={option} value={option}>{t(option)}</option>)}
+                </select>
+                <span className="md-grow" />
+                {row['目录'] ? <button type="button" className="md-inline-link" onClick={() => revealDir(row['目录']).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button> : null}
+              </footer>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: '~/Documents/Youtulh 工作台' })}</p>

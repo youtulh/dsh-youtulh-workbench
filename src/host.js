@@ -327,7 +327,7 @@ async function route(ctx, store, desk, req, res) {
       const batch = batchId()
       appendTopics(root, batch, topics)
       writeLessonMarkdown(root)
-      return json(res, 200, { topics, source, batch })
+      return json(res, 200, { topics, source, batch, lessons: buildLessonBlock(root) })
     }
     case 'topics/pick': {
       // 记录勾了哪些选题：这是学习「哪类选题被采纳」的信号

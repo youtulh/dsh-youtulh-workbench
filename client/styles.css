@@ -1315,3 +1315,34 @@ body[data-ds-dark-theme] .md-root {
   .md-nav { overflow-x: auto; scrollbar-width: none; }
   .md-nav::-webkit-scrollbar { display: none; }
 }
+
+/* 内容库卡片：一行一条，指标就地改 */
+.md-content-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.md-content-card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: inset 0 0 0 .5px var(--hairline), var(--shadow-1);
+  transition: transform .3s var(--ease), box-shadow .3s var(--ease);
+}
+.md-content-card:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 .5px var(--hairline), var(--shadow-2); }
+.md-card-head { display: flex; align-items: flex-start; gap: 8px; }
+.md-root .md-card-head h3 { font-size: 14.5px; line-height: 22px; font-weight: 500; letter-spacing: -.01em; }
+.md-card-score { font-family: var(--display); font-size: 22px; line-height: 26px; color: var(--ink3); font-variant-numeric: tabular-nums; }
+.md-card-topic { color: var(--ink3); font-size: 12px; line-height: 18px; }
+.md-card-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.md-card-metrics label { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; background: color-mix(in srgb, var(--bg) 60%, transparent); box-shadow: inset 0 0 0 .5px var(--hairline); }
+.md-card-metrics span { color: var(--ink3); font-size: 11.5px; }
+.md-card-metrics input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; }
+.md-card-metrics input:focus { color: var(--accent); }
+.md-card-foot { display: flex; align-items: center; gap: 10px; }
+.md-card-foot select { padding: 3px 8px; border: .5px solid var(--line); border-radius: 7px; background: transparent; color: var(--ink2); font: inherit; font-size: 12px; }
+
+@media (max-width: 720px) { .md-content-list { grid-template-columns: minmax(0, 1fr); } }
+
+.md-lessons-inline summary { cursor: pointer; color: var(--accent); font-size: 12.5px; list-style: none; }
+.md-lessons-inline summary::-webkit-details-marker { display: none; }
+.md-lessons-inline summary::before { content: '›'; display: inline-block; margin-right: 6px; transition: transform .2s; }
+.md-lessons-inline[open] summary::before { transform: rotate(90deg); }
+.md-lessons-inline pre { margin-top: 8px; }

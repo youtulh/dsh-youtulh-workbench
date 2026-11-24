@@ -30,6 +30,7 @@ export function CreateView() {
   const [busy, setBusy] = React.useState('')
   const [saving, setSaving] = React.useState('')
   const [batch, setBatch] = React.useState('')
+  const [lessons, setLessons] = React.useState('')
   const [adopted, setAdopted] = React.useState({})
 
   React.useEffect(() => {
@@ -44,6 +45,7 @@ export function CreateView() {
       const data = await post('topics', { count: 30 })
       setTopics(data.topics ?? [])
       setBatch(data.batch ?? '')
+      setLessons(data.lessons ?? '')
       setPicked({})
       setScripts([])
       setAdopted({})
@@ -90,6 +92,13 @@ export function CreateView() {
           {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         </div>
       </header>
+
+      {lessons ? (
+        <details className="md-lessons md-lessons-inline">
+          <summary>{t('这一批参考了你的历史结果')}</summary>
+          <pre className="md-lessons-pre">{lessons.trim()}</pre>
+        </details>
+      ) : null}
 
       {examples.length ? (
         <div className="md-create-pains">

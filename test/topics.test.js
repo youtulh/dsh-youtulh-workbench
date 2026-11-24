@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { localScript, localTopics, normalizeScript, normalizeTopics } from '../src/topics.js'
+import { localScript, localTopics, normalizeScript, normalizeTopics, topicsPrompt } from '../src/topics.js'
 
 const state = { positioning: { subject: '化学', grade: '高一', city: '北京' }, painPoints: ['期中 58 分还能补吗', '物质的量听不懂', '上课听懂了做题就废'] }
 
@@ -101,4 +101,13 @@ test('课程要求：选题按 3:3:3:1、口播带八条红线、同城要带地
   assert.equal(list.length, 30)
   assert.ok(list.some(row => row.includes('写作业') || row.includes('手机')))
   assert.ok(list.some(row => row.includes('期中') || row.includes('一模') || row.includes('志愿')))
+})
+
+test('选题规则：五类家长、选题公式、反例、自检都写进 prompt', () => {
+  const { system } = topicsPrompt(state, 30)
+  assert.match(system, /差生家长/)
+  assert.match(system, /偏科生家长/)
+  assert.match(system, /选题公式/)
+  assert.match(system, /如何提高化学成绩/)
+  assert.match(system, /换成任何科目、任何年级都成立/)
 })
