@@ -53,7 +53,7 @@ export function StudentsView() {
         </button>
       </header>
 
-      {students ? (
+      {students && (students.length > 0 || classes.length > 0) ? (
         <section className="md-student-summary">
           <div><b>{classes.length}</b><span>{t('个班')}</span></div>
           <div><b>{students.length}</b><span>{t('个学生')}</span></div>
@@ -188,7 +188,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
               {openStudent === `${student.name}-${student.grade}` ? (
                 <ul className="md-student-records">
                   {lessons.filter(row => row.name === student.name && (!student.className || row.className === student.className))
-                    .sort((a, b) => a.no - b.no)
+                    .sort((a, b) => String(a.className).localeCompare(String(b.className)) || a.no - b.no)
                     .map(row => (
                       <li key={`${row.className}-${row.no}`}>
                         <span className="md-muted">{row.className}</span>
