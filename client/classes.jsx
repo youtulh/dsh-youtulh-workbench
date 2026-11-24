@@ -25,6 +25,14 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
   useLang()
   const [selected, setSelected] = React.useState('')
   const [showEnded, setShowEnded] = React.useState(false)
+  const duplicateClasses = (() => {
+    const groups = new Map()
+    for (const row of classes) {
+      const key = row.name.replace(/\s+/g, '').toLowerCase()
+      groups.set(key, [...(groups.get(key) ?? []), row.name])
+    }
+    return [...groups.values()].filter(names => names.length > 1)
+  })()
   const klass = classes.find(row => row.name === selected)
 
   const createClass = () => setDesk({
@@ -60,6 +68,9 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
           ) : null}
           <button type="button" className="md-pill is-small is-primary" onClick={createClass}><Icon name="plus" size={13} />{t('建班')}</button>
         </div>
+        {duplicateClasses.length ? (
+          <p className="md-muted md-class-dupe">{t('这些班只差空格或大小写，可能是重复班：{names}', { names: duplicateClasses.map(names => names.join(' / ')).join('；') })}</p>
+        ) : null}
         {classes.length === 0 ? (
           <div className="md-works-empty">
             <p>{t('还没有班。建一个班，把学生加进来，再记每次课。')}</p>
@@ -81,6 +92,10 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
                     <span className="md-class-meta">
                       <span>{t('{n} 人', { n: roster.length })}</span>
                       <span>{done ? t('已上 {done}/{total} 次', { done, total: row.total }) : t('共 {n} 次课', { n: row.total })}</span>
+                      {(() => {
+                        const last = lessons.filter(item => item.className === row.name).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]
+                        return <span>{last?.date ? t('最近一次课：{date}', { date: last.date }) : t('还没记过课')}</span>
+                      })()}
                     </span>
                     {row.layers.length ? <span className="md-layer-chips">{row.layers.map(layer => <em key={layer}>{layer}</em>)}</span> : null}
                   </button>
