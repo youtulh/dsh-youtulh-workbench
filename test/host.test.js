@@ -347,14 +347,15 @@ test('条目能记卡点和拍摄进度，乱写的阶段被丢掉', () => {
   assert.equal(item.stage, 'published')
 })
 
-test('定位卡和卡点会进成稿的策划案 prompt，成稿要守这四条', () => {
-  const state = { items: [], skills: [], styles: [], people: [], angles: [], positioning: { only: '北京、高一、化学', notDo: '高二高三、外地' }, painPoints: [] }
+test('我的设定（教什么、边界）和家长痛点都会进成稿的策划案 prompt', () => {
+  const state = { items: [], skills: [], styles: [], people: [], angles: [], positioning: { subject: '高中化学', grade: '高一', city: '北京', only: '开学后掉队', notDo: '高二高三、外地' }, painPoints: ['期中 58 分还能补吗'] }
   const item = { id: 'x', title: '期中 58 分还能补吗', tags: [], painPoint: '物质的量' }
   const { system, user } = planPrompts(state, item, { imageCount: 1, shotCount: 2, voice: '' })
-  assert.match(system, /定位卡/)
-  assert.match(system, /北京、高一、化学/)
+  assert.match(system, /我的设定/)
+  assert.match(system, /高中化学 · 高一 · 北京/)
   assert.match(system, /高二高三、外地/)
   assert.match(user, /物质的量/)
+  assert.match(user, /期中 58 分还能补吗/)
 })
 
 async function producerFixture({ callText, generate, ready = true }) {

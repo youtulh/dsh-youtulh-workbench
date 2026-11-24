@@ -115,7 +115,8 @@ export function migrateState(state) {
   // 加入英文之前的数据都是中文示例
   if (state.sampleLang === undefined) state.sampleLang = 'zh'
   // 定位卡和卡点清单是后加的，老状态补上空对象
-  if (!state.positioning || typeof state.positioning !== 'object') state.positioning = { only: '', notDo: '', voice: '', redline: '' }
+  if (!state.positioning || typeof state.positioning !== 'object') state.positioning = {}
+  state.positioning = { subject: '', grade: '', city: '', only: '', notDo: '', voice: '', redline: '', ...state.positioning }
   if (!Array.isArray(state.painPoints) || !state.painPoints.length) state.painPoints = [...PAIN_POINTS]
   // 私信线索表是后加的
   if (!Array.isArray(state.leads)) state.leads = []

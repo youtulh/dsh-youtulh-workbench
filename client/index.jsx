@@ -1,13 +1,12 @@
 // dsh-youtulh-workbench 浏览器半片：侧栏入口 + main 全局面板。
 import React from 'react'
-import { HomeView } from './canvas.jsx'
 import { ChatDock } from './chat.jsx'
 import { ContentView } from './content.jsx'
 import { captureFiles, captureUrl, dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { InsightsView } from './insights.jsx'
 import { DmView } from './dm.jsx'
-import { StyleView } from './style.jsx'
-import { ScheduleView } from './schedule.jsx'
+import { SetupView } from './setup.jsx'
+import { WelcomeView } from './welcome.jsx'
 import { ModelButton, ModelPicker } from './modelpick.jsx'
 import { SettingsDialog } from './settings.jsx'
 import { Studio } from './studio.jsx'
@@ -20,15 +19,14 @@ const PANEL_ID = 'media-desk'
 
 // navKey：同一个中文在别处意思不同（单数的“灵感”“风格”），英文导航另查一条
 const NAV = [
-  { id: 'home', label: '灵感', navKey: '灵感（导航）' },
-  { id: 'dm', label: '私信', navKey: '私信（导航）' },
-  { id: 'content', label: '内容' },
-  { id: 'schedule', label: '排期' },
-  { id: 'insights', label: '复盘' },
-  { id: 'style', label: '风格', navKey: '风格（导航）' },
+  { id: 'home', label: '首页' },
+  { id: 'dm', label: '回私信' },
+  { id: 'content', label: '做内容' },
+  { id: 'data', label: '看数据' },
+  { id: 'setup', label: '我的设定' },
 ]
 
-const VIEWS = { home: HomeView, dm: DmView, content: ContentView, schedule: ScheduleView, insights: InsightsView, style: StyleView }
+const VIEWS = { home: WelcomeView, dm: DmView, content: ContentView, data: InsightsView, setup: SetupView }
 
 function CaptureDialog() {
   const capture = useDesk(s => s.capture)
@@ -163,14 +161,14 @@ function Desk() {
   // 工作区有自己的对话栏
   const focused = useDesk(s => Boolean(s.focusId))
   const showDock = dockOpen && !focused
-  const Active = VIEWS[view] ?? HomeView
+  const Active = VIEWS[view] ?? WelcomeView
   return (
     <div className={`md-root ${narrow ? 'is-narrow' : ''} ${width < 780 ? 'is-compact' : ''} ${showDock ? 'has-dock' : ''}`} ref={rootRef}>
       <style>{css}</style>
       <div className="md-ambient" aria-hidden="true"><i /><i /><i /></div>
       <div className="md-main">
         <header className="md-topbar" data-window-drag="">
-          <nav className="md-nav" aria-label={t('工作台导航')}>
+          <nav className="md-nav" aria-label={t('推流工具导航')}>
             {NAV.map(entry => (
               <button type="button" key={entry.id} className={view === entry.id ? 'is-on' : ''} aria-current={view === entry.id ? 'page' : undefined} onClick={() => setDesk({ view: entry.id, focusId: null })}>{entry.navKey && lang() === 'en' ? t(entry.navKey) : t(entry.label)}</button>
             ))}

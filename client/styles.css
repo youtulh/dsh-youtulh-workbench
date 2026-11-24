@@ -921,3 +921,39 @@ body[data-ds-dark-theme] .md-root {
 .md-dm-wrap { max-width: 260px; }
 .md-dm-empty { padding: 6px 0 2px; }
 @media (max-width: 720px) { .md-dm-ledger-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== 首页：三个按钮 + 漏斗 ===== */
+.md-welcome { width: min(880px, 100%); margin: 0 auto; padding: 40px clamp(16px, 4vw, 40px) 60px; }
+.md-welcome-head h1 { font-size: 26px; font-weight: 300; line-height: 1.45; }
+.md-welcome-sub { margin-top: 8px; color: var(--ink3); font-size: 13.5px; line-height: 21px; }
+.md-welcome-setup { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; padding: 8px 12px; border-radius: var(--r-md); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: 13px; }
+.md-welcome-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 26px; }
+.md-big { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 20px 18px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); text-align: left; transition: transform .2s var(--ease), box-shadow .25s var(--ease); }
+.md-big:hover { transform: translateY(-2px); box-shadow: 0 12px 32px -14px rgb(0 0 0 / .25); }
+.md-big-icon { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 10px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.md-big b { font-size: 16px; font-weight: 500; }
+.md-big small { color: var(--ink3); font-size: 12.5px; line-height: 18px; }
+.md-welcome-funnel { display: flex; align-items: center; gap: 14px; margin-top: 26px; padding-top: 16px; border-top: .5px solid var(--line); color: var(--ink3); font-size: 12.5px; }
+.md-welcome-funnel dl { display: flex; gap: 18px; }
+.md-welcome-funnel div { display: flex; align-items: baseline; gap: 6px; }
+.md-welcome-funnel dd { color: var(--ink); font-size: 15px; }
+@media (max-width: 700px) { .md-welcome-actions { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== 我的设定 ===== */
+.md-setup { display: grid; gap: 12px; width: min(760px, 100%); margin: 0 auto; }
+.md-setup-card { padding: 18px 20px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-setup-card h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 15px; font-weight: 500; }
+.md-setup-card h2 span { display: inline-flex; width: 20px; height: 20px; align-items: center; justify-content: center; border-radius: 50%; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); font-size: 12px; }
+.md-setup-hint { margin-bottom: 12px; color: var(--ink3); font-size: 12.5px; line-height: 19px; }
+.md-setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.md-setup-grid .md-field input, .md-setup-grid .md-field textarea, .md-setup-card textarea { width: 100%; padding: 7px 9px; border: .5px solid var(--line); border-radius: var(--r-sm); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 13px; line-height: 20px; }
+.md-setup-grid .md-field input:focus, .md-setup-card textarea:focus { border-color: var(--accent); }
+.md-setup-pains { display: flex; flex-wrap: wrap; gap: 6px; }
+.md-chip.is-removable { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 9px; }
+.md-chip.is-removable button { width: 16px; height: 16px; border-radius: 50%; color: var(--ink3); font-size: 13px; line-height: 1; }
+.md-chip.is-removable button:hover { color: var(--ink); background: var(--hover); }
+.md-setup-add { display: flex; gap: 8px; margin-top: 12px; }
+.md-setup-add input { flex: 1; min-width: 0; padding: 7px 9px; border: .5px solid var(--line); border-radius: var(--r-sm); outline: 0; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 13px; }
+.md-setup-more summary { cursor: pointer; color: var(--ink3); font-size: 13px; }
+.md-setup-more .md-setup-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
+@media (max-width: 700px) { .md-setup-grid { grid-template-columns: minmax(0, 1fr); } }

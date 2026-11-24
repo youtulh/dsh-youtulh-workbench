@@ -11,7 +11,7 @@ export const STAGE_LABEL = { todo: '待拍', shot: '已拍', published: '已发'
 export const KINDS = ['image', 'video', 'web', 'quote', 'note']
 export const PLATFORMS = ['公众号', '小红书', '抖音', 'B站', '视频号', 'TikTok', 'Instagram', 'YouTube', 'X']
 // 定位卡：选题和成稿都要被这四条管住，不是写文风的
-export const POSITIONING_FIELDS = ['only', 'notDo', 'voice', 'redline']
+export const POSITIONING_FIELDS = ['subject', 'grade', 'city', 'only', 'notDo', 'voice', 'redline']
 // 卡点清单（附录 A），选题卡从这里挑；用户可以在界面上改
 export const PAIN_POINTS = ['物质的量', '氧化还原反应', '离子反应', '元素化合物', '计算题']
 
@@ -276,6 +276,11 @@ const handlers = {
     const lead = findById(state.leads ?? [], op.id)
     state.leads = (state.leads ?? []).filter(row => row.id !== lead.id)
     return { text: tr('删掉一条线索') }
+  },
+  set_pain_points(state, op) {
+    const points = (Array.isArray(op.points) ? op.points : []).map(row => String(row ?? '').trim().slice(0, 40)).filter(Boolean).slice(0, 30)
+    state.painPoints = [...new Set(points)]
+    return { text: tr('更新了家长痛点清单') }
   },
   update_positioning(state, op) {    const next = { ...(state.positioning ?? {}) }
     let changed = 0

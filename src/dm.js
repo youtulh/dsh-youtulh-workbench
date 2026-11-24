@@ -19,7 +19,7 @@ const RULES = `判断规则（硬规则，不许含糊）：
 - 什么时候、线上吗、几个人、多久 → D 时间形式
 第 3 步 两条草稿：
 - 草稿 1「接住」：先接住对方最急的那句话，不评价、不承诺
-- 草稿 2「引导下一步」：只留一个动作（加微信 / 做诊断题 / 等试听），不给第二个选择
+- 草稿 2「引导下一步」：必须落到一个具体动作，优先引导加微信（一句「方便加个微信吗」之类的自然收尾），不给第二个选择
 第 4 步 台账：
 - 只抽私信里出现过的信息，没出现就留空字符串，不许编
 - 卡点写「哪一章、什么症状」；来源留空，由人补
@@ -30,9 +30,14 @@ const RULES = `判断规则（硬规则，不许含糊）：
 
 function positioningBlock(state) {
   const p = state?.positioning ?? {}
-  const rows = [['只做', p.only], ['不做', p.notDo], ['说法', p.voice], ['红线', p.redline]]
-    .filter(([, value]) => typeof value === 'string' && value.trim())
-  return rows.length ? `\n定位卡（违反就得重写）：\n${rows.map(([key, value]) => `- ${key}：${value.trim()}`).join('\n')}` : ''
+  const rows = [
+    ['教什么', [p.subject, p.grade, p.city].filter(Boolean).join(' · ')],
+    ['只做', p.only],
+    ['不做', p.notDo],
+    ['说法', p.voice],
+    ['红线', p.redline],
+  ].filter(([, value]) => typeof value === 'string' && value.trim())
+  return rows.length ? `\n我的设定（违反就得重写）：\n${rows.map(([key, value]) => `- ${key}：${value.trim()}`).join('\n')}` : ''
 }
 
 export function dmPrompts(state, raw) {

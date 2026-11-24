@@ -161,13 +161,14 @@ export function ContentView() {
           ].join(' · ')}</p>
         </div>
         <span style={{ flex: 1 }} />
+        <button type="button" className="md-pill is-primary" onClick={() => setDesk({ capture: { tab: 'text' } })}><Icon name="plus" size={14} />{t('新选题')}</button>
         <label className="md-search">
           <Icon name="search" size={15} />
           <input value={query} onChange={e => setDesk({ query: e.target.value })} placeholder={t('搜索标题、标签、平台')} aria-label={t('搜索内容')} />
         </label>
         <Segmented label={t('显示方式')} value={mode} onChange={setMode} options={[{ value: 'board', label: t('看板') }, { value: 'table', label: t('表格') }]} />
       </header>
-      {items.length === 0 ? <Empty title={query ? t('没有匹配的内容') : t('还没有内容')} hint={query ? t('换个关键词试试。') : t('到灵感页记下第一条。')} /> : mode === 'board' ? <Board items={items} /> : <Table items={items} />}
+      {items.length === 0 ? <Empty title={query ? t('没有匹配的内容') : t('还没有内容')} hint={query ? t('换个关键词试试。') : t('点右上角「新选题」，把家长最愁的那句话记下来。')} /> : mode === 'board' ? <Board items={items} /> : <Table items={items} />}
     </div>
   )
 }
