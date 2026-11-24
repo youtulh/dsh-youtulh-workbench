@@ -71,6 +71,16 @@ export function appendCase(root, input = {}) {
   return readCases(root)
 }
 
+/** 删掉一条导入的案例（导错了、不适用了）。 */
+export function removeCase(root, index) {
+  const rows = readTable(root, LAYOUT.cases).rows
+  const at = Number(index)
+  if (!Number.isInteger(at) || at < 0 || at >= rows.length) return null
+  rows.splice(at, 1)
+  writeTable(root, LAYOUT.cases, CASE_COLUMNS, rows)
+  return readCases(root)
+}
+
 /** 聊成的案例，按渠道取最近的几条，拼给模型当口气参考。 */
 export function chatLessons(root, channel, limit = 3) {
   const won = new Set(['加微', '约试听', '成交'])

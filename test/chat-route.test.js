@@ -124,6 +124,11 @@ test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
     const after = await call('GET', 'chat/records')
     assert.equal(after.body.cases.length, 1)
     assert.match(after.body.cases[0].text, /先别报数字/)
+
+    const removed = await call('POST', 'chat/cases/remove', { index: 0 })
+    assert.equal(removed.status, 200)
+    assert.equal(removed.body.cases.length, 0)
+    assert.equal((await call('POST', 'chat/cases/remove', { index: 4 })).status, 404)
   } finally {
     await cleanup()
   }

@@ -11,7 +11,7 @@ import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
-import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from './chat.js'
+import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateChatRow, writePlatformWords } from './chat.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -696,6 +696,12 @@ async function route(ctx, store, desk, req, res) {
         stage: body.stage, result: body.result, note: body.note,
       })
       return json(res, 200, { rows })
+    }
+    case 'chat/cases/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const cases = removeCase(root, body.index)
+      if (!cases) return json(res, 404, { error: tr('没找到这条案例') })
+      return json(res, 200, { cases })
     }
     case 'chat/cases': {
       // 人工聊天案例：平台引流 / 微信成交都可以，聊成的会进提示词

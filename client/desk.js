@@ -222,6 +222,10 @@ export async function addChatCase(payload) {
   return request('chat/cases', payload)
 }
 
+export async function removeChatCase(index) {
+  return request('chat/cases/remove', { index })
+}
+
 /** 聊天台的「再给一版」：按一句要求改上一版的两句话。 */
 export async function reviseDm(payload) {
   return request('dm/revise', payload)

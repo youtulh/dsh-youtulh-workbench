@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from '../src/chat.js'
+import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, removeCase, updateChatRow, writePlatformWords } from '../src/chat.js'
 
 const state = { positioning: { subject: '物理', grade: '高二', city: '北京' }, painPoints: ['期中 58 分还能补吗'] }
 const temp = () => mkdtemp(join(tmpdir(), 'workbench-chat-'))
@@ -100,6 +100,10 @@ test('对话记录和案例库：写进去能读回来，案例按渠道取', as
     appendCase(root, { channel: '微信', scene: '没聊成', result: '流失', text: '家长：太贵了。' })
     const cases = readCases(root)
     assert.equal(cases.length, 3)
+    // 导错了能删掉
+    const left = removeCase(root, 2)
+    assert.equal(left.length, 2)
+    assert.equal(removeCase(root, 9), null)
     const lessons = chatLessons(root, '微信')
     assert.match(lessons, /先别报数字/)
     assert.doesNotMatch(lessons, /太贵了/) // 流失的不当成功经验

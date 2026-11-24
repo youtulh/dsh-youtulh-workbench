@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, revealDir, reviseDm, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, revealDir, reviseDm, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -56,6 +56,7 @@ export function DmView() {
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
+  const [cases, setCases] = React.useState([])
   const [chatTotal, setChatTotal] = React.useState(0)
   const [chatsReady, setChatsReady] = React.useState(false)
   const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
@@ -85,7 +86,7 @@ export function DmView() {
 
   const reloadChats = React.useCallback(() => {
     fetchChatRecords()
-      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length) })
+      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length); setCases(data.cases ?? []) })
       .catch(() => {})
       .finally(() => setChatsReady(true))
   }, [])
@@ -623,6 +624,33 @@ export function DmView() {
           </ul>
           )
         )}
+      </section>
+
+      <section className="md-tile md-cases">
+        <details>
+          <summary>{t('案例库（{n}）· 聊成的会参考', { n: cases.length })}</summary>
+          {cases.length === 0 ? (
+            <p className="md-muted">{t('还没有导入案例。点上面「导入案例」，粘一段真实对话进来。')}</p>
+          ) : (
+            <ul className="md-case-list">
+              {cases.map((row, index) => (
+                <li key={`${row.date}-${index}`}>
+                  <span className="md-chat-channel">{t(row.channel)}</span>
+                  <b>{row.scene || t('没写场景')}</b>
+                  <em className={`is-${['成交', '加微', '约试听'].includes(row.result) ? 'won' : row.result === '流失' ? 'lost' : 'plain'}`}>{t(row.result || '未定')}</em>
+                  <span className="md-muted">{row.date}</span>
+                  <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => {
+                    removeChatCase(index)
+                      .then(data => { setCases(data.cases ?? []); toast(t('案例删掉了')) })
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>{t('删除')}</button>
+                  <p className="md-case-text">{row.text.slice(0, 120)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </details>
       </section>
     </div>
   )
