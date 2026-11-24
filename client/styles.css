@@ -1746,3 +1746,13 @@ body[data-ds-dark-theme] .md-root {
   .md-dm-revise input { flex-basis: 100%; }
   .md-dm-revise .md-pill { width: 100%; justify-content: center; }
 }
+
+/* 回私信：窄屏收口 */
+@media (max-width: 640px) {
+  .md-dm { padding: 10px 12px 32px; }
+  .md-dm .md-tile { padding: 14px; }
+  .md-dm-actions, .md-dm-draft-actions, .md-dm-chips { flex-wrap: wrap; }
+  .md-dm-input .md-field textarea { min-height: 84px; }
+  .md-chat-row > header select { max-width: 100%; }
+  .md-chat-person-row { gap: 6px; }
+}

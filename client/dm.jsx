@@ -489,6 +489,7 @@ export function DmView() {
             </ul>
           ) : (
           <ul className="md-chat-list">
+            {chatRows.length === 0 ? <li className="md-muted">{chatPerson ? t('还没有和 {name} 的对话', { name: chatPerson }) : t('这个筛选下没有对话')}</li> : null}
             {chatRows.slice(0, chatLimit).map(row => (
               <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
                 <header>

@@ -169,6 +169,12 @@ export function FunnelPanel({ students = [], onChanged }) {
                             {LEAD_STAGES.map(value => <option key={value} value={value}>{t(value)}</option>)}
                           </select>
                         </label>
+                        {lead.name ? (
+                          <button type="button" className="md-inline-link" onClick={event => {
+                            event.stopPropagation()
+                            setDesk({ view: 'dm', focusId: null, dmPerson: lead.name })
+                          }}>{t('去聊天台')}</button>
+                        ) : null}
                         {stage === '已报课' ? (
                           converted(lead)
                             ? <span className="md-muted">{t('已经转成学生了')}</span>
