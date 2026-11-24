@@ -1,5 +1,6 @@
 // 家长反馈：拿学生最近的课次记录，写成一条能直接发微信的话。
 // 有模型走模型，没模型就本地按数据拼一条，绝不假装模型通了。
+import { LAYOUT, dayStamp, nowStamp, readTable, writeTable } from './workspace.js'
 import { styleBlock } from './style-guide.js'
 
 const clean = (value, max = 200) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
@@ -57,4 +58,36 @@ export function localFeedback(student, lessons = [], subject = '') {
   parts.push('您看他这周作业最卡的是哪一步？')
   const out = parts.join('。').replace(/。。/g, '。')
   return /[。！？]$/.test(out) ? out : `${out}。`
+}
+
+
+export const FEEDBACK_COLUMNS = ['日期', '姓名', '年级', '课次', '内容', '来源', '创建时间']
+
+const toFeedback = row => ({
+  date: row['日期'] ?? '', name: row['姓名'] ?? '', grade: row['年级'] ?? '',
+  lessons: row['课次'] ?? '', text: row['内容'] ?? '', source: row['来源'] ?? '',
+  createdAt: row['创建时间'] ?? '',
+})
+
+/** 读家长反馈记录；按姓名筛选时只返回这个人。 */
+export function readFeedback(root, name = '') {
+  const target = clean(name, 40)
+  return readTable(root, LAYOUT.feedback).rows.map(toFeedback)
+    .filter(row => row.name && (!target || row.name === target))
+}
+
+/** 存一条写好的家长反馈，以后能查。 */
+export function appendFeedback(root, input = {}) {
+  const name = clean(input.name, 40)
+  const text = String(input.text ?? '').trim().slice(0, 2000)
+  if (!name) throw new Error('先选一个学生')
+  if (!text) throw new Error('反馈还是空的')
+  const rows = readTable(root, LAYOUT.feedback).rows
+  rows.push({
+    '日期': dayStamp(), '姓名': name, '年级': clean(input.grade, 20),
+    '课次': String(input.lessons ?? ''), '内容': text,
+    '来源': clean(input.source, 20) || 'local', '创建时间': nowStamp(),
+  })
+  writeTable(root, LAYOUT.feedback, FEEDBACK_COLUMNS, rows)
+  return readFeedback(root, name)
 }

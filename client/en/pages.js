@@ -632,4 +632,7 @@ export const PAGES = {
   '还没有课次记录，按学生档案写的': 'no lessons yet — built from the student profile',
   '发之前自己看一眼': 'read it before sending',
   '换一版': 'Regenerate',
+  '存一笔': 'Save a copy',
+  存进家长反馈了: 'Saved to parent updates',
+  '以前写过的 {n} 条': '{n} saved updates',
 }

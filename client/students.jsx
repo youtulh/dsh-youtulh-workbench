@@ -1,6 +1,6 @@
 // 学生：线索漏斗 / 学生档案 / 班课 三个 tab。数据都在工作区的 CSV 里。
 import React from 'react'
-import { fetchLessons, fetchStudentFeedback, fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
+import { fetchFeedbackList, fetchLessons, fetchStudentFeedback, fetchStudents, removeStudentRow, saveStudentFeedback, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ClassesPanel } from './classes.jsx'
 import { FunnelPanel } from './funnel.jsx'
@@ -146,9 +146,15 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
   }
 
   const writeFeedback = (student, limit = 4) => {
-    setFeedback({ student, name: student.name, text: '', busy: true, lessons: 0, limit, source: '' })
-    fetchStudentFeedback({ name: student.name, grade: student.grade, className: student.className, limit }).then(data => {
-      setFeedback({ student, name: student.name, text: data.text || '', busy: false, lessons: data.lessons ?? 0, limit, source: data.source || 'local' })
+    setFeedback({ student, name: student.name, text: '', busy: true, lessons: 0, limit, source: '', history: [] })
+    Promise.all([
+      fetchStudentFeedback({ name: student.name, grade: student.grade, className: student.className, limit }),
+      fetchFeedbackList(student.name).catch(() => ({ rows: [] })),
+    ]).then(([data, history]) => {
+      setFeedback({
+        student, name: student.name, text: data.text || '', busy: false, lessons: data.lessons ?? 0,
+        limit, source: data.source || 'local', history: history.rows ?? [],
+      })
       requestAnimationFrame(() => document.getElementById('student-feedback')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
     }).catch(err => { setFeedback(null); toast(err.message, { error: true }) })
   }
@@ -260,6 +266,15 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 </span>
                 <span className="md-grow" />
                 <button type="button" className="md-inline-link" disabled={feedback.busy} onClick={() => writeFeedback(feedback.student, feedback.limit)}>{t('换一版')}</button>
+                <button type="button" className="md-inline-link" onClick={() => {
+                  saveStudentFeedback({
+                    name: feedback.name, grade: feedback.student.grade, lessons: feedback.lessons,
+                    text: feedback.text, source: feedback.source,
+                  }).then(data => {
+                    setFeedback(prev => ({ ...prev, history: data.rows ?? prev.history }))
+                    toast(t('存进家长反馈了'))
+                  }).catch(err => toast(err.message, { error: true }))
+                }}>{t('存一笔')}</button>
                 <button type="button" className="md-pill is-small" onClick={() => {
                   if (navigator.clipboard?.writeText) {
                     navigator.clipboard.writeText(feedback.text).then(() => toast(t('复制了反馈'))).catch(() => toast(t('复制失败'), { error: true }))
@@ -268,6 +283,19 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                   }
                 }}>{t('复制反馈')}</button>
               </div>
+              {feedback.history?.length ? (
+                <details className="md-feedback-history">
+                  <summary>{t('以前写过的 {n} 条', { n: feedback.history.length })}</summary>
+                  <ul>
+                    {feedback.history.slice().reverse().map(row => (
+                      <li key={row.createdAt || `${row.date}-${row.text.slice(0, 8)}`}>
+                        <span className="md-muted">{row.date}</span>
+                        <p>{row.text}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </>
           )}
         </section>

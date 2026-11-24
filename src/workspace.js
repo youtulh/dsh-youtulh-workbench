@@ -12,7 +12,7 @@ import { join } from 'node:path'
 export const LAYOUT = {
   settings: '我的设定.md', style: '说话样本.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv',
   students: '学生档案.csv', classes: '班课.csv', lessons: '课次记录.csv',
-  chats: '对话记录.csv', cases: '案例库.csv', words: '平台词表.md',
+  chats: '对话记录.csv', cases: '案例库.csv', words: '平台词表.md', feedback: '家长反馈.csv',
 }
 
 export const defaultRoot = () => join(homedir(), 'Documents', 'Youtulh 工作台')

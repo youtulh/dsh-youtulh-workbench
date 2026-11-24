@@ -268,6 +268,14 @@ export async function fetchStudentFeedback({ name, grade = '', className = '', l
   return request('student/feedback', { name, grade, className, limit })
 }
 
+export async function fetchFeedbackList(name = '') {
+  return request(`feedback/list?name=${encodeURIComponent(name)}`)
+}
+
+export async function saveStudentFeedback(payload) {
+  return request('feedback/append', payload)
+}
+
 /** 家长有反应了：按行号更新那条线索。 */
 export async function updateLead(index, patch) {
   return request('workspace/lead/update', { index, patch })

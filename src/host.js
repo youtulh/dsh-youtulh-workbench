@@ -12,7 +12,7 @@ import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
-import { feedbackPrompt, localFeedback } from './feedback.js'
+import { appendFeedback, feedbackPrompt, localFeedback, readFeedback } from './feedback.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -233,6 +233,10 @@ async function route(ctx, store, desk, req, res) {
     if (path === 'lessons') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       return json(res, 200, { rows: readLessons(root, url.searchParams.get('class') ?? '') })
+    }
+    if (path === 'feedback/list') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { rows: readFeedback(root, url.searchParams.get('name') ?? '') })
     }
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
@@ -801,6 +805,11 @@ async function route(ctx, store, desk, req, res) {
         return json(res, 400, { error: tr(err.message) })
       }
       return json(res, 200, { classes: readClasses(root), students: readStudents(root) })
+    }
+    case 'feedback/append': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const rows = appendFeedback(root, body)
+      return json(res, 200, { rows })
     }
     case 'student/feedback': {
       const name = String(body.name ?? '').trim()
