@@ -551,7 +551,7 @@ export function DmView() {
           {dueLeads.length ? (
             <button type="button" className="md-inline-link" onClick={() => copy(dueLeads.map(lead => {
               const bits = [lead.name || t('未写名字'), lead.grade, lead.painPoint].filter(Boolean).join(' · ')
-              return `${bits}｜${t('下次跟进')} ${lead.nextAt}`
+              return `${bits}${lead.source ? `｜${t('来源：{source}', { source: lead.source })}` : ''}｜${t('下次跟进')} ${lead.nextAt}`
             }).join('\n'))}>{t('复制该跟进（{n}）', { n: dueLeads.length })}</button>
           ) : null}
         </div>

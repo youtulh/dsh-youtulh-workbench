@@ -50,7 +50,7 @@ export function canonImportColumn(cell) {
 
 /** 把粘贴进来的平台数据切成行：表头认得出就按列名对，认不出就按 标题,播放,涨粉,私信 的顺序。 */
 export function parseImportTable(raw) {
-  const lines = String(raw ?? '').split(/\r?\n/).filter(line => line.trim())
+  const lines = String(raw ?? '').replace(/^\uFEFF/, '').split(/\r?\n/).filter(line => line.trim())
   if (!lines.length) return { hasHead: false, keys: ['标题', '播放', '涨粉', '私信'], data: [] }
   const cells = lines.map(line => line.split(/\t|,/).map(cell => cell.trim().replace(/^"|"$/g, '')))
   const head = cells[0].map(cell => cell.trim())
@@ -63,7 +63,7 @@ export function parseImportTable(raw) {
 
 /** 从 Excel / 表格里粘进来的名单：认表头、认逗号或 Tab、带引号的单元格不拆列。 */
 export function parsePastedTable(raw) {
-  const text = String(raw ?? '').replace(/\r\n?/g, '\n').trim()
+  const text = String(raw ?? '').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim()
   if (!text) return []
   const lines = text.split('\n').filter(line => line.trim())
   const delimiter = lines[0].includes('\t') ? '\t' : ','
