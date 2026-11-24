@@ -4,21 +4,16 @@ import { execFile } from 'node:child_process'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { assistantModelOverride, callModel, chatPrompts, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
+import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, resolveExportDir, savePiece, saveProduction } from './export.js'
 import { createTools } from './tools.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, writeAccounts, writeSettingsMarkdown } from './workspace.js'
-import { dmPrompts, fallbackVerdict, normalizeVerdict } from './dm.js'
-import { createPrompts, fallbackCreative, normalizeCreative } from './create.js'
 import { harvest, harvestText } from './harvest.js'
-import { generateImage } from './images.js'
-import { generateToolImage, imageTool } from './image-tool.js'
 import { localIntent } from './intents.js'
 import { exportSkill, proposeRules } from './learn.js'
 import { createMonidRunner, fetchAccount, importPosts, monidStatus, postsToMaterial, resolveAccount, saveCovers } from './monid.js'
 import { applyOps, newId } from './ops.js'
-import { applyRevision, Producer } from './produce.js'
 import { publicSettings, Settings, imageReady } from './settings.js'
 import { normalizeStyle, referenceExcerpt, stylePrompts } from './style.js'
 import { dshHome, Store } from './store.js'
@@ -103,76 +98,6 @@ function engineLabel(ctx) {
 function outageNotice(ctx, wasDown, fallback) {
   if (wasDown) return null
   return modelInfo(ctx) ? tr('模型暂时用不了，{fallback}。可以到设置里检查账号或密钥。', { fallback }) : tr('当前没有连接模型，{fallback}。', { fallback })
-}
-
-async function chatTurn(ctx, store, desk, body) {
-  const message = String(body.message || '').trim()
-  if (!message) throw Object.assign(new Error(tr('消息为空')), { status: 400 })
-  const focusId = typeof body.focusId === 'string' ? body.focusId : undefined
-  const state = await store.read()
-  const snapshot = JSON.parse(JSON.stringify(state))
-  let plan
-  let engine = 'local'
-  let notice = null
-  const wasDown = modelStatus.ok === false
-  try {
-    const history = snapshot.chat.filter(row => (row.itemId ?? null) === (focusId ?? null))
-    const { system, user } = chatPrompts(snapshot, message, { focusId, history })
-    const editing = snapshot.items.find(row => row.id === focusId)?.production?.status === 'done'
-    const { text, model } = await callModel(ctx, { system, user, maxTokens: editing ? 8000 : 2000, light: true, signal: AbortSignal.timeout(editing ? 240_000 : 90_000) })
-    engine = model
-    try {
-      plan = extractJson(text)
-      if (typeof plan.reply !== 'string') plan.reply = tr('处理好了。')
-    } catch {
-      // 模型只回了一段话时，当成普通回答，不算失败
-      plan = { reply: text.trim().slice(0, 1200) || tr('我没有听懂，可以换个说法吗？'), ops: [] }
-    }
-  } catch {
-    notice = outageNotice(ctx, wasDown, tr('先用本地规则处理'))
-    plan = localIntent(snapshot, message, { focusId })
-  }
-  const settings = await desk.settings.read()
-  const canDraw = desk.producer.ready(settings)
-  // 只把真正改了数据的那一步放进撤销；问一句话不占撤销位
-  const changed = await store.mutate(tr('对话：{text}', { text: message.slice(0, 18) }), (draft) => {
-    const target = focusId ? draft.items.find(row => row.id === focusId) : null
-    const production = target?.production?.status === 'done' ? target.production : null
-    // 本地规则只会改灵感标题；有成稿时要改的是成稿标题
-    const ops = (Array.isArray(plan.ops) ? plan.ops : []).map((op) => {
-      if (production && op?.op === 'update_item' && op.id === focusId && typeof op.title === 'string') return { op: 'update_production', id: focusId, title: op.title }
-      return op
-    })
-    const { receipts, errors } = applyOps(draft, ops)
-    let targets = []
-    if (production && plan.revise) {
-      // 没接生图时，图不会重画，回执要说实话
-      const revision = applyRevision(production, plan.revise, { canDraw })
-      receipts.push(...revision.receipts.map(text => ({ text })))
-      errors.push(...revision.errors)
-      targets = canDraw ? revision.targets : []
-    }
-    return { receipts, errors, targets, done: Boolean(production) }
-  })
-  const result = await store.mutate('对话记录', (draft) => {
-    const { receipts, errors, targets, done } = changed
-    const at = new Date().toISOString()
-    const itemId = focusId ?? undefined
-    // 已经做好的成稿不会因为一句话被整篇重做，要重做请点「重新成稿」
-    const actions = (Array.isArray(plan.actions) ? plan.actions : [])
-      .filter(a => a && ['produce', 'open', 'nav'].includes(a.type))
-      .filter(a => !(a.type === 'produce' && (done && a.id === focusId || draft.items.find(row => row.id === a.id)?.production?.status === 'done')))
-    draft.chat.push({ id: newId('c'), at, role: 'user', text: message, itemId })
-    const answer = { id: newId('c'), at, role: 'assistant', text: plan.reply, receipts, errors, engine, notice, undoable: receipts.length > 0, itemId }
-    draft.chat.push(answer)
-    draft.chat = draft.chat.slice(-300)
-    return { answer, actions, targets, state: draft, modelOk: modelStatus.ok, modelError: modelStatus.error }
-  }, { undoable: false })
-  if (canDraw) {
-    await Promise.all(result.targets.map(target => desk.producer.regenerate(focusId, target).catch(() => {})))
-    return { ...result, state: await store.read() }
-  }
-  return result
 }
 
 async function extractStyle(ctx, store, body) {
@@ -303,7 +228,6 @@ async function route(ctx, store, desk, req, res) {
   }
   if (method === 'GET') {
     if (path === 'state') {
-      if (!desk.settled) { desk.settled = true; await desk.producer.settleAll().catch(() => {}) }
       let state = await store.read()
       // 用户可能在编辑器里直接改了「我的设定.md」：文件优先，读进来盖掉状态
       try {
@@ -337,14 +261,7 @@ async function route(ctx, store, desk, req, res) {
       if (samplesNeedLocale(state, currentLang())) state = await store.mutate('', draft => (localizeSamples(draft, currentLang()), draft), { undoable: false })
       return json(res, 200, { state, model: engineLabel(ctx), modelOk: modelStatus.ok, modelError: modelStatus.error, canUndo: store.undo.length > 0 })
     }
-    if (path === 'production') {
-      const id = url.searchParams.get('id') ?? ''
-      await desk.producer.settle(id)
-      const state = await store.read()
-      const item = state.items.find(row => row.id === id)
-      return json(res, 200, { production: item?.production ?? null, status: item?.status, live: desk.producer.status(id) })
-    }
-    if (path === 'settings') return json(res, 200, { ...publicSettings(await desk.settings.read(), Boolean(imageTool(ctx))), defaultExportDir: defaultExportDir() })
+    if (path === 'settings') return json(res, 200, { ...publicSettings(await desk.settings.read(), false), defaultExportDir: defaultExportDir() })
     if (path === 'models') {
       // 列出 Harness 里已接的提供方和它们公布的模型，给工作台的助手模型选择器用
       const llm = ctx.get('llm')
@@ -475,25 +392,6 @@ async function route(ctx, store, desk, req, res) {
       const label = await store.undoLast()
       return json(res, 200, { label, state: await store.read(), canUndo: store.undo.length > 0 })
     }
-    case 'chat': return json(res, 200, await chatTurn(ctx, store, desk, body))
-    case 'create': {
-      // 做内容：老师给一句话，回三组候选让人挑。没模型时给一份朴素能改的稿子
-      const hint = String(body.hint ?? '').trim()
-      if (!hint) return json(res, 400, { error: tr('先写一句你想讲什么') })
-      const state = await store.read()
-      let creative
-      let engine = 'local'
-      try {
-        const prompts = createPrompts(state, hint)
-        const result = await callModel(ctx, { ...prompts, maxTokens: 1600, light: true })
-        creative = normalizeCreative(extractJson(result.text))
-        engine = result.model
-        if (!creative.titles.length && !creative.scripts.length) creative = fallbackCreative(state, hint)
-      } catch {
-        creative = fallbackCreative(state, hint)
-      }
-      return json(res, 200, { creative, engine })
-    }
     case 'output/save': {
       // 写成本地文件（Word + Markdown）再登记进产出库，用户能看见、能打开
       const rawTitle = String(body.title ?? '').trim() || tr('未命名的一篇')
@@ -517,68 +415,6 @@ async function route(ctx, store, desk, req, res) {
       execFile(command, [dir], () => {})
       return json(res, 200, { path: dir })
     }
-    case 'dm': {
-      // 回私信分诊：有模型就用模型判断，模型不可用时退回规则兜底，不让按钮转圈
-      const raw = String(body.text ?? '').trim()
-      if (!raw) return json(res, 400, { error: tr('先把私信原话粘进来') })
-      const state = await store.read()
-      let verdict
-      let engine = 'local'
-      try {
-        const prompts = dmPrompts(state, raw)
-        const result = await callModel(ctx, { ...prompts, maxTokens: 1200, light: true })
-        verdict = normalizeVerdict(extractJson(result.text))
-        engine = result.model
-      } catch {
-        verdict = fallbackVerdict(raw)
-      }
-      return json(res, 200, { verdict, engine })
-    }
-    case 'chat/clear': {
-      const state = await store.mutate('清空对话', (draft) => { draft.chat = []; return draft }, { undoable: false })
-      return json(res, 200, { state })
-    }
-    case 'produce': {
-      const started = await desk.producer.start(String(body.id), { withImages: body.withImages })
-      return json(res, 200, { started, state: await store.read() })
-    }
-    case 'produce/cancel':
-      await desk.producer.cancel(String(body.id))
-      return json(res, 200, { ok: true })
-    case 'produce/regen':
-      await desk.producer.regenerate(String(body.id), body.target)
-      return json(res, 200, { state: await store.read() })
-    case 'produce/save': {
-      const settings = await desk.settings.read()
-      const state = await store.read()
-      const item = state.items.find(row => row.id === body.id)
-      if (!item?.production?.article) return json(res, 400, { error: tr('还没有可以保存的成稿') })
-      await store.read()
-      // 视频封面由浏览器合成（画面叠大字），这里只接受 JPEG
-      const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/.exec(body.videoCover ?? '')
-      const videoCover = match ? Buffer.from(match[1], 'base64') : null
-      if (videoCover && !(videoCover[0] === 0xff && videoCover[1] === 0xd8)) return json(res, 400, { error: tr('封面不是有效的图片') })
-      const saved = await saveProduction(item.production, { filesDir: store.filesDir, exportDir: resolveExportDir(settings.exportDir), videoCover })
-      const next = await store.mutate('保存成稿', (draft) => {
-        const target = draft.items.find(row => row.id === body.id)
-        if (target?.production) {
-          target.production.savedPath = saved.path
-          target.production.savedHashes = saved.hashes
-          target.production.savedAt = new Date().toISOString()
-        }
-        return draft
-      }, { undoable: false })
-      return json(res, 200, { ...saved, state: next })
-    }
-    case 'produce/reveal': {
-      // 路径只取自保存记录，不接受请求里传来的路径
-      const state = await store.read()
-      const path = state.items.find(row => row.id === body.id)?.production?.savedPath
-      if (!path) return json(res, 400, { error: tr('还没有保存过') })
-      const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
-      execFile(command, [path], () => {})
-      return json(res, 200, { path })
-    }
     case 'style/extract': return json(res, 200, await extractStyle(ctx, store, body))
     case 'monid/import': return json(res, 200, await importAccountRoute(ctx, store, desk, body))
     case 'settings': {
@@ -588,16 +424,7 @@ async function route(ctx, store, desk, req, res) {
       const after = modelInfo(ctx)
       // 换了模型，上一个模型的失败状态不再算数
       if (before?.provider !== after?.provider || before?.model !== after?.model) Object.assign(modelStatus, { ok: null, error: null })
-      return json(res, 200, { ...publicSettings(updated, Boolean(imageTool(ctx))), defaultExportDir: defaultExportDir(), assistantEffective: modelInfo(ctx)?.label ?? null })
-    }
-    case 'settings/test': {
-      const settings = await desk.settings.read()
-      if (!desk.producer.ready(settings)) return json(res, 400, { error: tr(settings.image.source === 'tool' ? '未找到订阅生图工具，或默认执行器不支持直接调用；请检查插件和执行器后刷新工作台' : '先填好接口地址、模型和密钥') })
-      await store.read()
-      const { buffer, ext } = await desk.producer.generate(settings.image, 'A single paper boat on calm water, black and white pencil line art sketch, plain white paper background, no text.')
-      const name = `${newId('t')}${ext}`
-      await writeFile(join(store.filesDir, name), buffer)
-      return json(res, 200, { src: `media-desk/files/${name}` })
+      return json(res, 200, { ...publicSettings(updated, false), defaultExportDir: defaultExportDir(), assistantEffective: modelInfo(ctx)?.label ?? null })
     }
     case 'capture-url': return json(res, 200, await addFromUrl(ctx, store, body))
     case 'account/refresh': return json(res, 200, await refreshAccount(store, body))
@@ -646,13 +473,8 @@ export default {
   apply(ctx) {
     const store = new Store()
     const settings = new Settings(store.root)
-    const producer = new Producer({
-      store, settings, callText: options => callModel(ctx, options),
-      ready: saved => imageReady(saved, Boolean(imageTool(ctx))),
-      generate: (image, prompt, options) => image.source === 'tool' ? generateToolImage(ctx, image, prompt, options) : generateImage(image, prompt, options),
-    })
     const monid = createMonidRunner()
-    const desk = { settings, producer, monid, versionCheck: createVersionCheck() }
+    const desk = { settings, monid, versionCheck: createVersionCheck() }
     // 案例提示词的缓存：设定没变就直接给上次那五条
     let suggestCache = { key: '', at: 0, list: [] }
     // 对话里的 agent 用这两个工具把产出写进工作区
