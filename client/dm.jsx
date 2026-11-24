@@ -567,10 +567,23 @@ export function DmView() {
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.source ? (
-                    <span className={`md-lead-source ${contentTitles.length && !contentTitles.includes(lead.source) ? 'is-missing' : ''}`}>
-                      {t('来源：{source}', { source: lead.source })}
-                      {contentTitles.length && !contentTitles.includes(lead.source) ? t(' · 不在内容库') : ''}
-                    </span>
+                    contentTitles.length && !contentTitles.includes(lead.source) ? (
+                      <select
+                        className="md-lead-source-fix"
+                        title={t('来源不在内容库，选一条修正')}
+                        value={lead.source}
+                        onChange={event => {
+                          updateLead(lead.rowIndex, { source: event.target.value })
+                            .then(data => { if (data.leads) setLeads(data.leads); toast(t('来源改好了')) })
+                            .catch(err => toast(err.message, { error: true }))
+                        }}
+                      >
+                        <option value={lead.source}>{lead.source} · {t('不在内容库')}</option>
+                        {contentTitles.map(title => <option key={title} value={title}>{title}</option>)}
+                      </select>
+                    ) : (
+                      <span className="md-lead-source">{t('来源：{source}', { source: lead.source })}</span>
+                    )
                   ) : null}
                   {lead.nextAt || lead.followUps ? (
                     <span className={`md-lead-follow ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
