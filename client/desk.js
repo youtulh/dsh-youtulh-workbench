@@ -40,6 +40,24 @@ export function resetCreate() {
   patchCreate({ ...EMPTY_CREATE })
 }
 
+/** 把一条选题带到「做内容」：只保留这一条并勾好，直接生成 3 版口播。 */
+export function startFromTopic(topic) {
+  const value = String(topic ?? '').trim()
+  if (!value) return
+  patchCreate(state => ({
+    topics: [value],
+    angles: {},
+    picked: { [value]: true },
+    groups: [],
+    adopted: {},
+    batch: '',
+    lessons: '',
+    source: '',
+    examples: state.examples,
+  }))
+  setDesk({ view: 'content', focusId: null })
+}
+
 /** 页面刷新后把上一次的选题和口播捡回来；已经有内容就不动。 */
 export function restoreCreateDraft() {
   if (snapshot.create.topics.length || snapshot.create.groups.length) return

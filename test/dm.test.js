@@ -40,3 +40,18 @@ test('没模型时的兜底：两条人话，第二条引导加微信，不承�
   assert.ok(out.fields.painPoint.length > 0)
   assert.equal(out.fallback, true)
 })
+
+test('私信 prompt 会判断对方是不是目标客户', () => {
+  const state = {
+    positioning: {
+      subject: '物理', grade: '高二', city: '北京',
+      target: '北京高二物理 40–60 分、家长急但没方向',
+      entry: '期中卷丢分最多的一块',
+      fear: '怕补了没起色',
+    },
+    painPoints: [],
+  }
+  const { system } = dmPrompt(state, '老师你好，孩子物理 58 分还能补吗')
+  assert.match(system, /北京高二物理 40–60 分/)
+  assert.match(system, /是不是我们这一阶段要接的家长/)
+})

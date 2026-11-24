@@ -159,3 +159,22 @@ test('选题 prompt 要求每条带角度，只有四种角度', () => {
   assert.match(system, /知识点 \/ 家庭 \/ 考情 \/ 本地/)
   assert.match(system, /同一个意思只留一条/)
 })
+
+test('目标客户、切入点、最怕什么会进 prompt，并要求只写给她', async () => {
+  const { scriptPrompt, topicsPrompt } = await import('../src/topics.js')
+  const state = {
+    positioning: {
+      subject: '物理', grade: '高二', city: '北京',
+      target: '北京高二物理 40–60 分、家长急但没方向',
+      entry: '期中卷丢分最多的一块',
+      fear: '怕补了没起色',
+    },
+    painPoints: ['期中 58 分还能补吗'],
+  }
+  const script = scriptPrompt(state, '偏科').system
+  assert.match(script, /北京高二物理 40–60 分/)
+  assert.match(script, /期中卷丢分最多的一块/)
+  assert.match(script, /怕补了没起色/)
+  assert.match(script, /只面向这一类家长/)
+  assert.match(topicsPrompt(state, 10).system, /北京高二物理 40–60 分/)
+})

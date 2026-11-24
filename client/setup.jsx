@@ -1,13 +1,14 @@
-// 我的设定：三个问题，喂给回私信、做内容、看数据三处。
+// 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { dispatchOps, setDesk, toast, useDesk } from './desk.js'
+import { dispatchOps, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
+import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
 
 const WHO = [
   ['subject', '教什么科目', '比如：高中化学'],
   ['grade', '带哪个年级', '比如：高一'],
-  ['city', '在哪个城市', '比如：北京'],
+  ['city', '在哪个城市', '比如：北京；只做线上就写线上'],
 ]
 
 const BOUNDARY = [
@@ -44,15 +45,33 @@ export function SetupView() {
   }
   const removePain = point => dispatchOps([{ op: 'set_pain_points', points: pains.filter(row => row !== point) }], { label: t('删掉一条痛点') }).then(data => { if (data) markSaved() })
 
+  const advice = diagnosePositioning({ ...positioning, pains })
+  const cards = suggestTargets({ ...positioning, pains })
+  const entries = entrySuggestions({ ...positioning, pains })
+
+  const applyCard = (card) => {
+    dispatchOps([
+      { op: 'update_positioning', target: card.value, entry: card.entry, fear: card.fear },
+    ], { label: t('先抓这一类'), silent: true }).then(data => {
+      if (!data) return
+      markSaved()
+      toast(t('定位填好了：{title}', { title: card.title }))
+    })
+  }
+
   return (
     <div className="md-page md-setup">
       <header className="md-page-head">
         <div>
           <h1>{t('我的设定')}</h1>
-          <p className="md-page-sub">{t('填一次就够了。回私信、做内容、看数据都会照着它来，以后随时能改。')}</p>
+          <p className="md-page-sub">{t('先定一类家长，再谈内容。回私信、做内容、看数据都会照着它来，以后随时能改。')}</p>
         </div>
         <span className="md-setup-saved">{savedAt ? t('已保存 {time}', { time: savedAt }) : t('改完自动保存')}</span>
       </header>
+
+      <p className={`md-setup-status ${advice.ready ? 'is-ok' : ''}`}>
+        {advice.ready ? t('定位完整：人群、切入点、顾虑都写了') : t('还差 {n} 项：{list}', { n: advice.gaps.length, list: advice.gaps.slice(0, 3).map(row => t(row.label)).join('、') })}
+      </p>
 
       <section className="md-setup-card">
         <h2><span>1</span>{t('我教什么')}</h2>
@@ -67,7 +86,44 @@ export function SetupView() {
       </section>
 
       <section className="md-setup-card">
-        <h2><span>2</span>{t('家长最愁什么')}</h2>
+        <h2><span>2</span>{t('先抓哪类家长')}</h2>
+        <p className="md-setup-hint">{t('一个账号只面向一类家长；越窄越容易赚到钱。不知道选谁，就从下面的方向里挑一个。')}</p>
+        {positioningSentence(positioning) ? <p className="md-setup-sentence">{positioningSentence(positioning)}</p> : null}
+        <div className="md-setup-cards">
+          {cards.map(card => {
+            const on = String(positioning.target ?? '') === card.value
+            return (
+              <button type="button" key={card.key} className={`md-setup-card-choice ${on ? 'is-on' : ''}`} onClick={() => applyCard(card)}>
+                <b>{card.title}</b>
+                <small>{card.why}</small>
+                <small className="md-setup-fear">{t('她最怕：{fear}', { fear: card.fear })}</small>
+              </button>
+            )
+          })}
+        </div>
+        <div className="md-setup-grid">
+          <label className="md-field">
+            <span>{t('我为谁（一句话）')}</span>
+            <input key={positioning.target ?? ''} defaultValue={positioning.target ?? ''} placeholder={t('比如：北京高二物理，期中掉到及格线、家长急但没方向')} onBlur={event => save('target', event.target.value)} />
+          </label>
+          <label className="md-field">
+            <span>{t('我从哪切进去')}</span>
+            <input key={positioning.entry ?? ''} defaultValue={positioning.entry ?? ''} placeholder={t('比如：期中卷丢分最多的那一块')} onBlur={event => save('entry', event.target.value)} />
+          </label>
+          <label className="md-field">
+            <span>{t('她最怕什么')}</span>
+            <input key={positioning.fear ?? ''} defaultValue={positioning.fear ?? ''} placeholder={t('比如：怕补了一学期还是原地踏步')} onBlur={event => save('fear', event.target.value)} />
+          </label>
+        </div>
+        <div className="md-setup-chips">
+          {entries.map(row => (
+            <button type="button" key={row} className="md-chip" onClick={() => save('entry', row)}>{row}</button>
+          ))}
+        </div>
+      </section>
+
+      <section className="md-setup-card">
+        <h2><span>3</span>{t('家长最愁什么')}</h2>
         <p className="md-setup-hint">{t('写家长的原话，不写教学术语。选题和文案的钩子都从这里长出来。')}</p>
         <div className="md-setup-pains">
           {pains.length ? pains.map(point => (
@@ -84,11 +140,39 @@ export function SetupView() {
       </section>
 
       <section className="md-setup-card">
-        <h2><span>3</span>{t('我平时怎么说话')}</h2>
+        <h2><span>4</span>{t('我平时怎么说话')}</h2>
         <p className="md-setup-hint">{t('一句话就行。成稿和私信话术都会跟着这个口气写。')}</p>
         <label className="md-field">
           <textarea rows={3} defaultValue={positioning.voice ?? ''} placeholder={t('比如：先接住家长的焦虑，再用一个具体数字说清楚，不喊口号')} onBlur={event => save('voice', event.target.value)} />
         </label>
+      </section>
+
+      <section className="md-setup-card md-advice">
+        <h2>{t('定位体检')}</h2>
+        <p className="md-advice-headline">{advice.headline}</p>
+        {advice.gaps.length ? (
+          <ul className="md-advice-gaps">
+            {advice.gaps.map(row => <li key={row.key}><b>{t(row.label)}</b><span>{t(row.fix)}</span></li>)}
+          </ul>
+        ) : <p className="md-setup-hint">{t('够了：人群具体、切入点清楚、也写了顾虑。可以开始拍了。')}</p>}
+        <div className="md-advice-videos">
+          <b>{t('先拍这几条（科目 / 家庭 / 考情 / 本地）')}</b>
+          <ul>
+            {advice.firstVideos.map(row => (
+              <li key={row.angle + row.text}>
+                <button type="button" className="md-advice-video" onClick={() => startFromTopic(row.text)}>
+                  <em>{t(row.angle)}</em>
+                  <span>{row.text}</span>
+                  <Icon name="pen" size={13} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <details className="md-advice-pitfalls">
+          <summary>{t('别踩的坑')}</summary>
+          <ul>{advice.pitfalls.map(row => <li key={row}>{t(row)}</li>)}</ul>
+        </details>
       </section>
 
       <section className="md-setup-card md-setup-reset">
@@ -96,7 +180,7 @@ export function SetupView() {
         <p className="md-setup-hint">{t('清空设定和家长痛点，重新做一遍问卷。线索表、账号数据和已经做出来的内容都不会动。')}</p>
         <button type="button" className="md-pill" onClick={() => {
           dispatchOps([
-            { op: 'update_positioning', subject: '', grade: '', city: '', only: '', notDo: '', voice: '', redline: '' },
+            { op: 'update_positioning', subject: '', grade: '', city: '', target: '', entry: '', fear: '', only: '', notDo: '', voice: '', redline: '' },
             { op: 'set_pain_points', points: [] },
           ], { label: t('重做问卷') })
           setDesk({ view: 'home', focusId: null })

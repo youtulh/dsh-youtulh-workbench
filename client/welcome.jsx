@@ -1,7 +1,8 @@
-// 首页 = 一条工作流：先用问卷填好定位（保存后停在确认屏），再带他做第一条口播，然后才是日常的回私信 / 看数据。
+// 首页 = 一条工作流：先把一类家长定下来（问卷），保存后给第一批可拍的视频，再进入日常的回私信 / 看数据。
 import React from 'react'
-import { fetchLeads, profileSummary, setDesk, useDesk } from './desk.js'
+import { dispatchOps, fetchLeads, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
+import { diagnosePositioning, positioningSentence, suggestTargets } from '../src/targets.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
 
@@ -27,30 +28,60 @@ export function WelcomeView() {
   const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
   const go = view => setDesk({ view, focusId: null })
   const summary = profileSummary({ positioning, painPoints: pains })
+  const advice = diagnosePositioning({ ...positioning, pains })
 
   React.useEffect(() => {
     if (!configured) return
     fetchLeads().then(setLeads).catch(() => {})
   }, [configured])
 
-  // 没填设定：首页就是问卷
-  if (!configured) {
-    if (saved) {
-      return (
-        <div className="md-page md-welcome">
-          <div className="md-onb md-onb-done">
-            <p className="md-eyebrow">{t('设定已保存')}</p>
-            <h1 className="md-display">{t('好，往后就按你说的来')}</h1>
-            {summary ? <p className="md-lede">{t('按你的设定：{summary}', { summary })}</p> : null}
-            <p className="md-note">{t('之后随时可以在「我的设定」里改；改了以后，做内容和回私信都会跟着变。')}</p>
-            <div className="md-onb-actions">
-              <button type="button" className="md-pill" onClick={() => setSaved(false)}>{t('留在首页')}</button>
-              <button type="button" className="md-pill is-primary" onClick={() => go('content')}><Icon name="pen" size={14} />{t('去做第一条口播')}</button>
-            </div>
+  const applyTarget = (card) => {
+    dispatchOps([
+      { op: 'update_positioning', target: card.value, entry: card.entry, fear: card.fear },
+    ], { label: t('先抓这一类'), silent: true }).then(data => {
+      if (data) toast(t('定位填好了：{title}', { title: card.title }))
+    })
+  }
+
+  // 保存后先停在这一屏：给他定位一句话和第一批可拍的视频
+  if (saved) {
+    return (
+      <div className="md-page md-welcome">
+        <div className="md-onb md-onb-done">
+          <p className="md-eyebrow">{t('设定已保存')}</p>
+          <h1 className="md-display">{t('好，往后就按你说的来')}</h1>
+          <p className="md-lede">{positioningSentence(positioning) || t('按你的设定：{summary}', { summary })}</p>
+          {positioning.target
+            ? <p className="md-profile-line"><Icon name="user" size={13} />{t('你抓的是：{target}', { target: positioning.target })}</p>
+            : <p className="md-note">{t('目标客户还没定，首页和「我的设定」里都能补。')}</p>}
+
+          <div className="md-first-videos">
+            <b>{t('先拍这几条（科目 / 家庭 / 考情 / 本地）')}</b>
+            <ul>
+              {advice.firstVideos.map(row => (
+                <li key={row.angle + row.text}>
+                  <button type="button" className="md-first-video" onClick={() => startFromTopic(row.text)}>
+                    <em>{t(row.angle)}</em>
+                    <span>{row.text}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <small>{t('点一条就去做内容，选题已经勾好；每个选题会出 3 版。')}</small>
+          </div>
+
+          <p className="md-note">{t('发出去有人私信，就用「回私信」接住：判断、话术、加微信、记台账。')}</p>
+          <div className="md-onb-actions">
+            <button type="button" className="md-pill" onClick={() => setSaved(false)}>{t('留在首页')}</button>
+            <button type="button" className="md-pill is-primary" onClick={() => go('content')}><Icon name="pen" size={14} />{t('去做第一条口播')}</button>
           </div>
         </div>
-      )
-    }
+      </div>
+    )
+  }
+
+  // 没填设定：首页就是问卷
+  if (!configured) {
     return (
       <div className="md-page md-welcome">
         <OnboardingWizard onDone={() => setSaved(true)} onSwitch={() => go('setup')} />
@@ -70,11 +101,38 @@ export function WelcomeView() {
         <h1 className="md-display">{t('把一条视频，做成一个学生')}</h1>
         <p className="md-lede">{t('先写一条家长看得下去的口播，再把来问的人一个个接住。每个动作都留痕，越用越顺手。')}</p>
         {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
+        {positioning.target ? <p className="md-note">{t('你现在抓的是：{target}', { target: positioning.target })}</p> : null}
       </header>
 
+      {!positioning.target ? (
+        <section className="md-nudge">
+          <div className="md-nudge-head">
+            <p className="md-eyebrow">{t('还差一步')}</p>
+            <b>{t('先定一类家长，选题和话术才不会写给所有人')}</b>
+            <small>{t('点一个方向就帮你填好人群、切入点和顾虑；之后在「我的设定」里还能改。')}</small>
+          </div>
+          <div className="md-nudge-cards">
+            {suggestTargets({ ...positioning, pains }).slice(0, 2).map(card => (
+              <button type="button" key={card.key} className="md-nudge-card" onClick={() => applyTarget(card)}>
+                <b>{card.title}</b>
+                <small>{card.why}</small>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="md-pill is-small" onClick={() => go('setup')}>{t('自己写')}</button>
+        </section>
+      ) : null}
+
       <div className="md-steps">
-        <Step index={1} title={t('认识你')} hint={t('科目、年级、城市、家长最愁什么')} done action={t('改一下')} onAction={() => go('setup')} />
-        <Step index={2} title={t('做第一条口播')} hint={t('先看几条案例，改成你自己的说法，点开始')} action={t('开始')} onAction={() => go('content')} primary />
+        <Step
+          index={1}
+          title={t('认识你')}
+          hint={positioning.target ? t('科目、年级、城市、目标客户') : t('还差目标客户：先选一类家长')}
+          done={configured && Boolean(positioning.target)}
+          action={t('改一下')}
+          onAction={() => go('setup')}
+        />
+        <Step index={2} title={t('做第一条口播')} hint={t('选题 → 每个 3 版 → 改一版 → 采用这条')} action={t('开始')} onAction={() => go('content')} primary />
         <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
       </div>
 

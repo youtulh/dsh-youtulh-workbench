@@ -8,16 +8,39 @@ import { appendLead, appendTopics, leadLessons, markTopicsPicked, readAccounts, 
 test('我的设定.md：写完能原样读回来，空字段写「（还没填）」', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
   try {
-    const positioning = { subject: '高中化学', grade: '高一', city: '北京', only: '开学后掉队', notDo: '', voice: '先接住焦虑', redline: '不承诺提分' }
+    const positioning = {
+      subject: '高中化学', grade: '高一', city: '北京',
+      target: '北京高一化学 50–60 分、家长急但没方向', entry: '物质的量这一块', fear: '怕补了没起色',
+      only: '开学后掉队', notDo: '', voice: '先接住焦虑', redline: '不承诺提分',
+    }
     const file = writeSettingsMarkdown(root, positioning, ['期中 58 分还能补吗', '物质的量听不懂'])
     const text = await readFile(file, 'utf8')
     assert.match(text, /# 我的设定/)
     assert.match(text, /- \*\*我教什么科目\*\*：高中化学/)
     assert.match(text, /- \*\*不做\*\*：（还没填）/)
+    assert.match(text, /- \*\*目标客户\*\*：北京高一化学 50–60 分/)
     const back = readSettingsMarkdown(root)
     assert.equal(back.positioning.subject, '高中化学')
     assert.equal(back.positioning.notDo, '')
+    assert.equal(back.positioning.target, '北京高一化学 50–60 分、家长急但没方向')
+    assert.equal(back.positioning.entry, '物质的量这一块')
+    assert.equal(back.positioning.fear, '怕补了没起色')
     assert.deepEqual(back.painPoints, ['期中 58 分还能补吗', '物质的量听不懂'])
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('旧版我的设定.md（没有目标客户三行）读成空，不报错', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-ws-old-'))
+  try {
+    const { writeFile } = await import('node:fs/promises')
+    await writeFile(join(root, '我的设定.md'), '# 我的设定\n\n- **我教什么科目**：化学\n- **带哪个年级**：高一\n', 'utf8')
+    const back = readSettingsMarkdown(root)
+    assert.equal(back.positioning.subject, '化学')
+    assert.equal(back.positioning.target, '')
+    assert.equal(back.positioning.entry, '')
+    assert.equal(back.positioning.fear, '')
   } finally {
     await rm(root, { recursive: true, force: true })
   }

@@ -8,9 +8,15 @@ const text = (value, max = 400) => (typeof value === 'string' ? value.trim().sli
 function settingBlock(state) {
   const p = state?.positioning ?? {}
   const who = [p.subject, p.grade, p.city].filter(Boolean).join(' · ')
-  const rows = [['教什么', who], ['只做', p.only], ['不做', p.notDo], ['说法', p.voice], ['红线', p.redline]]
-    .filter(([, value]) => typeof value === 'string' && value.trim())
-  return rows.length ? `\n我的设定：\n${rows.map(([key, value]) => `- ${key}：${value.trim()}`).join('\n')}` : ''
+  const rows = [
+    ['教什么', who], ['先抓哪类家长', p.target], ['从哪切进去', p.entry], ['她最怕什么', p.fear],
+    ['只做', p.only], ['不做', p.notDo], ['说法', p.voice], ['红线', p.redline],
+  ].filter(([, value]) => typeof value === 'string' && value.trim())
+  if (!rows.length) return ''
+  const targeting = p.target
+    ? `\n这一阶段只面向这一类家长：${p.target.trim()}。每条内容都要让她觉得「说的就是我家」；别的人群最多偶尔带一条。`
+    : ''
+  return `\n我的设定：\n${rows.map(([key, value]) => `- ${key}：${value.trim()}`).join('\n')}${targeting}`
 }
 
 // ---- 选题 ----

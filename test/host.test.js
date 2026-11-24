@@ -113,6 +113,15 @@ test('applyOps 部分失败不影响其余操作', () => {
   assert.equal(state.items.find(i => i.id === 'seed_2').status, 'draft')
 })
 
+test('update_positioning 接受目标客户、切入点、最怕什么', () => {
+  const state = seed()
+  const { errors } = applyOps(state, [{ op: 'update_positioning', target: '北京高二物理 40–60 分', entry: '期中卷', fear: '怕补了没起色' }])
+  assert.equal(errors.length, 0)
+  assert.equal(state.positioning.target, '北京高二物理 40–60 分')
+  assert.equal(state.positioning.entry, '期中卷')
+  assert.equal(state.positioning.fear, '怕补了没起色')
+})
+
 test('删除父卡片时子卡片接到上一级', () => {
   const state = seed()
   applyOps(state, [{ op: 'update_item', id: 'seed_2', parentId: 'seed_1' }, { op: 'update_item', id: 'seed_3', parentId: 'seed_2' }, { op: 'delete_item', id: 'seed_2' }])

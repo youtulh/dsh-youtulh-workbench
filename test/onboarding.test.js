@@ -43,3 +43,17 @@ test('每题自己写的内容优先，多选里的自定义会追加进去', ()
   assert.match(positioning.only, /孩子刚转学/)
   assert.match(positioning.notDo, /只想试听/)
 })
+
+
+test('目标客户、切入点、最怕什么会写进设定', () => {
+  const { positioning } = buildProfile({
+    subject: '物理', grade: '高二', city: '北京',
+    target: '北京高二物理 40–60 分、家长急但没方向',
+    entry: '期中卷丢分最多的一块',
+    fear: '怕补了没起色',
+  })
+  assert.equal(positioning.target, '北京高二物理 40–60 分、家长急但没方向')
+  assert.equal(positioning.entry, '期中卷丢分最多的一块')
+  assert.equal(positioning.fear, '怕补了没起色')
+  assert.equal(buildProfile({}).positioning.target, '')
+})

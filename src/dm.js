@@ -12,6 +12,9 @@ function settingBlock(state) {
   const p = state?.positioning ?? {}
   const rows = [
     ['他教什么', [p.subject, p.grade, p.city].filter(Boolean).join(' · ')],
+    ['先抓哪类家长', p.target],
+    ['从哪切进去', p.entry],
+    ['她最怕什么', p.fear],
     ['只做', p.only],
     ['不做', p.notDo],
     ['说话的样子', p.voice],
@@ -27,9 +30,10 @@ export function dmPrompt(state, raw, { lessons = '', contentLessons = '' } = {})
   const system = `你是给补课老师回家长私信的助手。先判断，再写话术，最后抽台账。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
 
-先判断两件事：
+先判断三件事：
 1. 这条私信是谁发的：家长 / 学生本人 / 同行 / 广告
 2. 他真正在问什么：A 价格 / B 能不能提分 / C 怎么补 / D 时间形式
+3. 是不是我们这一阶段要接的家长${state?.positioning?.target ? `（${state.positioning.target}）` : ''}：不是就礼貌收住，别硬接
 
 再写两条话术，都是能直接复制发出去的成品：
 - 第一条：接住他最急的那句话。不评价、不承诺、不报价，用「您」，一句一个意思，平均 20 到 25 字
