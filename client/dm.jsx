@@ -80,6 +80,7 @@ export function DmView() {
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
   const [editDraft, setEditDraft] = React.useState(-1)
+  const [editedDrafts, setEditedDrafts] = React.useState({})
   const [editText, setEditText] = React.useState('')
   const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
   const [chatPerson, setChatPerson] = React.useState(DM_DRAFT.chatPerson)
@@ -135,6 +136,7 @@ export function DmView() {
       const data = await draftDm(raw.trim(), channel, history)
       const judged = { ...data, type: data.type || LEAD_TYPES[0], category: data.category || LEAD_CATEGORIES[2] }
       setResult(judged)
+      setEditedDrafts({})
       setChosen(0)
       setFields({ ...EMPTY_FIELDS, ...(data.fields ?? {}) })
       setDraftText(data.drafts?.[0]?.text ?? '')
@@ -179,6 +181,7 @@ export function DmView() {
         return
       }
       setResult(prev => ({ ...prev, drafts: data.drafts, source: data.source ?? prev.source }))
+      setEditedDrafts({})
       setChosen(0)
       setReviseNote('')
       toast(t('改好了，再看一眼'))
@@ -372,6 +375,7 @@ export function DmView() {
             {(result.drafts ?? []).map((draft, index) => (
               <li key={`${draft.tag}-${index}`} className={chosen === index ? 'is-used' : ''}>
                 <span className="md-dm-tag">{draft.tag || t('第 {n} 条', { n: index + 1 })}</span>
+                {editedDrafts[index] ? <em className="md-dm-edited">{t('已改')}</em> : null}
                 {editDraft === index ? (
                   <div className="md-dm-draft-edit">
                     <textarea rows={4} value={editText} onChange={event => setEditText(event.target.value)} />
@@ -381,6 +385,7 @@ export function DmView() {
                       <button type="button" className="md-inline-link" onClick={() => setEditDraft(-1)}>{t('取消')}</button>
                       <button type="button" className="md-pill is-small" onClick={() => {
                         setResult(prev => ({ ...prev, drafts: prev.drafts.map((row, at) => (at === index ? { ...row, text: editText } : row)) }))
+                        setEditedDrafts(prev => ({ ...prev, [index]: true }))
                         setEditDraft(-1)
                         toast(t('改好了'))
                       }}>{t('保存这句')}</button>

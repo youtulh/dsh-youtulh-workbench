@@ -1,6 +1,6 @@
 {
   "name": "dsh-youtulh-workbench",
-  "version": "0.11.34",
+  "version": "0.11.35",
   "description": "Youtulh 工作台：给线上带小班的老师用的推流工具。回私信、做内容、看数据，产出全部写成本地文件（Word / CSV）。",
   "type": "module",
   "main": "src/host.js",
@@ -47,7 +47,8 @@
     "test": "node --test test/*.test.js",
     "assets": "python3 scripts/gen-assets.py",
     "index": "node scripts/build-index.mjs",
-    "prepack": "node scripts/build.mjs"
+    "prepack": "node scripts/build.mjs",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-plugin-market-index": "^0.2.1-rc.2",

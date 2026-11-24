@@ -429,6 +429,7 @@ export const PAGES = {
   '我发了，记一笔': 'Sent it — log it',
   改一下: 'Edit',
   保存这句: 'Save this line',
+  已改: 'Edited',
   '改完这句，记一笔时存的就是改过的': 'Edits are what get logged',
 
   记进对话记录了: 'Logged in conversation history',

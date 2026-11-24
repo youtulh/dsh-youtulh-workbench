@@ -1827,3 +1827,6 @@ body[data-ds-dark-theme] .md-root {
 .md-dm-draft-edit textarea { width: 100%; padding: 8px 10px; border: .5px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 13px; line-height: 21px; resize: vertical; }
 .md-dm-draft-edit textarea:focus { border-color: var(--accent); }
 .md-dm-draft-edit .md-dm-draft-actions { align-items: center; }
+
+/* 聊天建议：已改标记 */
+.md-dm-edited { margin-left: 6px; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-style: normal; font-size: 10.5px; line-height: 17px; }
