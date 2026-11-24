@@ -298,6 +298,10 @@ export function SetupView() {
           <span className="md-muted">{backup ? t('备份好了：{dir}', { dir: backup }) : t('建议每周点一次')}</span>
           <span className="md-grow" />
           {backup ? <button type="button" className="md-inline-link" onClick={() => revealDir(backup).catch(err => toast(err.message, { error: true }))}>{t('打开备份文件夹')}</button> : null}
+          {backup ? <button type="button" className="md-inline-link" onClick={() => {
+            if (navigator.clipboard?.writeText) navigator.clipboard.writeText(backup).then(() => toast(t('复制了路径'))).catch(() => toast(t('复制失败'), { error: true }))
+            else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
+          }}>{t('复制路径')}</button> : null}
           <button type="button" className="md-pill is-small is-primary" disabled={backupBusy} onClick={() => {
             setBackupBusy(true)
             backupWorkspace()
