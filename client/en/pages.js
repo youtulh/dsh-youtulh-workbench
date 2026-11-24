@@ -700,4 +700,6 @@ export const PAGES = {
   '选一个学生': 'Pick a student',
   '没找到这个学生': 'Student not found',
   '把 {name} 加进班了': 'Added {name} to the class',
+  '上次：{summary}': 'Last time: {summary}',
+  没记: 'not recorded',
 }

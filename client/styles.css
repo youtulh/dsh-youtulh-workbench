@@ -1960,3 +1960,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-upgrade-result > .md-inline-link { position: absolute; top: 8px; right: 10px; }
 
 .md-class-dupe { margin: 0 0 8px; color: var(--accent); font-size: 11.5px; }
+
+.md-lesson-prev { color: var(--ink3); font-size: 11px; }

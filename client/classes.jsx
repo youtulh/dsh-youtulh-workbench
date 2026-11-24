@@ -153,6 +153,16 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
     setNo(next > klass.total ? klass.total : next)
   }, [lessons, klass.total])
 
+  // 每个学生「上一次」的掌握/作业，记新课时给个参照
+  const previous = React.useMemo(() => {
+    const map = {}
+    for (const row of lessons ?? []) {
+      if (row.no >= no) continue
+      if (!map[row.name] || row.no > map[row.name].no) map[row.name] = row
+    }
+    return map
+  }, [lessons, no])
+
   // 切换课次时把已保存的记录回填，没记过的默认「到 / 会 / 交」
   React.useEffect(() => {
     if (!lessons) return
@@ -444,6 +454,9 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
               return (
                 <div key={student.name} className={`md-lesson-row ${row.attend || row.mastery || row.homework ? '' : 'is-empty'}`}>
                   <b>{student.name}</b>
+                  {previous[student.name] ? (
+                    <span className="md-lesson-prev">{t('上次：{summary}', { summary: [previous[student.name].mastery, previous[student.name].homework].filter(Boolean).join(' · ') || t('没记') })}</span>
+                  ) : null}
                   {[['attend', ATTEND_OPTIONS], ['mastery', MASTERY_OPTIONS], ['homework', HOMEWORK_OPTIONS]].map(([key, options]) => (
                     <div key={key} className="md-seg" role="group" aria-label={t(key === 'attend' ? '出勤' : key === 'mastery' ? '掌握' : '作业')}>
                       {options.map(value => (
