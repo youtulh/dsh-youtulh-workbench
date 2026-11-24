@@ -652,4 +652,5 @@ export const PAGES = {
   备份工作区: 'Back up workspace',
   '备份中…': 'Backing up…',
   备份好了: 'Backup complete',
+  '整个工作区（设定、线索、学生、课次、反馈、内容）就在你的电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。': 'Everything lives on your computer. One click copies the workspace to a backup folder next to it without touching the original; only the latest 10 backups are kept.',
 }

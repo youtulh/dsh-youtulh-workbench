@@ -291,7 +291,7 @@ export function SetupView() {
 
       <section className="md-setup-card" id="setup-backup">
         <h2><span>8</span>{t('数据备份')}</h2>
-        <p className="md-setup-hint">{t('整个工作区（设定、线索、学生、课次、反馈、内容）就在你的电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据。')}</p>
+        <p className="md-setup-hint">{t('整个工作区（设定、线索、学生、课次、反馈、内容）就在你的电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。')}</p>
         <div className="md-setup-samples-foot">
           <span className="md-muted">{backup ? t('备份好了：{dir}', { dir: backup }) : t('建议每周点一次')}</span>
           <span className="md-grow" />

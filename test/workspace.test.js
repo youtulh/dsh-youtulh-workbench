@@ -280,6 +280,11 @@ test('备份：整个工作区复制到旁边，原文件不动', async () => {
     await writeFile(join(root, '线索表.csv'), '姓名\n王\n')
     const dir = backupWorkspace(root)
     assert.ok(dir.includes('备份'))
+    // 只留最近 3 份：造 5 个不同时间的备份
+    for (let i = 0; i < 4; i += 1) backupWorkspace(root, { keep: 3, at: new Date(2026, 10, 25, 6, 0, i) })
+    const { readdirSync } = await import('node:fs')
+    const backups = readdirSync(parent).filter(name => name.includes('备份'))
+    assert.equal(backups.length, 3)
     const copied = await readFile(join(dir, '线索表.csv'), 'utf8')
     assert.match(copied, /王/)
     const original = await readFile(join(root, '线索表.csv'), 'utf8')

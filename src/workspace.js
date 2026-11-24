@@ -5,7 +5,7 @@
 //   <根>/私信/<日期 某人>/    判断 + 两条话术
 //   <根>/线索表.csv           台账（Excel 能开）
 //   <根>/数据/<日期>.csv      复盘数据
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
@@ -425,12 +425,19 @@ export function readTable(root, file) {
 }
 
 /** 写一张表：只重写已知列，表里多出来的列忽略（避免手改的列被抹掉）。 */
-/** 把整个工作区复制到旁边的备份文件夹，随时能找回。 */
-export function backupWorkspace(root) {
+/** 把整个工作区复制到旁边的备份文件夹，随时能找回；只保留最近 keep 份。 */
+export function backupWorkspace(root, { keep = 10, at = new Date() } = {}) {
   if (!existsSync(root)) throw new Error('工作区还没建好')
-  const stamp = new Date().toLocaleString('sv-SE').replace(' ', ' ').replace(/[:]/g, '-').slice(0, 16)
-  const dir = join(dirname(root), `${basename(root)} 备份 ${stamp}`)
-  cpSync(root, dir, { recursive: true, errorOnExist: true })
+  const stamp = at.toLocaleString('sv-SE').replace(/[:]/g, '-').slice(0, 19)
+  const parent = dirname(root)
+  const prefix = `${basename(root)} 备份 `
+  const dir = join(parent, `${prefix}${stamp}`)
+  cpSync(root, dir, { recursive: true, errorOnExist: false })
+  // 备份越攒越多会占空间：按名字里的时间排序，只留最近 keep 份
+  const old = readdirSync(parent).filter(name => name.startsWith(prefix)).sort()
+  for (const name of old.slice(0, Math.max(0, old.length - Math.max(1, keep)))) {
+    rmSync(join(parent, name), { recursive: true, force: true })
+  }
   return dir
 }
 
