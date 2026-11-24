@@ -1714,3 +1714,8 @@ body[data-ds-dark-theme] .md-root {
   .md-chat-row > header { gap: 6px; }
   .md-chat-lead input { width: 100%; }
 }
+
+/* 聊天台：按一句要求再给一版 */
+.md-dm-revise { display: flex; gap: 8px; margin-top: 10px; }
+.md-dm-revise input { flex: 1; min-width: 0; padding: 7px 10px; border: .5px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12.5px; }
+.md-dm-revise input:focus { border-color: var(--accent); }

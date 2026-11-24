@@ -222,6 +222,11 @@ export async function addChatCase(payload) {
   return request('chat/cases', payload)
 }
 
+/** 聊天台的「再给一版」：按一句要求改上一版的两句话。 */
+export async function reviseDm(payload) {
+  return request('dm/revise', payload)
+}
+
 /** 平台话术词表（可以出现 / 不要出现）。 */
 export async function fetchPlatformWords() {
   return request('platform-words')

@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, revealDir, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, draftDm, fetchChatRecords, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, revealDir, reviseDm, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -39,6 +39,8 @@ export function DmView() {
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
+  const [reviseNote, setReviseNote] = React.useState('')
+  const [reviseBusy, setReviseBusy] = React.useState(false)
   const [chatFilter, setChatFilter] = React.useState('all')
   const [chatPerson, setChatPerson] = React.useState('')
   const [chatResult, setChatResult] = React.useState('all')
@@ -92,6 +94,26 @@ export function DmView() {
       setStage('私信')
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
+  }
+
+  const revise = async () => {
+    if (!result || !reviseNote.trim()) return
+    setReviseBusy(true)
+    try {
+      const data = await reviseDm({
+        channel, raw: raw.trim(), history,
+        drafts: (result.drafts ?? []).map(row => row.text), note: reviseNote.trim(),
+      })
+      if (!data.drafts?.length) {
+        toast(t('模型没通，这次没改；上一版还能用'), { error: true })
+        return
+      }
+      setResult(prev => ({ ...prev, drafts: data.drafts, source: data.source ?? prev.source }))
+      setChosen(0)
+      setReviseNote('')
+      toast(t('改好了，再看一眼'))
+    } catch (err) { toast(err.message, { error: true }) }
+    finally { setReviseBusy(false) }
   }
 
   const mark = async (lead, patch) => {
@@ -237,6 +259,18 @@ export function DmView() {
               </li>
             ))}
           </ul>
+
+          <div className="md-dm-revise">
+            <input
+              value={reviseNote}
+              onChange={event => setReviseNote(event.target.value)}
+              onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent?.isComposing) { event.preventDefault(); revise() } }}
+              placeholder={t('想怎么改？比如：再短一点，别问分数，直接说私信')}
+            />
+            <button type="button" className="md-pill is-small" onClick={revise} disabled={reviseBusy || !reviseNote.trim()}>
+              {reviseBusy ? t('正在改…') : t('再给一版')}
+            </button>
+          </div>
 
           <div className="md-dm-ledger">
             <div className="md-dm-ledger-grid">

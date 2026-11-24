@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from '../src/chat.js'
+import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from '../src/chat.js'
 
 const state = { positioning: { subject: '物理', grade: '高二', city: '北京' }, painPoints: ['期中 58 分还能补吗'] }
 const temp = () => mkdtemp(join(tmpdir(), 'workbench-chat-'))
@@ -26,6 +26,16 @@ test('带上下文：把上一轮喂进去，模型顺着聊', () => {
   assert.match(prompt.user, /孩子高二物理 40 分/)
   assert.match(prompt.user, /那多少钱？/)
   assert.doesNotMatch(chatPrompt(state, { channel: '微信', raw: '多少钱' }).user, /前面聊过的/)
+})
+
+test('再给一版：带上上一版和老师的那句要求，不推翻重写', () => {
+  const prompt = chatRevisePrompt(state, {
+    channel: '平台私信', raw: '58 分还能补吗', drafts: ['先接住他', '我私信您'], note: '再短一点，别问分数',
+  })
+  assert.match(prompt.user, /上一版：/)
+  assert.match(prompt.user, /1\. 先接住他/)
+  assert.match(prompt.user, /老师的要求：再短一点，别问分数/)
+  assert.match(prompt.system, /不要推翻重写/)
 })
 
 test('平台词表：默认有一份、能存能读、自定义词进提示词', async () => {

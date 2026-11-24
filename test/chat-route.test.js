@@ -73,6 +73,21 @@ test('platform-words：默认能读，改完能存回来', async () => {
   }
 })
 
+test('dm/revise：缺要求/缺上一版被拒；没模型时返回空，不假装改过', async () => {
+  const { call, cleanup } = await boot()
+  try {
+    const drafts = ['先接住', '我私信您']
+    assert.equal((await call('POST', 'dm/revise', { raw: '58 分还能补吗', drafts })).status, 400)
+    assert.equal((await call('POST', 'dm/revise', { raw: '58 分还能补吗', drafts: [], note: '短一点' })).status, 400)
+    const ok = await call('POST', 'dm/revise', { raw: '58 分还能补吗', drafts, note: '短一点' })
+    assert.equal(ok.status, 200)
+    assert.equal(ok.body.drafts.length, 0)
+    assert.equal(ok.body.source, 'local')
+  } finally {
+    await cleanup()
+  }
+})
+
 test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
   const { call, cleanup } = await boot()
   try {

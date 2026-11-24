@@ -178,6 +178,28 @@ ${cases ? `\n以前聊成的真实例子（照着这种感觉写，别照抄内�
   return { system, user: `${history.trim() ? `前面聊过的（接着这个上下文）：\n${history.trim()}\n\n` : ''}对方最近的消息：\n${raw}` }
 }
 
+/**
+ * 已经给过一版，老师想再改：保留上一版能用的句子，只按他这句要求调。
+ * 这就是聊天台的「再给一版」。
+ */
+export function chatRevisePrompt(state, { channel = '平台私信', raw = '', history = '', drafts = [], note = '', cases = '', words = DEFAULT_PLATFORM_WORDS } = {}) {
+  const base = chatPrompt(state, { channel, raw, history, cases, words })
+  const previous = (Array.isArray(drafts) ? drafts : []).slice(0, 2)
+    .map((text, index) => `${index + 1}. ${text}`)
+    .join('\n')
+  return {
+    system: `${base.system}
+
+老师已经看过上一版，现在按他的一句要求改：不要推翻重写，能用的句子留着，只改他不满意的地方。`,
+    user: `${base.user}
+
+上一版：
+${previous}
+
+老师的要求：${note}`,
+  }
+}
+
 /** 只留两条能直接发的、一个判断和阶段；台账字段沿用 dm 的抽取。 */
 export function normalizeChat(json) {
   const drafts = (Array.isArray(json?.drafts) ? json.drafts : [])

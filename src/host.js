@@ -11,7 +11,7 @@ import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
-import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from './chat.js'
+import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, updateChatRow, writePlatformWords } from './chat.js'
 import { LAYOUT, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readVoiceSamples, recordContent, removeContent, resolveRoot, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent } from './students.js'
@@ -640,6 +640,28 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const next = writePlatformWords(root, { allow: body.allow, ban: body.ban })
       return json(res, 200, next)
+    }
+    case 'dm/revise': {
+      // 对上一版不满意：按老师的一句要求重写两条，不推翻已经能用的部分
+      const raw = String(body.raw ?? '').trim().slice(0, 2000)
+      const note = String(body.note ?? '').trim().slice(0, 200)
+      const channel = CHANNELS.includes(body.channel) ? body.channel : CHANNELS[0]
+      const drafts = (Array.isArray(body.drafts) ? body.drafts : []).map(value => String(value ?? '').slice(0, 500)).filter(Boolean).slice(0, 2)
+      if (!raw) return json(res, 400, { error: tr('先粘一条消息') })
+      if (!note) return json(res, 400, { error: tr('先写一句想怎么改') })
+      if (!drafts.length) return json(res, 400, { error: tr('还没有上一版') })
+      const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const cases = chatLessons(root, channel)
+      const words = readPlatformWords(root)
+      let variants = []
+      let from = 'local'
+      try {
+        const { text: out } = await callModel(ctx, { ...chatRevisePrompt(state, { channel, raw, history: String(body.history ?? ''), drafts, note, cases, words }), maxTokens: 1200, light: true })
+        const normalized = normalizeChat(extractJson(out))
+        if (normalized.drafts.length) { variants = normalized.drafts; from = 'model' }
+      } catch { /* 没模型就保持上一版，交给页面提示 */ }
+      return json(res, 200, { drafts: variants, source: from })
     }
     case 'chat/update': {
       // 给一轮对话标结果：成交 / 流失 / 约试听，后面的建议会参考；顺手把线索阶段推上去
