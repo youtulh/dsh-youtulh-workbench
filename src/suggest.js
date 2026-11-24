@@ -1,6 +1,7 @@
 // 做内容页的「案例提示词」：先读人设，想几条家长真会问的问题，让人照着改写。
 // 先本地拼（快、不花钱、断网也能用），接上模型时换成更像人话的一版。
 import { currentLang } from './i18n.js'
+import { STYLE_RULES } from './style-guide.js'
 
 const text = (value, max = 60) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
 
@@ -42,6 +43,8 @@ ${pains.length ? `- 家长常愁的：${pains.join('、')}` : ''}
 
 要求：
 - 每个不超过 20 字，像家长自己会说的话，不用「干货」「秘籍」这类词
+- 要圈住具体的人（偏科、掉队、只差一分、艺考、转学…），不要写成人人都能说的空题
+${STYLE_RULES.split('\n').slice(8, 12).join('\n')}
 - 5 个角度不要重复：一个讲基础薄弱、一个讲分数焦虑、一个讲方法、一个讲时间/形式、一个讲具体知识点
 - 不承诺提分、不报价
 

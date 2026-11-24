@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, savePiece } from './export.js'
 import { createTools } from './tools.js'
+import { styleMarkdown } from './style-guide.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { creativeText, localScript, localTopics, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt } from './topics.js'
 import { LAYOUT, appendLead, dayStamp, ensureLayout, folderName, leadLessons, listTree, readAccounts, readLeads, readSettingsMarkdown, resolveRoot, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
@@ -131,6 +132,11 @@ async function route(ctx, store, desk, req, res) {
         const root = resolveRoot((await desk.settings.read()).saveRoot)
         // 老用户升级上来时 md 可能还不存在：先补写一份，agent 读到才有依据
         if (!existsSync(join(root, LAYOUT.settings))) writeSettingsMarkdown(root, state.positioning ?? {}, state.painPoints ?? [])
+        // 说话样本也落成文件：用户想换成自己的口气，直接改这个 md
+        if (!existsSync(join(root, '说话样本.md'))) {
+          ensureLayout(root)
+          writeFile(join(root, '说话样本.md'), styleMarkdown()).catch(() => {})
+        }
         const fromFile = readSettingsMarkdown(root)
         if (fromFile) {
           const same = JSON.stringify(fromFile.positioning) === JSON.stringify(state.positioning)
