@@ -25,10 +25,10 @@ const EMPTY_FIELDS = { name: '', grade: '', school: '', painPoint: '', source: '
 
 // 新用户不知道粘什么的时候，点一条示例先看效果（随手能改）
 const SCENARIOS = [
-  { label: '问价格', platform: '老师，高一物理一对一怎么收费？', wechat: '老师，一节课多少钱？' },
-  { label: '能不能提分', platform: '孩子高一物理才考 58 分，还能补上来吗？', wechat: '孩子高二物理四十多分，还来得及吗？' },
-  { label: '怎么补', platform: '老师，物质的量这一块完全听不懂，该怎么补？', wechat: '我们报过班，成绩还是不动，您看该怎么弄？' },
-  { label: '时间怎么排', platform: '周末能上课吗？我们平时没什么时间。', wechat: '周末能排课吗？孩子平时作业多。' },
+  { label: '问价格', platform: p => `老师，${p.grade}${p.subject}一对一怎么收费？`, wechat: () => '老师，一节课多少钱？' },
+  { label: '能不能提分', platform: p => `孩子${p.grade}${p.subject}才考 58 分，还能补上来吗？`, wechat: p => `孩子${p.grade}${p.subject}四十多分，还来得及吗？` },
+  { label: '怎么补', platform: () => '老师，物质的量这一块完全听不懂，该怎么补？', wechat: () => '我们报过班，成绩还是不动，您看该怎么弄？' },
+  { label: '时间怎么排', platform: () => '周末能上课吗？我们平时没什么时间。', wechat: () => '周末能排课吗？孩子平时作业多。' },
 ]
 
 // 粘了一半的消息和建议不要丢：切页面记得，刷新页面也记得
@@ -341,7 +341,10 @@ export function DmView() {
         <div className="md-dm-scenarios">
           <span>{t('不知道粘什么？点一条示例：')}</span>
           {SCENARIOS.map(item => (
-            <button type="button" key={item.label} className="md-chip" onClick={() => setRaw(channel === '微信' ? item.wechat : item.platform)}>{t(item.label)}</button>
+            <button type="button" key={item.label} className="md-chip" onClick={() => {
+              const facts = { grade: positioning.grade || t('高一'), subject: positioning.subject || t('物理') }
+              setRaw(channel === '微信' ? item.wechat(facts) : item.platform(facts))
+            }}>{t(item.label)}</button>
           ))}
         </div>
         <div className="md-dm-actions">
@@ -403,6 +406,7 @@ export function DmView() {
                       await logChat({
                         channel, name: fields.name || result.fields?.name || '', incoming: raw.trim(),
                         outgoing: draft.text, stage: result.stage || (channel === '微信' ? '成交' : '引流'), result: '未定',
+                        note: editedDrafts[index] ? t('发出前改过') : '',
                       })
                       toast(t('记进对话记录了'))
                       reloadChats()
@@ -665,6 +669,7 @@ export function DmView() {
                   <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
                   {row.name ? <button type="button" className="md-inline-link" onClick={() => setChatPerson(row.name)}>{row.name}</button> : null}
                   <span className="md-muted">{row.date} {row.stage ? `· ${t(row.stage)}` : ''}</span>
+                  {String(row.note || '').includes('改过') ? <em className="md-chat-edited">{t('改过')}</em> : null}
                   <span className="md-grow" />
                   <button type="button" className="md-inline-link" onClick={() => {
                     setChannel(row.channel)
