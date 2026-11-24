@@ -1777,3 +1777,10 @@ body[data-ds-dark-theme] .md-root {
 /* 线索卡：聊过几轮 */
 .md-lead-chat { padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-size: 10.5px; line-height: 18px; }
 .md-lead-chat:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+
+/* 窄屏筛选条 */
+@media (max-width: 640px) {
+  .md-lead-tools { gap: 6px; }
+  .md-lead-search { width: 100%; }
+  .md-lead-tabs { flex-wrap: wrap; }
+}

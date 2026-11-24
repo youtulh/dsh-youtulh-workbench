@@ -77,10 +77,14 @@ export function StudentsView() {
   )
 }
 
+// 学生页的搜索/筛选：切到别的页面再回来不重置
+const ROSTER_UI = { query: '', filter: '' }
+
 function RosterPanel({ students, classes, onChanged }) {
   useLang()
-  const [query, setQuery] = React.useState('')
-  const [filter, setFilter] = React.useState('')
+  const [query, setQuery] = React.useState(ROSTER_UI.query)
+  const [filter, setFilter] = React.useState(ROSTER_UI.filter)
+  React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter }) }, [query, filter])
   if (students === null) return <p className="md-muted md-dm-empty">{t('读取中…')}</p>
 
   const layerOptions = [...new Set(classes.flatMap(row => row.layers))]

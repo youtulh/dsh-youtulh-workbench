@@ -22,7 +22,7 @@ const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
   raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
   fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
-  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent',
+  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '',
 }
 const DM_DRAFT = (() => {
   try {
@@ -51,8 +51,8 @@ export function DmView() {
   const [leads, setLeads] = React.useState([])
   const [leadsReady, setLeadsReady] = React.useState(false)
   const [lessons, setLessons] = React.useState([])
-  const [filter, setFilter] = React.useState('all')
-  const [query, setQuery] = React.useState('')
+  const [filter, setFilter] = React.useState(DM_DRAFT.filter)
+  const [query, setQuery] = React.useState(DM_DRAFT.query)
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
@@ -69,9 +69,9 @@ export function DmView() {
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => {
-    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort })
+    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query })
     try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
-  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort])
+  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
 
