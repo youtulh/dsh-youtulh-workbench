@@ -1,7 +1,7 @@
 // 线索漏斗：一条线索从私信走到报课，拖一下就换个阶段。
 // 数据就是工作区里的 线索表.csv，页面只是换个看法。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchChatRecords, fetchLeadsWithLessons, setDesk, setLeadStage, toast, updateLead } from './desk.js'
+import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, setDesk, setLeadStage, toast, updateLead } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { LEAD_CATEGORIES, LEAD_STAGES, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
@@ -12,13 +12,15 @@ export function FunnelPanel({ students = [], onChanged }) {
   useLang()
   const [leads, setLeads] = React.useState(null)
   const [chatCounts, setChatCounts] = React.useState({})
+  const [contentTitles, setContentTitles] = React.useState([])
   const [busy, setBusy] = React.useState('')
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
 
-  const load = () => Promise.all([fetchLeadsWithLessons(), fetchChatRecords()])
-    .then(([{ leads: rows }, chatData]) => {
+  const load = () => Promise.all([fetchLeadsWithLessons(), fetchChatRecords(), fetchContent()])
+    .then(([{ leads: rows }, chatData, content]) => {
       setLeads(rows)
+      setContentTitles((content.rows ?? []).map(row => row['标题']).filter(Boolean).slice(0, 60))
       const counts = {}
       for (const chat of chatData.rows ?? []) {
         if (chat.name) counts[chat.name] = (counts[chat.name] ?? 0) + 1
@@ -69,11 +71,12 @@ export function FunnelPanel({ students = [], onChanged }) {
         { name: 'grade', label: t('孩子年级'), placeholder: t('高一') },
         { name: 'school', label: t('学校'), placeholder: t('没说的留空') },
         { name: 'painPoint', label: t('卡点'), placeholder: t('物质的量不会算') },
-        { name: 'source', label: t('来源'), placeholder: t('哪条视频带来的') },
+        { name: 'source', label: t('来源'), placeholder: t('哪条视频带来的'), list: 'funnel-content-titles' },
         { name: 'category', label: t('分诊类型'), type: 'select', options: LEAD_CATEGORIES.map(value => ({ value, label: t(value) })) },
         { name: 'stage', label: t('阶段'), type: 'select', options: LEAD_STAGES.map(value => ({ value, label: t(value) })) },
         { name: 'next', label: t('下一步做什么'), placeholder: t('周四晚 8 点试听') },
       ],
+      datalists: [{ id: 'funnel-content-titles', options: contentTitles }],
       onSubmit: values => {
         appendLeadRow(values).then(data => { setLeads(data.leads ?? []); toast(t('记进线索表了')) }).catch(err => toast(err.message, { error: true }))
       },

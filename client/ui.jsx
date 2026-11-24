@@ -143,12 +143,17 @@ export function FormDialog() {
                   {field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               ) : (
-                <input type={field.type ?? 'text'} value={values[field.name] ?? ''} placeholder={field.placeholder} required={field.required} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))} />
+                <input type={field.type ?? 'text'} value={values[field.name] ?? ''} placeholder={field.placeholder} required={field.required} list={field.list} onChange={e => setValues(v => ({ ...v, [field.name]: e.target.value }))} />
               )}
               {field.hint ? <small>{field.hint}</small> : null}
             </label>
           )
         })}
+        {(dialog.datalists ?? []).map(list => (
+          <datalist id={list.id} key={list.id}>
+            {list.options.map(option => <option key={option} value={option} />)}
+          </datalist>
+        ))}
         <div className="md-form-foot">
           {dialog.onDelete ? <button type="button" className="md-btn is-danger" onClick={() => { dialog.onDelete(); close() }}>{t('删除')}</button> : null}
           <span style={{ flex: 1 }} />
