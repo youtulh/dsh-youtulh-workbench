@@ -79,6 +79,13 @@ test('chat/log 记一笔；chat/cases 存案例并回读', async () => {
     const synced = await call('POST', 'chat/update', { index: last.rowIndex, patch: { result: '成交' } })
     assert.equal(synced.status, 200)
     assert.equal(synced.body.leads[0].stage, '已报课')
+    assert.equal(synced.body.studentCreated, true)
+    const students = await call('GET', 'students')
+    assert.deepEqual(students.body.students.map(row => row.name), ['王'])
+    // 再标一次不重复建
+    const again = await call('POST', 'chat/update', { index: last.rowIndex, patch: { result: '成交' } })
+    assert.equal(again.body.studentCreated, false)
+    assert.equal((await call('GET', 'students')).body.students.length, 1)
 
     assert.equal((await call('POST', 'chat/cases', { channel: '微信', scene: '问价格', result: '成交', text: '家长：多少钱？老师：先别报数字。' })).status, 200)
     assert.equal((await call('POST', 'chat/cases', { channel: '微信', text: '   ' })).status, 400)

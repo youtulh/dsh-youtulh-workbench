@@ -40,6 +40,7 @@ export function DmView() {
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
   const [chatFilter, setChatFilter] = React.useState('all')
+  const [chatPerson, setChatPerson] = React.useState('')
   const [openChat, setOpenChat] = React.useState(-1)
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
@@ -370,16 +371,23 @@ export function DmView() {
               <button type="button" key={id} className={chatFilter === id ? 'is-on' : ''} onClick={() => setChatFilter(id)}>{t(label)}</button>
             ))}
           </div>
+          {chatPerson ? (
+            <button type="button" className="md-chat-person" onClick={() => setChatPerson('')}>
+              {t('只看 {name}', { name: chatPerson })}<span>×</span>
+            </button>
+          ) : null}
         </header>
         {chats.length === 0 ? (
           <p className="md-muted md-dm-empty">{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
         ) : (
           <ul className="md-chat-list">
-            {chats.slice().reverse().filter(row => chatFilter === 'all' || row.channel === chatFilter).slice(0, 20).map(row => (
+            {chats.slice().reverse()
+              .filter(row => (chatFilter === 'all' || row.channel === chatFilter) && (!chatPerson || row.name === chatPerson))
+              .slice(0, 20).map(row => (
               <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
                 <header>
                   <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
-                  {row.name ? <b>{row.name}</b> : null}
+                  {row.name ? <button type="button" className="md-inline-link" onClick={() => setChatPerson(row.name)}>{row.name}</button> : null}
                   <span className="md-muted">{row.date} {row.stage ? `· ${t(row.stage)}` : ''}</span>
                   <span className="md-grow" />
                   <button type="button" className="md-inline-link" onClick={() => {
@@ -393,7 +401,8 @@ export function DmView() {
                       .then(data => {
                         setChats(data.rows ?? [])
                         if (data.leads) setLeads(data.leads)
-                        if (['加微', '约试听', '成交'].includes(event.target.value) && data.leads) toast(t('结果记下了，线索阶段也一起更新'))
+                        if (data.studentCreated) toast(t('成交，顺手建了学生档案'))
+                        else if (['加微', '约试听', '成交'].includes(event.target.value) && data.leads) toast(t('结果记下了，线索阶段也一起更新'))
                       })
                       .catch(err => toast(err.message, { error: true }))
                   }}>

@@ -403,6 +403,8 @@ export const PAGES = {
   '我发了，记一笔': 'Sent it — log it',
   记进对话记录了: 'Logged in conversation history',
   最近对话: 'Recent chats',
+  '只看 {name}': 'Only {name}',
+  '成交，顺手建了学生档案': 'Enrolled — student profile created too',
   接着聊: 'Continue',
   '接着上一轮聊：': 'Continuing from:',
   清除上下文: 'Clear context',

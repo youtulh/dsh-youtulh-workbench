@@ -636,13 +636,22 @@ async function route(ctx, store, desk, req, res) {
       const rows = updateChatRow(root, body.index, body.patch ?? {})
       if (!rows) return json(res, 404, { error: tr('没找到这一轮对话') })
       const row = rows.find(item => item.rowIndex === Number(body.index))
-      const toStage = { 加微: '已加微信', 约试听: '约试听', 成交: '已报课' }[String(body.patch?.result ?? '')]
+      const result = String(body.patch?.result ?? '')
+      const toStage = { 加微: '已加微信', 约试听: '约试听', 成交: '已报课' }[result]
       let leads = null
+      let studentCreated = false
       if (toStage && row?.name) {
         const match = readLeads(root).find(item => item.name === row.name && !['已报课', '流失'].includes(item.stage))
         if (match) leads = updateLeadRow(root, match.rowIndex, { stage: toStage })
+        // 成交顺手建学生档案，省得再回学生页转一次
+        if (result === '成交' && !readStudents(root).some(item => item.name === row.name)) {
+          saveStudent(root, {
+            name: row.name, grade: '', source: '聊天成交', enrolledAt: dayStamp(), note: '聊天台标成交时自动建档',
+          })
+          studentCreated = true
+        }
       }
-      return json(res, 200, { rows, leads })
+      return json(res, 200, { rows, leads, studentCreated })
     }
     case 'chat/log': {
       // 这句我发出去了：记进 对话记录.csv，后面用来复盘和给建议
