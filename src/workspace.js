@@ -175,13 +175,15 @@ export function appendLead(root, lead) {
 
 /** 解析一行 CSV（支持引号、引号内逗号、"" 转义）。 */
 export function parseCsvLine(line) {
+  // Excel 另存为 CSV 会带 BOM；不剥掉的话第一列表头会变成「\uFEFF姓名」，整张表读不出来
+  const text = String(line ?? '').replace(/^\uFEFF/, '')
   const out = []
   let cell = ''
   let quoted = false
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]
     if (quoted) {
-      if (ch === '"' && line[i + 1] === '"') { cell += '"'; i++ } else if (ch === '"') quoted = false
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++ } else if (ch === '"') quoted = false
       else cell += ch
     } else if (ch === '"') quoted = true
     else if (ch === ',') { out.push(cell); cell = '' }

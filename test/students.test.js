@@ -173,3 +173,33 @@ test('聚合：进度、按卡点层分组、分层解析', () => {
   assert.deepEqual(groups.map(row => [row.layer, row.students.length]), [['化合价', 1], ['配平', 1], ['', 1]])
   assert.deepEqual(parseLayers('化合价，配平、化合价;  '), ['化合价', '配平'])
 })
+
+
+test('老版本表格兼容：班课的班名列叫「期次」，课次的列叫「第几次」', async () => {
+  const root = await temp()
+  try {
+    await writeFile(join(root, '班课.csv'), '期次,上课时间,总次数,分层,备注\n高一补漏一期,周日 17:15,10,,腾讯会议\n')
+    await writeFile(join(root, '课次记录.csv'), '日期,班,姓名,出勤,掌握,作业,备注\n2026-11-22,高一补漏一期,赵培源,到,半会,交,\n')
+    const classes = readClasses(root)
+    assert.equal(classes[0].name, '高一补漏一期')
+    assert.equal(classes[0].status, '在读')
+    const lessons = readLessons(root, '高一补漏一期')
+    assert.equal(lessons[0].no, 0) // 老表没有课次列，先读成 0，不丢记录
+    assert.equal(lessons[0].name, '赵培源')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
+
+
+test('Excel CSV 带 BOM：学生和班仍能读出来', async () => {
+  const root = await temp()
+  try {
+    await writeFile(join(root, '班课.csv'), '\uFEFF"期次","上课时间","总次数"\n"高一补漏一期","周日",10\n')
+    await writeFile(join(root, '学生档案.csv'), '\uFEFF"姓名","年级","班"\n"赵培源","高一","高一补漏一期"\n')
+    assert.equal(readClasses(root)[0].name, '高一补漏一期')
+    assert.equal(readStudents(root)[0].name, '赵培源')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})

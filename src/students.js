@@ -44,7 +44,8 @@ const toStudent = (row) => ({
 const toStudentRow = (student) => Object.fromEntries(Object.entries(STUDENT_FIELDS).map(([key, col]) => [col, student[key] ?? '']))
 
 const toClass = (row) => ({
-  name: row['班名'] ?? '', time: row['上课时间'] ?? '', total: Number(row['总次数']) || DEFAULT_TOTAL,
+  // 老版本班课.csv 的班名列叫「期次」，读的时候兼容，写的时候统一成「班名」
+  name: row['班名'] ?? row['期次'] ?? '', time: row['上课时间'] ?? '', total: Number(row['总次数']) || DEFAULT_TOTAL,
   status: row['状态'] === '结课' ? '结课' : '在读',
   layers: parseLayers(row['分层']), layerText: row['分层'] ?? '', note: row['备注'] ?? '',
   createdAt: row['创建时间'] ?? '', updatedAt: row['更新时间'] ?? '',
@@ -55,7 +56,7 @@ const toClassRow = (klass) => ({
 })
 
 const toLesson = (row) => ({
-  className: row['班'] ?? '', no: Number(row['课次']) || 0, date: row['日期'] ?? '', name: row['姓名'] ?? '',
+  className: row['班'] ?? '', no: Number(row['课次'] ?? row['第几次'] ?? row['次数']) || 0, date: row['日期'] ?? '', name: row['姓名'] ?? '',
   attend: row['出勤'] ?? '', mastery: row['掌握'] ?? '', homework: row['作业'] ?? '', note: row['备注'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
 const toLessonRow = (lesson) => Object.fromEntries(Object.entries(LESSON_FIELDS).map(([key, col]) => [col, lesson[key] ?? '']))
