@@ -490,6 +490,7 @@ export const PAGES = {
   '挪到「{stage}」了': 'Moved to “{stage}”',
   '已转成学生，去学生档案补卡点层': 'Student created — add the stuck layer in Student profiles',
   转成学生: 'Make a student',
+  去档案: 'Open profile',
   已经转成学生了: 'Already a student',
   家长称呼: 'Parent name',
   孩子年级: 'Child grade',

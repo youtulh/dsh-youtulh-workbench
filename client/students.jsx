@@ -1,6 +1,6 @@
 // 学生：线索漏斗 / 学生档案 / 班课 三个 tab。数据都在工作区的 CSV 里。
 import React from 'react'
-import { fetchLessons, fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast } from './desk.js'
+import { fetchLessons, fetchStudents, removeStudentRow, saveStudentRow, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ClassesPanel } from './classes.jsx'
 import { FunnelPanel } from './funnel.jsx'
@@ -18,6 +18,7 @@ export function StudentsView() {
   const [students, setStudents] = React.useState(null)
   const [classes, setClasses] = React.useState([])
   const [lessons, setLessons] = React.useState([])
+  const studentFocus = useDesk(s => s.studentFocus)
 
   const load = () => Promise.all([fetchStudents(), fetchLessons('')])
     .then(([data, rows]) => {
@@ -27,6 +28,7 @@ export function StudentsView() {
     })
     .catch(err => toast(err.message, { error: true }))
   React.useEffect(() => { load() }, [])
+  React.useEffect(() => { if (studentFocus) setTab('roster') }, [studentFocus])
 
   const onChanged = (data) => {
     if (data?.students) setStudents(data.students)
@@ -71,7 +73,7 @@ export function StudentsView() {
       </div>
 
       {tab === 'funnel' ? <FunnelPanel students={students ?? []} onChanged={onChanged} /> : null}
-      {tab === 'roster' ? <RosterPanel students={students} classes={classes} onChanged={onChanged} /> : null}
+      {tab === 'roster' ? <RosterPanel students={students} classes={classes} onChanged={onChanged} focusName={studentFocus} /> : null}
       {tab === 'classes' ? <ClassesPanel classes={classes} students={students ?? []} lessons={lessons} onChanged={onChanged} onLessons={onLessons} /> : null}
     </div>
   )
@@ -80,11 +82,17 @@ export function StudentsView() {
 // 学生页的搜索/筛选：切到别的页面再回来不重置
 const ROSTER_UI = { query: '', filter: '' }
 
-function RosterPanel({ students, classes, onChanged }) {
+function RosterPanel({ students, classes, onChanged, focusName = '' }) {
   useLang()
   const [query, setQuery] = React.useState(ROSTER_UI.query)
   const [filter, setFilter] = React.useState(ROSTER_UI.filter)
   React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter }) }, [query, filter])
+  React.useEffect(() => {
+    if (!focusName) return
+    setQuery(focusName)
+    setFilter('')
+    setDesk({ studentFocus: '' })
+  }, [focusName])
   if (students === null) return <p className="md-muted md-dm-empty">{t('读取中…')}</p>
 
   const layerOptions = [...new Set(classes.flatMap(row => row.layers))]

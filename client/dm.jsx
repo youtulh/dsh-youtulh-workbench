@@ -532,12 +532,16 @@ export function DmView() {
                   }}>{t('记一次跟进')}</button>
                   <button type="button" className="md-inline-link" onClick={() => postpone(lead, 1)}>{t('明天再跟')}</button>
                   <button type="button" className="md-inline-link" onClick={() => postpone(lead, 3)}>{t('3 天后')}</button>
-                  {lead.stage === '已报课' && lead.name && !converted[lead.rowIndex] ? (
-                    <button type="button" className="md-inline-link" onClick={() => {
-                      convertLead(lead.rowIndex)
-                        .then(data => { if (data.leads) setLeads(data.leads); setConverted(prev => ({ ...prev, [lead.rowIndex]: true })); toast(t('已转成学生，去学生档案补卡点层')) })
-                        .catch(err => toast(err.message, { error: true }))
-                    }}>{t('转成学生')}</button>
+                  {lead.stage === '已报课' && lead.name ? (
+                    converted[lead.rowIndex] ? (
+                      <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'students', focusId: null, studentFocus: converted[lead.rowIndex] })}>{t('去档案')}</button>
+                    ) : (
+                      <button type="button" className="md-inline-link" onClick={() => {
+                        convertLead(lead.rowIndex)
+                          .then(data => { if (data.leads) setLeads(data.leads); setConverted(prev => ({ ...prev, [lead.rowIndex]: lead.name })); toast(t('已转成学生，去学生档案补卡点层')) })
+                          .catch(err => toast(err.message, { error: true }))
+                      }}>{t('转成学生')}</button>
+                    )
                   ) : null}
                 </div>
                 {openDraft === lead.rowIndex ? (
