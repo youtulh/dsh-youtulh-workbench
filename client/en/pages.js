@@ -726,4 +726,5 @@ export const PAGES = {
   这批的选题: 'Topics in this batch',
   下一步: 'Next',
   全部状态: 'All statuses',
+  本月: 'This month',
 }

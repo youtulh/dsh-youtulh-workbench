@@ -111,7 +111,9 @@ export function DataView() {
     { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
   ]
   const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
-  const scopedLeads = leads.filter(row => bizRange === 'all' || (row.date && row.date >= weekStart))
+  const monthStart = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const cutoff = bizRange === 'week' ? weekStart : bizRange === 'month' ? monthStart : ''
+  const scopedLeads = leads.filter(row => !cutoff || (row.date && row.date >= cutoff))
   const q = query.trim()
   const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row)
     && (!q || [row['标题'], row['选题'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
@@ -158,7 +160,7 @@ export function DataView() {
       <div className="md-biz-head">
         <span>{t('私信漏斗（线索表）')}</span>
         <div className="md-biz-range">
-          {[['all', t('全部')], ['week', t('近 7 天')]].map(([id, label]) => (
+          {[['all', t('全部')], ['week', t('近 7 天')], ['month', t('本月')]].map(([id, label]) => (
             <button type="button" key={id} className={bizRange === id ? 'is-on' : ''} onClick={() => setBizRange(id)}>{label}</button>
           ))}
         </div>

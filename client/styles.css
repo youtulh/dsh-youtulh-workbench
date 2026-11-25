@@ -1974,3 +1974,9 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 .md-student-status { padding: 0 6px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-style: normal; font-size: 10.5px; line-height: 17px; }
 .md-student-status.is-lost { color: var(--accent); }
+
+@media (max-width: 640px) {
+  .md-class-meta { flex-wrap: wrap; gap: 6px; }
+  .md-student-card header, .md-student-tags { flex-wrap: wrap; }
+  .md-biz-range { flex-wrap: wrap; }
+}
