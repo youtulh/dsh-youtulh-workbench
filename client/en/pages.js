@@ -792,7 +792,6 @@ export const PAGES = {
   去跟进: 'Follow up',
   '回 {n} 条还没结果的私信': 'Reply to {n} unresolved DMs',
   '先判断是谁、在问什么，再回': 'Work out who they are and what they ask before replying.',
-  去回私信: 'Open DMs',
   拍第一条口播: 'Film the first video',
   '不用完美，先拍一条能发出去的': 'It does not need to be perfect — just postable.',
   去做内容: 'Make content',
