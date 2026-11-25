@@ -87,10 +87,35 @@ test('加微/报课最多的内容可以单独归因', () => {
   ]
   const leads = [
     { grade: '高二', source: '高二物理期中卷丢分在哪', stage: '私信', result: '待定' },
+    { grade: '高二', source: '高二物理期中卷丢分在哪', stage: '私信', result: '待定' },
+    { grade: '高二', source: '高二物理期中卷丢分在哪', stage: '私信', result: '待定' },
     { grade: '高二', source: '动量守恒怎么判断', stage: '已报课', result: '加微成功' },
+    { grade: '高二', source: '动量守恒怎么判断', stage: '已加微信', result: '加微成功' },
   ]
   const out = reviewPositioning({ positioning, content, leads })
   assert.equal(out.topLeadContent.title, '高二物理期中卷丢分在哪')
   assert.equal(out.topWonContent.title, '动量守恒怎么判断')
   assert.ok(out.notes.some(row => row.key === 'review_top_won_content'))
+})
+
+
+test('只有 1 个转化时会明确说样本少', () => {
+  const content = [{ '标题': '动量守恒怎么判断', '选题': '动量守恒' }]
+  const leads = [
+    { grade: '高二', source: '动量守恒怎么判断', stage: '已报课', result: '加微成功' },
+    { grade: '高二', source: '小红书', stage: '私信', result: '待定' },
+  ]
+  const out = reviewPositioning({ positioning, content, leads })
+  assert.ok(out.notes.some(row => row.key === 'review_top_won_small'))
+})
+
+test('来源只写平台时，复盘会提醒归因不到内容', () => {
+  const leads = [
+    { grade: '高二', source: '小红书', stage: '私信' },
+    { grade: '高二', source: '抖音', stage: '私信' },
+    { grade: '高二', source: '', stage: '私信' },
+  ]
+  const out = reviewPositioning({ positioning, content: [], leads })
+  assert.equal(out.unattributed, 2)
+  assert.ok(out.notes.some(row => row.key === 'review_source_vague'))
 })

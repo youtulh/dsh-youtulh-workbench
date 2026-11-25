@@ -86,6 +86,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   // 线索的「来源」如果能对上某条内容的标题，就知道哪条内容真的带来了家长
   const attributed = new Map()
   const attributedWon = new Map()
+  let unattributed = 0
   for (const row of leads) {
     const source = text(row.source, 80)
     if (!source) continue
@@ -97,6 +98,8 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
       if (row.result === '加微成功' || ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)) {
         attributedWon.set(title, (attributedWon.get(title) ?? 0) + 1)
       }
+    } else {
+      unattributed += 1
     }
   }
   const topLeadContent = [...attributed.entries()].sort((a, b) => b[1] - a[1])[0] ?? null
@@ -112,10 +115,15 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   }
   if (topContent) notes.push({ key: 'review_top_content', params: { title: text(topContent['标题'], 24), dms: num(topContent['私信']) } })
   if (topLeadContent) notes.push({ key: 'review_top_lead_content', params: { title: text(topLeadContent[0], 24), n: topLeadContent[1] } })
-  if (topWonContent && (!topLeadContent || topWonContent[0] !== topLeadContent[0])) {
+  if (topWonContent && topWonContent[1] >= 2) {
     notes.push({ key: 'review_top_won_content', params: { title: text(topWonContent[0], 24), n: topWonContent[1] } })
+  } else if (topWonContent && topWonContent[1] === 1) {
+    notes.push({ key: 'review_top_won_small', params: { title: text(topWonContent[0], 24) } })
   }
   if (topSource) notes.push({ key: 'review_top_source', params: { source: topSource[0], n: topSource[1] } })
+  if (leads.length >= 3 && unattributed >= Math.max(2, Math.ceil(leads.length * 0.5))) {
+    notes.push({ key: 'review_source_vague', params: { n: unattributed } })
+  }
   if (local && recentContent.length >= 5 && cityMentions === 0) {
     notes.push({ key: 'review_local_missing', params: { city } })
   }
@@ -139,6 +147,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     gradedLeads: graded.length,
     gradeMatched: gradeMatched.length,
     wonCount: won.length,
+    unattributed,
     local,
     cityMentions,
     topSource,
