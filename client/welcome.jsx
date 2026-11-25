@@ -26,7 +26,7 @@ export function WelcomeView() {
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const [saved, setSaved] = React.useState(false)
   const [leads, setLeads] = React.useState([])
-  const [contentCount, setContentCount] = React.useState(0)
+  const [content, setContent] = React.useState([])
   const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
   const go = view => setDesk({ view, focusId: null })
   const summary = profileSummary({ positioning, painPoints: pains })
@@ -35,7 +35,7 @@ export function WelcomeView() {
   React.useEffect(() => {
     if (!configured) return
     fetchLeads().then(setLeads).catch(() => {})
-    fetchContent().then(data => setContentCount((data.rows ?? data.content ?? []).length)).catch(() => {})
+    fetchContent().then(data => setContent(data.rows ?? data.content ?? [])).catch(() => {})
   }, [configured])
 
   const proofIdeas = ['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完']
@@ -104,13 +104,21 @@ export function WelcomeView() {
   const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
   const trials = leads.filter(row => row.stage === '约试听').length
   const due = leads.filter(row => row.nextAt && row.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(row.stage)).length
+  const published = content.filter(row => row['状态'] === '已发布' && row['发布日'])
+  const latestPublish = published.map(row => String(row['发布日'])).sort().at(-1) ?? ''
+  const daysSincePublish = latestPublish ? Math.floor((Date.now() - new Date(`${latestPublish}T00:00:00`).getTime()) / 86400000) : null
+  const stale = daysSincePublish !== null && daysSincePublish >= 7
   const focus = due
     ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('去跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
     : todo
       ? { title: t('回 {n} 条还没结果的私信', { n: todo }), hint: t('先判断是谁、在问什么，再回'), action: t('去回私信'), run: () => go('dm') }
-      : contentCount === 0
+      : content.length === 0
         ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('去做内容'), run: () => go('content') }
-        : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('去看数据'), run: () => go('data') }
+        : !published.length
+          ? { title: t('把做好的口播发出去'), hint: t('内容库还没有已发布；发一条，才有数据可看'), action: t('去做内容'), run: () => go('content') }
+          : stale
+            ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('去做内容'), run: () => go('content') }
+            : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('去看数据'), run: () => go('data') }
 
   return (
     <div className="md-page md-welcome md-workflow">

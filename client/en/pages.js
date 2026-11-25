@@ -799,4 +799,8 @@ export const PAGES = {
   把已发内容的结果填上: 'Fill in results for published pieces',
   '播放、私信、加微，填一次就知道下一条怎么拍': 'Views, DMs, WeChat adds — one pass tells you what to shoot next.',
   去看数据: 'Open data',
+  把做好的口播发出去: 'Post the finished video',
+  '内容库还没有已发布；发一条，才有数据可看': 'Nothing is marked published yet — post one and the data starts.',
+  '已经 {n} 天没发了': 'It has been {n} days since the last post',
+  '稳定更新比偶尔爆一条更有用；拍下一条': 'Consistency beats one lucky hit — shoot the next one.',
 }
