@@ -43,8 +43,21 @@ export function FunnelPanel({ students = [], onChanged }) {
     setBusy(`${lead.rowIndex}-${stage}`)
     try {
       const data = await setLeadStage(lead.rowIndex, stage)
-      setLeads(data.leads ?? [])
-      toast(t('挪到「{stage}」了', { stage: t(stage) }))
+      let next = data.leads ?? []
+      if (stage === '已报课') {
+        // 报课就该进档案：拖到「已报课」和点「转成学生」做同一件事
+        try {
+          const converted = await convertLead(lead.rowIndex)
+          next = converted.leads ?? next
+          onChanged?.(converted)
+          toast(t('已报课，并更新了学生档案'))
+        } catch (err) {
+          toast(t('已报课；学生档案没建成：{msg}', { msg: err.message }), { error: true })
+        }
+      } else {
+        toast(t('挪到「{stage}」了', { stage: t(stage) }))
+      }
+      setLeads(next)
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
   }

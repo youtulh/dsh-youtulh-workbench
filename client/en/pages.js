@@ -852,5 +852,7 @@ export const PAGES = {
   处理跟进: 'Follow up',
   处理私信: 'Handle DMs',
   补齐数据: 'Fill data',
+  '已报课，并更新了学生档案': 'Enrolled — student profile updated',
+  '已报课；学生档案没建成：{msg}': 'Enrolled, but the student profile was not created: {msg}',
 
 }

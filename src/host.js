@@ -912,18 +912,16 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const lead = readLeads(root).find(row => row.rowIndex === index)
       if (!lead) return json(res, 404, { error: tr('没找到这条线索') })
-      const students = readStudents(root)
       const name = String(lead.name ?? '').trim()
       const grade = String(lead.grade ?? '').trim()
       if (!name && !grade) return json(res, 400, { error: tr('先补上家长称呼或孩子年级，再转成学生') })
       const studentName = name || grade
-      const exists = students.find(row => row.name === studentName && row.grade === grade)
-      if (!exists) {
-        saveStudent(root, {
-          name: studentName, grade, school: lead.school, source: lead.source, enrolledAt: dayStamp(),
-          note: lead.painPoint ? `卡点：${lead.painPoint}` : '',
-        })
-      }
+      // 已经在档案里的同名同年级学生也要合并新信息，不能什么都不做
+      const patch = { name: studentName, grade, enrolledAt: dayStamp() }
+      if (String(lead.school ?? '').trim()) patch.school = lead.school
+      if (String(lead.source ?? '').trim()) patch.source = lead.source
+      if (String(lead.painPoint ?? '').trim()) patch.note = `卡点：${lead.painPoint}`
+      saveStudent(root, patch)
       if (lead.stage !== '流失' && lead.stage !== '已报课') updateLeadRow(root, index, { stage: '已报课' })
       return json(res, 200, { students: readStudents(root), classes: readClasses(root), leads: readLeads(root) })
     }

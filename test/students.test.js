@@ -334,3 +334,17 @@ test('课次备注：只写备注、三态不点也会保存；备注进反馈�
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('学生档案局部更新：只补来源，不清空已有学校', async () => {
+  const root = await temp()
+  try {
+    saveStudent(root, { name: '王', grade: '高一', school: '十一学校' })
+    saveStudent(root, { name: '王', grade: '高一', source: '小红书' })
+    const row = readStudents(root)[0]
+    assert.equal(row.school, '十一学校')
+    assert.equal(row.source, '小红书')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
