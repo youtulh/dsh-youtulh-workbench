@@ -1966,3 +1966,8 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-lesson-prev em { margin-left: 6px; font-style: normal; font-size: 10.5px; color: var(--ink3); }
 .md-lesson-prev em.is-up { color: var(--accent); }
 .md-lesson-prev em.is-down { color: #b4552d; }
+
+@media (max-width: 640px) {
+  .md-lesson-prev { flex-basis: 100%; }
+  .md-student-last { line-height: 18px; }
+}

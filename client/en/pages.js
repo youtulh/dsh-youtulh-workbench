@@ -705,4 +705,6 @@ export const PAGES = {
   进步: 'better',
   退步: 'worse',
   持平: 'same',
+  '已上 {n} 次': '{n} lessons',
+  还没上过课: 'No lessons yet',
 }
