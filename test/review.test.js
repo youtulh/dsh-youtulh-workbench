@@ -136,3 +136,9 @@ test('内容几乎全是同一类时，提示配比偏了', () => {
   const out = reviewPositioning({ positioning, content, leads: [] })
   assert.ok(out.notes.some(row => row.key === 'review_angle_skew'))
 })
+
+
+test('同城定位时，复盘选题里至少有一条本地视角', () => {
+  const out = reviewPositioning({ positioning: { ...positioning, city: '北京' }, painPoints: [], content: [], leads: [] })
+  assert.ok(out.nextTopics.some(row => row.includes('北京')))
+})

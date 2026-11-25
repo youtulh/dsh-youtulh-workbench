@@ -38,6 +38,10 @@ export function suggestReviewTopics({ positioning = {}, painPoints = [], content
   }
   list.push(`${who}：家长最容易误会的一件事`)
   list.push(`${who}：先补哪一章，钱才不白花`)
+  const city = text(positioning.city, 20)
+  if (city && !/线上|全国|网课/.test(city)) {
+    list.unshift(`${city}家长：${who}最容易被忽略的一件事`)
+  }
   const unique = [...new Set(list)].filter(Boolean)
   // 内容库里已经拍过的同题不再推，避免复盘来回复制旧选题
   const seen = existing.map(row => text(row, 80)).filter(Boolean)
