@@ -64,6 +64,12 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   const city = text(positioning.city, 20)
   const local = Boolean(city) && !/线上|全国|网课/.test(city)
   const cityMentions = recentContent.filter(row => contentText(row).includes(city)).length
+  const angleNames = ['知识点', '家庭', '考情', '本地']
+  const angleCounts = Object.fromEntries(angleNames.map(name => [name, 0]))
+  for (const row of recentContent) {
+    if (angleNames.includes(row['角度'])) angleCounts[row['角度']] += 1
+  }
+  const angled = angleNames.reduce((sum, name) => sum + angleCounts[name], 0)
 
   const graded = leads.filter(row => text(row.grade, 20))
   const gradeMatched = graded.filter(row => {
@@ -127,6 +133,9 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   if (local && recentContent.length >= 5 && cityMentions === 0) {
     notes.push({ key: 'review_local_missing', params: { city } })
   }
+  if (local && angled >= 5 && angleCounts['本地'] === 0) {
+    notes.push({ key: 'review_local_angle_missing', params: { city } })
+  }
   if (!won.length) notes.push({ key: 'review_no_won', params: {} })
 
   const nextTopics = suggestReviewTopics({
@@ -150,6 +159,8 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     unattributed,
     local,
     cityMentions,
+    angled,
+    angleCounts,
     topSource,
     topContent: topContent ? { title: text(topContent['标题'], 60), dms: num(topContent['私信']) } : null,
     topLeadContent: topLeadContent ? { title: text(topLeadContent[0], 60), n: topLeadContent[1] } : null,

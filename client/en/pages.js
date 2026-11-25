@@ -815,4 +815,6 @@ export const PAGES = {
   'review_top_won_small': '《{title}》 has 1 WeChat add / enrolment — too small a sample, keep watching.',
   'review_source_vague': '{n} leads only say a platform as their source — the review cannot attribute them. Next time pick a content title.',
   这条内容的私信第一句: 'From this piece',
+  内容配比: 'Content mix',
+  'review_local_angle_missing': 'You teach locally, but none of the recent pieces is a local one — add one about {city} schools/exams.',
 }

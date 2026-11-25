@@ -488,6 +488,11 @@ export function SetupView() {
           <ul className="md-review-notes">
             {review.notes.map(row => <li key={row.key}>{t(row.key, row.params)}</li>)}
           </ul>
+          {review.angled ? (
+            <p className="md-review-mix">
+              {t('内容配比')}：{['知识点', '家庭', '考情', '本地'].map(name => `${t(name)} ${review.angleCounts[name]}`).join(' · ')}
+            </p>
+          ) : null}
           <p className="md-review-note">{t('按最近 30 条内容和全部线索算，只做参考')}</p>
           {reviewJump ? (
             <button type="button" className="md-inline-link md-review-jump" onClick={() => setDesk({ view: 'data', focusId: null, dataQuery: reviewJump.title })}>

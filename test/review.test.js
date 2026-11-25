@@ -119,3 +119,13 @@ test('来源只写平台时，复盘会提醒归因不到内容', () => {
   assert.equal(out.unattributed, 2)
   assert.ok(out.notes.some(row => row.key === 'review_source_vague'))
 })
+
+
+test('内容配比按角度统计；同城但没有本地内容会提醒', () => {
+  const content = Array.from({ length: 5 }, (_, i) => ({ '标题': `高二物理第${i}讲`, '选题': '物理', '角度': i === 4 ? '家庭' : '知识点' }))
+  const out = reviewPositioning({ positioning: { ...positioning, city: '北京' }, content, leads: [] })
+  assert.equal(out.angled, 5)
+  assert.equal(out.angleCounts['知识点'], 4)
+  assert.equal(out.angleCounts['家庭'], 1)
+  assert.ok(out.notes.some(row => row.key === 'review_local_angle_missing'))
+})
