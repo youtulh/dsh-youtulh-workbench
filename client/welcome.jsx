@@ -36,6 +36,13 @@ export function WelcomeView() {
     fetchLeads().then(setLeads).catch(() => {})
   }, [configured])
 
+  const proofIdeas = ['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完']
+  const applyProof = (value) => {
+    dispatchOps([{ op: 'update_positioning', proof: value }], { label: t('补上凭什么信你'), silent: true }).then(data => {
+      if (data) toast(t('人设补好了：{proof}', { proof: value }))
+    })
+  }
+
   const applyTarget = (card) => {
     dispatchOps([
       { op: 'update_positioning', target: card.value, entry: card.entry, fear: card.fear },
@@ -105,6 +112,21 @@ export function WelcomeView() {
         {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         {positioning.target ? <p className="md-note">{t('你现在抓的是：{target}', { target: positioning.target })}</p> : null}
       </header>
+
+      {positioning.target && !positioning.proof ? (
+        <section className="md-nudge md-proof-nudge">
+          <div className="md-nudge-head">
+            <p className="md-eyebrow">{t('人设还差一句')}</p>
+            <b>{t('家长凭什么信你？')}</b>
+            <small>{t('不用写「认真负责」，写一条能被验证的经历；哪条是真的点哪条。')}</small>
+          </div>
+          <div className="md-proof-chips">
+            {proofIdeas.map(row => (
+              <button type="button" key={row} className="md-chip" onClick={() => applyProof(row)}>{row}</button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {!positioning.target ? (
         <section className="md-nudge">

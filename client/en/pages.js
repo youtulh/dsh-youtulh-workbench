@@ -779,4 +779,9 @@ export const PAGES = {
   'review_top_source': 'Most WeChat adds / enrolments came from “{source}” ({n}).',
   review_no_won: 'No WeChat add or enrolment yet — get one piece\'s DM handoff working first.',
   下一步可以拍: 'Shoot next',
+  人设还差一句: 'One line missing',
+  '家长凭什么信你？': 'Why should parents trust you?',
+  '不用写「认真负责」，写一条能被验证的经历；哪条是真的点哪条。': 'Skip “responsible and caring” — pick a verifiable experience that is true for you.',
+  补上凭什么信你: 'Add your credibility',
+  '人设补好了：{proof}': 'Persona updated: {proof}',
 }

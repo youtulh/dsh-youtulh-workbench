@@ -9,7 +9,7 @@ function contentText(row) {
 }
 
 /** 复盘后直接给 3 个能拍的选题，不让用户自己再想。 */
-export function suggestReviewTopics({ positioning = {}, painPoints = [], contentCount = 0, contentDrift = false, gradeDrift = false, topContent = null } = {}) {
+export function suggestReviewTopics({ positioning = {}, painPoints = [], contentCount = 0, contentDrift = false, gradeDrift = false, topContent = null, existing = [] } = {}) {
   const p = positioning
   const subject = text(p.subject, 20)
   const grade = text(p.grade, 20)
@@ -35,7 +35,13 @@ export function suggestReviewTopics({ positioning = {}, painPoints = [], content
     if (pain) list.push(`家长说「${pain}」，先怎么回`)
     list.push(`${who}：为什么我只带这一类家长`)
   }
-  return [...new Set(list)].filter(Boolean).slice(0, 3)
+  list.push(`${who}：家长最容易误会的一件事`)
+  list.push(`${who}：先补哪一章，钱才不白花`)
+  const unique = [...new Set(list)].filter(Boolean)
+  // 内容库里已经拍过的同题不再推，避免复盘来回复制旧选题
+  const seen = existing.map(row => text(row, 80)).filter(Boolean)
+  const fresh = unique.filter(topic => !/^再讲一条/.test(topic) && !seen.some(row => row === topic || row.includes(topic) || (row.length >= 6 && topic.includes(row))))
+  return (fresh.length ? fresh : unique).slice(0, 3)
 }
 
 /**
@@ -91,6 +97,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     contentDrift: recentContent.length >= 3 && matchedContent.length / recentContent.length < 0.6,
     gradeDrift: graded.length >= 3 && Boolean(grade) && gradeMatched.length / graded.length < 0.6,
     topContent: topContent ? { title: text(topContent['标题'], 40) } : null,
+    existing: recentContent.map(contentText),
   })
 
   return {

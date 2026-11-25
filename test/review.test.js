@@ -42,3 +42,14 @@ test('定位复盘会给出 3 个回到定位的选题', () => {
   assert.ok(out.nextTopics.some(row => row.includes('物理') || row.includes('高二')))
   assert.ok(out.nextTopics.some(row => row.includes('动量守恒') || row.includes('期中 58')))
 })
+
+
+test('复盘选题避开内容库已经拍过的同题', () => {
+  const out = reviewPositioning({
+    positioning,
+    painPoints: [],
+    content: [{ '标题': '高二物理：动量守恒，先补哪一步', '选题': '动量守恒', '私信': '0' }],
+  })
+  assert.ok(!out.nextTopics.includes('高二物理：动量守恒，先补哪一步'))
+  assert.equal(out.nextTopics.length, 3)
+})
