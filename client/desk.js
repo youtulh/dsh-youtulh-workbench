@@ -640,8 +640,8 @@ export function importDiagnosticResult(payload) {
   return request('diagnostics/import', payload)
 }
 
-export function analyzeDiagnostic(id, kind = 'pre') {
-  return request('diagnostics/analyze', { id, kind })
+export function analyzeDiagnostic(id, kind = 'pre', note = '') {
+  return request('diagnostics/analyze', { id, kind, note })
 }
 
 export function createPostDiagnostic(id, notes = '') {

@@ -14,6 +14,7 @@ const DEMO = {
   resistances: '概念、计算、审题', goal: '先补化合价，再练最小公倍数',
   lessonTitle: '氧化还原配平', subject: '化学', at: '2026-11-30 周日 19:00',
   code: 'TRIAL-HX-1130', topic: '从标化合价一路配平到氧化还原',
+  talkAt: '周日晚 7 点', altAt: '周六上午 10 点', temperature: 'A3 已经急了',
   brandName: '姜老师化学', brandTeacher: '姜老师',
 }
 
@@ -25,6 +26,7 @@ export function DiagnosticsView() {
   const [busy, setBusy] = React.useState('')
   const [analysis, setAnalysis] = React.useState(null)
   const [analysisSource, setAnalysisSource] = React.useState('')
+  const [analysisKind, setAnalysisKind] = React.useState('pre')
   const [query, setQuery] = React.useState('')
   const [showArchived, setShowArchived] = React.useState(false)
   const [creating, setCreating] = React.useState(false)
@@ -72,7 +74,8 @@ export function DiagnosticsView() {
     gender: '', level: '基础薄弱', count: '15', subject: '', grade: prefill.grade ?? '',
     score: prefill.score ?? '',
     pain: prefill.pain ?? '', resistances: prefill.resistances ?? '', goal: prefill.goal ?? '',
-    lessonTitle: prefill.lessonTitle ?? '', at: prefill.at ?? '', code: prefill.code ?? '', topic: prefill.topic ?? '',
+    lessonTitle: prefill.lessonTitle ?? '', at: prefill.at ?? '', talkAt: prefill.talkAt ?? '', altAt: prefill.altAt ?? '', code: prefill.code ?? '', topic: prefill.topic ?? '',
+    temperature: prefill.temperature ?? '',
     brandName: prefill.brandName ?? brand.name ?? '', brandTeacher: prefill.brandTeacher ?? brand.teacher ?? '',
     ...prefill,
     studentName: prefill.name ?? prefill.studentName ?? '', studentGrade: prefill.grade ?? prefill.studentGrade ?? '',
@@ -99,10 +102,10 @@ export function DiagnosticsView() {
     try {
       const res = await createDiagnostic({
         brand: { name: form.brandName || brand.name, teacher: form.brandTeacher || brand.teacher, logo: brand.logo ?? '', mark: brand.mark ?? '' },
-        lesson: { title: form.lessonTitle, subject: form.subject, grade: form.grade || form.studentGrade, at: form.at, code: form.code, topic: form.topic },
+        lesson: { title: form.lessonTitle, subject: form.subject, grade: form.grade || form.studentGrade, at: form.at, talkAt: form.talkAt, altAt: form.altAt, code: form.code, topic: form.topic },
         student: {
           name: form.studentName, grade: form.studentGrade || form.grade, gender: form.gender,
-          level: form.level, score: form.score, pain: form.pain, goal: form.goal,
+          level: form.level, score: form.score, pain: form.pain, goal: form.goal, temperature: form.temperature,
           resistances: String(form.resistances ?? '').split(/[，,、;；\n]+/).map(row => row.trim()).filter(Boolean),
         },
         count: Number(form.count) || 15,
@@ -158,13 +161,14 @@ export function DiagnosticsView() {
     })
   }
 
-  const analyze = async (kind = 'pre') => {
+  const analyze = async (kind = 'pre', note = '') => {
     if (!current) return
     setBusy(`analyze-${kind}`)
     try {
-      const res = await analyzeDiagnostic(current.id, kind)
+      const res = await analyzeDiagnostic(current.id, kind, note)
       setAnalysis(res.analysis)
-      setAnalysisSource(res.source)
+      setAnalysisKind(kind)
+      setAnalysisSource(res.source === 'local' ? 'local' : 'model')
       await load()
       toast(res.source === 'model' ? t('家长话术生成好了') : t('模型没通，先用数据拼了一版'))
     } catch (err) { toast(err.message, { error: true }) }
@@ -318,12 +322,25 @@ export function DiagnosticsView() {
                     </div>
                     <p className="md-diag-summary">{analysis.summary}</p>
                     {analysis.findings?.length ? <ul>{analysis.findings.map(row => <li key={row}>{row}</li>)}</ul> : null}
-                    <label className="md-field">
-                      <span>{t('直接发家长（可改）')}</span>
-                      <textarea rows={5} readOnly value={analysis.parentScript} />
-                    </label>
+                    {(analysis.scripts?.length ? analysis.scripts : [{ tag: '首条', text: analysis.parentScript }]).map((script, index) => (
+                      <div className="md-script-card" key={`${script.tag}-${index}`}>
+                        <div className="md-script-head">
+                          <b>{t(script.tag)}</b>
+                          <span className="md-grow" />
+                          <button type="button" className="md-inline-link" onClick={() => copy(script.text)}>{t('复制这条')}</button>
+                        </div>
+                        <textarea rows={5} readOnly value={script.text} />
+                      </div>
+                    ))}
                     <div className="md-diag-actions">
-                      <button type="button" className="md-inline-link" onClick={() => copy(analysis.parentScript)}>{t('复制话术')}</button>
+                      <button type="button" className="md-inline-link" onClick={() => setDesk({
+                        dialog: {
+                          title: t('再改一版'),
+                          submitLabel: t('重新生成'),
+                          fields: [{ name: 'note', label: t('想怎么改？一句话就行'), type: 'textarea', rows: 2, placeholder: t('比如：再短一点，别那么急；或者更口语一点') }],
+                          onSubmit: values => analyze(analysisKind, values.note),
+                        },
+                      })}>{t('再改一版')}</button>
                       {analysis.trialFocus?.length ? <span className="md-muted">{t('试听重点：{list}', { list: analysis.trialFocus.join('、') })}</span> : null}
                     </div>
                   </div>
@@ -371,6 +388,7 @@ export function DiagnosticsView() {
               {textField('resistances', t('学习阻力（逗号分隔）'), t('计算、概念、审题'))}
               {areaField('pain', t('卡点/家长原话'), t('比如：期中 58，氧化还原一听就乱'))}
               {textField('goal', t('这次试听想先解决什么'), t('先补化合价'), { wide: true })}
+              {selectField('temperature', t('家长现在什么状态'), [{ value: '', label: '未说明' }, { value: 'A2 还在比较', label: 'A2 还在比较' }, { value: 'A3 已经急了', label: 'A3 已经急了' }])}
             </div>
           </div>
 
@@ -381,6 +399,8 @@ export function DiagnosticsView() {
               {textField('subject', t('科目'), t('化学'))}
               {textField('grade', t('课程年级'), t('高一'))}
               {textField('at', t('上课时间（必填）'), t('2026-11-30 周日 19:00'))}
+              {textField('talkAt', t('跟家长怎么说时间'), t('周日晚 7 点'))}
+              {textField('altAt', t('备选时间（可选）'), t('周六上午 10 点'))}
               {textField('code', t('课次编码'), t('TRIAL-HX-1130'))}
               {textField('topic', t('试听重点（一句话）'), t('从化合价一路配平到氧化还原'))}
             </div>

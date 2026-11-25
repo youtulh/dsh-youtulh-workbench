@@ -1,7 +1,7 @@
 // 诊断卷与家长话术的提示词。输出必须是 JSON，宿主再校验。
-import { tr } from './i18n.js'
+import { settingBlock } from './dm.js'
 import { styleBlock } from './style-guide.js'
-import { bandOf } from './diagnostics.js'
+import { REPLY_RULES, formatParentSlot, localParentAnalysis } from './replies.js'
 
 const clean = (value, max = 200) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 const line = (value, max = 120) => clean(value, max)
@@ -73,58 +73,59 @@ ${SCHEMA}`
 }
 
 /** 课前/课后的家长话术与诊断说明。 */
-export function analysisPrompt(state, spec, result, { kind = 'pre', pre = null, note = '' } = {}) {
-  const p = state?.positioning ?? {}
+export function analysisPrompt(state, spec, result, { kind = 'pre', pre = null, note = '', samples = [], temperature = '', slots = null } = {}) {
   const brand = spec.brand ?? {}
   const student = spec.student ?? {}
   const layers = (result?.layers ?? []).map(row => `${row.name} ${row.correct}/${row.total}`).join('；')
-  const wrong = (result?.wrong ?? []).slice(0, 6).map(row => `第${row.index + 1}题：${row.question.stem}`).join('\n') || '没有错题'
-  const system = `你是给补课老师写家长沟通话术的顾问。你要把诊断结果翻译成家长听得懂、愿意来试听/继续报课的话，但不夸大、不承诺、不制造假焦虑。
-${styleBlock([])}
-规则：
-- 只输出 JSON：{"summary":"给老师看的一句话诊断","findings":["具体发现，最多4条"],"parentScript":"直接发家长的微信，120-220字，不分点","trialFocus":["试听先讲哪2-3步"],"nextStep":"老师下一步动作","riskNote":"一句风险提醒"}
-- 先接住家长情绪，再说具体数据/断层，最后只给一个动作；
-- 分数低：指出哪一层断，建议先补，不羞辱孩子；分数高：肯定，再说剩下的一块在课内补；
-- 必须引用具体的层/题/学生原话，不能只写「基础薄弱」；
-- 课后话术要引用课前结果和这次进步/未进步，体现「诊断—上课—复测」是一套方案；
-- 不报价、不承诺提分、不写包过、不出现微信/手机号/价格；
-- 家长话术里不要出现「AI」「模型」「诊断系统」这些词。`
+  const wrong = (result?.wrong ?? []).slice(0, 5).map(row => `第${row.index + 1}题：${row.question.stem}${row.question.trialFocus ? `（对应：${row.question.trialFocus}）` : ''}`).join('\n') || '没有错题'
+  const point = (result?.layers ?? []).find(row => row.total && row.percent < 60)?.name || spec.layers?.[0]?.name || '前面那一步'
+  const slot = slots ?? formatParentSlot({ at: spec.lesson?.at, talkAt: spec.lesson?.talkAt, altAt: spec.lesson?.altAt })
+  const timeLine = [slot.main && `说的出口的时间：${slot.main}`, slot.alt && `备选：${slot.alt}`].filter(Boolean).join('；') || '老师没填具体时间'
+  const system = `你是给补课老师写家长微信的顾问。你写的不是诊断报告，是一条能约到人的微信。
+${settingBlock(state)}${styleBlock(samples)}
+${REPLY_RULES}
+
+反面例子（绝对不要这样写，也不要把它的句式换个词再用）：
+「家长您好，小雪的试听诊断结果出来了：这次诊断 2/10 题，正确率 20%。最需要先补的是「① 化合价」，这一层 0/2。这不是孩子笨，是这一层没接上。试听我会从「① 化合价」开始讲，讲完再让他自己做一遍，您能看到他到底卡在哪。您看2026-11-30 周日 19:00的时间方便吗？」
+它的问题：系统通知开头、先报分数、把内部层号给家长、销售式否定、拿完整日期问方便、一条消息做四件事。
+
+正面示例（只学结构，不要照抄内容）：
+「小雪家长，我看他前面标化合价那几步停得比较久，配平的时候一直在试系数。不是不会，是这一步没稳住，后面就只能猜。这次试听我先带他把「标价→找升降→配平」走一遍，当场再做一道同型题。周日晚 7 点先按这个排，你看行吗？」
+
+输出 JSON，不要 Markdown：
+{"summary":"给老师看的一句话诊断","findings":["具体发现，最多4条"],"scripts":[{"tag":"首条","text":"可直接发家长的微信，120-180字"},{"tag":"没回再发","text":"更短，给一个有用的小动作，不逼单"}],"parentScript":"首条的兼容字段","trialFocus":["试听先讲哪2-3步"],"nextStep":"老师下一步动作","riskNote":"一句风险提醒"}
+
+写的时候再检查一遍：
+- 首条不要报分数、百分比、层号；不要写「诊断结果出来了」「这不是孩子笨」「最需要先补的是」；
+- 时间只用老师给的口语时间；没有就只问「这周哪天晚上方便」，绝不出现完整年月日；
+- 全篇最多一个问号；
+- 先具体观察，再讲机制，再给试听动作，最后才约时间；
+- A3 直接给时间，A2 轻一点、不逼单；但都只留一个动作；
+- 课后话术先说课前目标/家长原话，再说这次哪一步变了；没进步就说哪一步没稳住，不指责。`
   const user = `品牌：${line(brand.name)}（${line(brand.teacher)}）
 学生：${line(student.name) || '孩子'}（${line(student.grade) || '年级未知'}）
-课程：${line(spec.lesson?.title)} · ${line(spec.lesson?.at)}
+家长原话/卡点：${line(student.pain) || '未说明'}
+本次目标：${line(student.goal) || line(spec.commitment) || '先找出卡点'}
+家长状态：${temperature || '未说明（默认按 A3 处理）'}
+课程：${line(spec.lesson?.title)} · 家长能听懂的时间：${timeLine}
 本次类型：${kind === 'post' ? '课后复测' : '课前诊断'}
-学生目标：${line(result?.commitment) || line(spec.commitment)}
+内部数据（只给你判断用，不要原样写给家长）：
 总分：${result?.correct}/${result?.total}（${result?.percent}%）
 分层：${layers}
+最卡的一层：${point}
 错题/卡点：
 ${wrong}
 ${pre ? `课前：${pre.correct}/${pre.total}（${pre.percent}%）` : ''}
 ${note ? `老师补充：${clean(note, 600)}` : ''}
 ${kind === 'post' ? `学生自评：${JSON.stringify(result?.selfEval ?? {})}` : ''}
 
-请写老师能直接用的诊断说明和家长话术。`
+请写首条和没回再发两段。`
   return { system, user }
 }
 
 /** 没模型时的本地话术：只根据分数和分层说，不编细节。 */
-export function localAnalysis(spec, result, { kind = 'pre', pre = null } = {}) {
-  const band = bandOf(result?.percent ?? 0)
-  const stuck = (result?.layers ?? []).find(row => row.total && row.percent < 60)
-  const name = spec.student?.name || '孩子'
-  const low = `这次诊断 ${result?.correct ?? 0}/${result?.total ?? 0} 题，正确率 ${result?.percent ?? 0}%。${stuck ? `最需要先补的是「${stuck.name}」，这一层 ${stuck.correct}/${stuck.total}。` : '各层都有一些漏洞，需要先稳住基础。'}`
-  const high = `这次 ${result?.correct ?? 0}/${result?.total ?? 0} 题，正确率 ${result?.percent ?? 0}%，基础是够用的；剩下没稳的部分，正好在试听里补。`
-  const summary = band === 'low' || band === 'mid' ? low : high
-  const parentScript = kind === 'post'
-    ? `家长您好，${name}今天的课后检测做完了。${pre ? `课前正确率 ${pre.percent}%，这次 ${result?.percent ?? 0}%，` : ''}${(result?.percent ?? 0) >= (pre?.percent ?? 0) ? '这一步是有进步的，说明课上讲的方法他接住了。' : '这次暴露的是还没稳住，不是不会。'}接下来我们会针对${stuck ? `「${stuck.name}」` : '还不稳的那一步'}再带他练，主讲和助教都会盯到他会为止。您看这周哪天方便，我把他下一步的安排发您。`
-    : `家长您好，${name}的试听诊断结果出来了：${summary}这不是孩子笨，是这一层没接上。试听我会从${stuck ? `「${stuck.name}」` : '他最卡的那一步'}开始讲，讲完再让他自己做一遍，您能看到他到底卡在哪。您看${spec.lesson?.at || '这周'}的时间方便吗？`
-  return {
-    summary,
-    findings: [summary],
-    parentScript,
-    trialFocus: stuck ? [stuck.name, '当场重做一道同型题'] : ['按诊断结果从最弱一层开始'],
-    nextStep: kind === 'post' ? '根据课后结果安排补漏，并确认下次课时间' : '把诊断结果发给家长，约试听',
-    riskNote: '不承诺提分；不报价；先确认孩子是否愿意来。',
-  }
+export function localAnalysis(spec, result, { kind = 'pre', pre = null, temperature = '', slots = null } = {}) {
+  return localParentAnalysis(spec, result, { kind, pre, temperature, slots: slots ?? formatParentSlot({ at: spec.lesson?.at, talkAt: spec.lesson?.talkAt, altAt: spec.lesson?.altAt }) })
 }
 
 /** 生成课后检测：同一套层，换题，不重复原题。 */

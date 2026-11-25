@@ -15,6 +15,7 @@ import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePr
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
 import { decodeResult, localDiagnostic, normalizeDiagnostic, scoreDiagnostic, compareScores, encodeResult } from './diagnostics.js'
 import { analysisPrompt, diagnosticPrompt, localAnalysis, postDiagnosticPrompt } from './diagnostics-prompt.js'
+import { formatParentSlot, validateParentReply } from './replies.js'
 import { DIAG_COLUMNS, diagnosticDir, ensureDiagnosticDir, listDiagnostics, readDiagnosticFile, readDiagnosticResult, readManifest, readPostSpec, saveDiagnosticRow, writeDiagnosticFile, writeDiagnosticHtml, writeDiagnosticResult, writeManifest, writePostSpec } from './diagnostics-store.js'
 import { renderDiagnosticHtml } from './diagnostics-render.js'
 import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
@@ -725,21 +726,37 @@ async function route(ctx, store, desk, req, res) {
       const preScore = pre && preSpec ? scoreDiagnostic(preSpec, pre.answers) : null
       let analysis = null
       let source = 'local'
-      try {
-        const { text: raw } = await callModel(ctx, { ...analysisPrompt(await store.read(), spec, { ...result, ...scoreDiagnostic(spec, result.answers) }, { kind, pre: preScore }), maxTokens: 1600 })
-        const parsed = extractJson(raw)
-        analysis = {
-          summary: String(parsed.summary ?? '').trim(),
-          findings: Array.isArray(parsed.findings) ? parsed.findings.map(row => String(row)).filter(Boolean).slice(0, 6) : [],
-          parentScript: String(parsed.parentScript ?? '').trim(),
-          trialFocus: Array.isArray(parsed.trialFocus) ? parsed.trialFocus.map(row => String(row)).filter(Boolean).slice(0, 6) : [],
-          nextStep: String(parsed.nextStep ?? '').trim(),
-          riskNote: String(parsed.riskNote ?? '').trim(),
-        }
-        if (analysis.parentScript) source = 'model'
-        else analysis = null
-      } catch { /* 没模型就本地拼 */ }
-      if (!analysis) analysis = localAnalysis(spec, { ...result, ...scoreDiagnostic(spec, result.answers) }, { kind, pre: preScore })
+      const score = { ...result, ...scoreDiagnostic(spec, result.answers) }
+      const samples = readVoiceSamples(root)
+      const temperature = spec.student?.temperature ?? ''
+      const slots = formatParentSlot({ at: spec.lesson?.at, talkAt: spec.lesson?.talkAt, altAt: spec.lesson?.altAt })
+      let retryNote = ''
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const prompt = analysisPrompt(await store.read(), spec, score, { kind, pre: preScore, samples, temperature, slots, note: [body.note, retryNote].filter(Boolean).join('\n') })
+          const { text: raw } = await callModel(ctx, { ...prompt, maxTokens: 1600 })
+          const parsed = extractJson(raw)
+          const scripts = (Array.isArray(parsed.scripts) ? parsed.scripts : [{ tag: '首条', text: parsed.parentScript }])
+            .map(row => ({ tag: String(row?.tag ?? '首条').trim().slice(0, 20), text: String(row?.text ?? '').trim() }))
+            .filter(row => row.text)
+          const issues = scripts.flatMap(row => validateParentReply(row.text, { kind }).issues.map(issue => `${row.tag}：${issue}`))
+          if (scripts.length && !issues.length) {
+            analysis = {
+              summary: String(parsed.summary ?? '').trim(),
+              findings: Array.isArray(parsed.findings) ? parsed.findings.map(row => String(row)).filter(Boolean).slice(0, 6) : [],
+              scripts,
+              parentScript: scripts[0].text,
+              trialFocus: Array.isArray(parsed.trialFocus) ? parsed.trialFocus.map(row => String(row)).filter(Boolean).slice(0, 6) : [],
+              nextStep: String(parsed.nextStep ?? '').trim(),
+              riskNote: String(parsed.riskNote ?? '').trim(),
+            }
+            source = attempt ? 'model-retry' : 'model'
+            break
+          }
+          retryNote = `上一版被规则拦下：${[...new Set(issues)].join('；')}。重写时避开这些。`
+        } catch { /* 没模型就本地拼 */ }
+      }
+      if (!analysis) analysis = localAnalysis(spec, score, { kind, pre: preScore, temperature, slots })
       const md = `# 试听诊断解析
 
 - 学生：${spec.student.name || '孩子'}（${spec.student.grade || ''}）
@@ -754,7 +771,7 @@ ${analysis.findings.map(row => `- ${row}`).join('\n')}
 
 ## 家长话术
 
-${analysis.parentScript}
+${(analysis.scripts ?? [{ tag: '首条', text: analysis.parentScript }]).map(row => `### ${row.tag}\n\n${row.text}`).join('\n\n')}
 
 ## 试听重点
 
