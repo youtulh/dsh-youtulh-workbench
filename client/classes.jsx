@@ -24,7 +24,12 @@ const emptyDraft = () => ({ attend: '', mastery: '', homework: '', note: '' })
 export function ClassesPanel({ classes, students, lessons = [], onChanged, onLessons }) {
   useLang()
   const [selected, setSelected] = React.useState('')
-  const [showEnded, setShowEnded] = React.useState(false)
+  const [showEnded, setShowEnded] = React.useState(() => {
+    try { return sessionStorage.getItem('youtulh:show-ended') === '1' } catch { return false }
+  })
+  React.useEffect(() => {
+    try { sessionStorage.setItem('youtulh:show-ended', showEnded ? '1' : '0') } catch { /* 隐私模式 */ }
+  }, [showEnded])
   const classFocus = useDesk(s => s.classFocus)
   const [focusNo, setFocusNo] = React.useState(null)
   const [returnStudent, setReturnStudent] = React.useState('')
