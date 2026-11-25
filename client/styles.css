@@ -1993,3 +1993,11 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-card-rate { margin: 6px 0 0; color: var(--ink3); font-size: 11.5px; }
 
 .md-card-rate { overflow-wrap: anywhere; }
+
+/* 学生概览：5 项在中屏/窄屏分列 */
+@media (max-width: 900px) {
+  .md-student-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .md-student-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
