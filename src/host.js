@@ -97,6 +97,7 @@ const STUDENT_IMPORT_ALIAS = {
   className: ['班', '班级', '所在班', '在哪个班'],
   source: ['来源'],
   note: ['备注', '情况', '说明'],
+  status: ['状态', '学生状态'],
 }
 const STUDENT_IMPORT_KEYS = Object.keys(STUDENT_IMPORT_ALIAS)
 

@@ -282,7 +282,7 @@ export function legacyTables(root) {
   const header = file => readTable(root, file).header
   const list = []
   if (header(LAYOUT.classes).length && !has(LAYOUT.classes, '班名') && has(LAYOUT.classes, '期次')) list.push('班课')
-  if (header(LAYOUT.students).length && !has(LAYOUT.students, '微信')) list.push('学生档案')
+  if (header(LAYOUT.students).length && (!has(LAYOUT.students, '微信') || !has(LAYOUT.students, '状态'))) list.push('学生档案')
   if (header(LAYOUT.lessons).length && !has(LAYOUT.lessons, '课次')) list.push('课次记录')
   if (header(LAYOUT.leads).length && !has(LAYOUT.leads, '阶段')) list.push('线索表')
   return list
@@ -298,7 +298,7 @@ export function upgradeTables(root) {
     upgraded.push('班课')
   }
   const studentsHeader = headerOf(LAYOUT.students)
-  if (studentsHeader.length && !studentsHeader.includes('微信')) {
+  if (studentsHeader.length && (!studentsHeader.includes('微信') || !studentsHeader.includes('状态'))) {
     writeTable(root, LAYOUT.students, STUDENT_COLUMNS, readStudents(root).map(toStudentRow))
     upgraded.push('学生档案')
   }
