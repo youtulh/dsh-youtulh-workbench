@@ -478,8 +478,9 @@ export function listBackups(root) {
     .map(name => {
       const dir = join(parent, name)
       let size = 0
-      try { size = folderSize(dir) } catch { size = 0 }
-      return { name, dir, size }
+      let mtime = 0
+      try { size = folderSize(dir); mtime = statSync(dir).mtimeMs } catch { size = 0 }
+      return { name, dir, size, mtime }
     })
 }
 

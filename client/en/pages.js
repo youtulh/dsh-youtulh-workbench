@@ -745,4 +745,6 @@ export const PAGES = {
   '{page}这一页出错了': '{page} hit an error',
   '这节课的备注（可不填）': 'Lesson note (optional)',
   '有 {n} 个学生只写了备注、没点出勤/掌握/作业，这些备注不会保存。还要继续吗？': '{n} students only have a note and no attendance/mastery/homework; those notes will not be saved. Continue?',
+  '上次备份：{days} 天前': 'Last backup: {days} days ago',
+  '还没备份过，建议现在备份一次': 'No backup yet — worth doing one now',
 }

@@ -366,7 +366,13 @@ export function SetupView() {
           </div>
         ) : null}
         <div className="md-setup-samples-foot">
-          <span className="md-muted">{backup ? t('备份好了：{dir}', { dir: backup }) : t('建议每周点一次')}</span>
+          <span className={`md-muted ${backups[0] && Date.now() - backups[0].mtime > 7 * 86400000 ? 'md-legacy-note' : ''}`}>
+            {backup
+              ? t('备份好了：{dir}', { dir: backup })
+              : backups[0]
+                ? t('上次备份：{days} 天前', { days: Math.max(0, Math.floor((Date.now() - backups[0].mtime) / 86400000)) })
+                : t('还没备份过，建议现在备份一次')}
+          </span>
           <span className="md-grow" />
           {backup ? <button type="button" className="md-inline-link" onClick={() => revealDir(backup).catch(err => toast(err.message, { error: true }))}>{t('打开备份文件夹')}</button> : null}
           {backup ? <button type="button" className="md-inline-link" onClick={() => {
