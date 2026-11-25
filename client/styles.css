@@ -2204,3 +2204,11 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-setup-advanced { margin: 8px 0 12px; color: var(--ink3); font-size: 11.5px; }
 .md-setup-advanced summary { cursor: pointer; }
 .md-setup-advanced .md-legacy-row { margin-top: 8px; }
+
+/* 视觉一致性：工具条按钮统一高度，看数据在宽屏能放下三列内容卡 */
+:is(.md-page-head, .md-pipeline-tools, .md-tile-head, .md-lead-tools, .md-dm-actions, .md-content-tools) .md-inline-link {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+.md-data { width: min(1040px, 100%); }
