@@ -2038,3 +2038,15 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-content-lead p { grid-template-columns: 1fr auto; }
   .md-content-lead b { grid-column: 1 / -1; }
 }
+
+/* 定位复盘 */
+.md-review { margin: 12px 0 14px; padding: 12px 14px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--hover) 45%, transparent); }
+.md-review-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.md-review-head b { font-size: 13px; font-weight: 500; }
+.md-review-stats { display: flex; flex-wrap: wrap; gap: 16px; }
+.md-review-stats div { display: flex; flex-direction: column; gap: 1px; }
+.md-review-stats b { font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.md-review-stats span { color: var(--ink3); font-size: 11px; }
+.md-review-notes { display: grid; gap: 3px; margin-top: 8px; }
+.md-review-notes li { color: var(--ink2); font-size: 12px; line-height: 18px; }
+.md-review-notes li::before { content: '·'; margin-right: 6px; color: var(--accent); }
