@@ -251,7 +251,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 ) : null}
                 {student.status && student.status !== '在读' ? <em className={`md-student-status ${student.status === '流失' ? 'is-lost' : ''}`}>{t(student.status)}</em> : null}
                 <span className="md-grow" />
-                {student.className ? <span className="md-student-class">{student.className}</span> : <span className="md-muted">{t('还没排班')}</span>}
+                {student.className ? <span className="md-student-class">{student.className}{classes.find(row => row.name === student.className)?.status === '结课' ? t('（已结课）') : ''}</span> : <span className="md-muted">{t('还没排班')}</span>}
               </header>
               <div className="md-student-tags">
                 {student.layer ? <em>{t('卡在：{layer}', { layer: student.layer })}</em> : <span className="md-muted">{t('还没标卡点层')}</span>}
@@ -266,7 +266,9 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 const key = `${student.name}-${student.grade}`
                 return (
                   <p className="md-student-last">
-                    <button type="button" className="md-inline-link" onClick={() => setOpenStudent(openStudent === key ? '' : key)}>{t('已上 {n} 次', { n: own.length })}</button>
+                    <button type="button" className="md-inline-link" onClick={() => setOpenStudent(openStudent === key ? '' : key)}>
+                      {openStudent === key ? t('收起课次') : t('已上 {n} 次', { n: own.length })}
+                    </button>
                     {' · '}{t('最近一次')}：{[last.date || t('没填日期'), last.mastery ? t('掌握{value}', { value: last.mastery }) : '', last.homework ? t('作业{value}', { value: last.homework }) : ''].filter(Boolean).join(' · ')}
                   </p>
                 )

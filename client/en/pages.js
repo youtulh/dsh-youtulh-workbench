@@ -737,4 +737,5 @@ export const PAGES = {
   每万播加微最高: 'Best adds per 10k views',
   个学生: 'students',
   在读: 'Active',
+  '（已结课）': ' (finished)',
 }
