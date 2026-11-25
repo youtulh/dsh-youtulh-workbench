@@ -1,6 +1,7 @@
 // 定位复盘：不靠模型，用最近的内容和线索反过来检查「有没有跑偏」。
 // 纯函数：给浏览器和宿主都能用。
 const text = (value, max = 200) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
+const shorten = (value, max) => { const row = text(value, max * 2); return row.length > max ? `${row.slice(0, max)}…` : row }
 const num = (value) => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0
 const tokens = value => String(value ?? '').split(/[，,、；;/\s]+/).map(row => row.trim()).filter(row => row.length >= 2)
 
@@ -82,6 +83,22 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   const withDms = recentContent.filter(row => num(row['私信']) > 0)
   const topContent = withDms.slice().sort((a, b) => num(b['私信']) - num(a['私信']))[0] ?? null
 
+  // 线索的「来源」如果能对上某条内容的标题，就知道哪条内容真的带来了家长
+  const attributed = new Map()
+  for (const row of leads) {
+    const source = text(row.source, 80)
+    if (!source) continue
+    const hit = recentContent.find(item => {
+      const title = text(item['标题'], 80)
+      return title.length >= 4 && (source.includes(title) || title.includes(source))
+    })
+    if (hit) {
+      const title = text(hit['标题'], 60)
+      attributed.set(title, (attributed.get(title) ?? 0) + 1)
+    }
+  }
+  const topLeadContent = [...attributed.entries()].sort((a, b) => b[1] - a[1])[0] ?? null
+
   const notes = []
   if (!recentContent.length) notes.push({ key: 'review_no_content', params: {} })
   else if (recentContent.length >= 3 && matchedContent.length / recentContent.length < 0.6) {
@@ -91,6 +108,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     notes.push({ key: 'review_grade_drift', params: { total: graded.length, matched: gradeMatched.length, grade } })
   }
   if (topContent) notes.push({ key: 'review_top_content', params: { title: text(topContent['标题'], 24), dms: num(topContent['私信']) } })
+  if (topLeadContent) notes.push({ key: 'review_top_lead_content', params: { title: text(topLeadContent[0], 24), n: topLeadContent[1] } })
   if (topSource) notes.push({ key: 'review_top_source', params: { source: topSource[0], n: topSource[1] } })
   if (local && recentContent.length >= 5 && cityMentions === 0) {
     notes.push({ key: 'review_local_missing', params: { city } })
@@ -119,6 +137,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     cityMentions,
     topSource,
     topContent: topContent ? { title: text(topContent['标题'], 60), dms: num(topContent['私信']) } : null,
-    notes: notes.slice(0, 5),
+    topLeadContent: topLeadContent ? { title: text(topLeadContent[0], 60), n: topLeadContent[1] } : null,
+    notes: notes.slice(0, 6),
   }
 }

@@ -62,3 +62,19 @@ test('同城定位：连着 5 条都没提城市会提醒', () => {
   assert.equal(out.cityMentions, 0)
   assert.ok(out.notes.some(row => row.key === 'review_local_missing'))
 })
+
+
+test('线索来源能对上内容标题时，复盘指出哪条内容带来了家长', () => {
+  const content = [
+    { '标题': '高二物理期中卷丢分在哪', '选题': '高二物理', '私信': '3' },
+    { '标题': '动量守恒怎么判断', '选题': '动量', '私信': '0' },
+  ]
+  const leads = [
+    { grade: '高二', source: '高二物理期中卷丢分在哪', stage: '已加微信' },
+    { grade: '高二', source: '高二物理期中卷丢分在哪', stage: '私信' },
+  ]
+  const out = reviewPositioning({ positioning, content, leads })
+  assert.equal(out.topLeadContent.title, '高二物理期中卷丢分在哪')
+  assert.equal(out.topLeadContent.n, 2)
+  assert.ok(out.notes.some(row => row.key === 'review_top_lead_content'))
+})
