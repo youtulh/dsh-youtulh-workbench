@@ -363,7 +363,9 @@ export function DmView() {
                 { name: 'text', label: t('把对话粘进来（谁说的都保留）'), type: 'textarea', rows: 6, required: true },
               ],
               onSubmit: values => {
-                addChatCase(values).then(() => toast(t('案例存好了，以后给建议会参考'))).catch(err => toast(err.message, { error: true }))
+                addChatCase(values)
+                  .then(data => { setCases(data.cases ?? []); toast(t('案例存好了，以后给建议会参考')) })
+                  .catch(err => toast(err.message, { error: true }))
               },
             },
           })}>{t('导入案例')}</button>
