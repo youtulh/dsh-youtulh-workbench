@@ -29,6 +29,7 @@ export function DataView() {
   const [form, setForm] = React.useState(EMPTY_FORM)
   const [adding, setAdding] = React.useState(false)
   const [filter, setFilter] = React.useState(DATA_UI.filter)
+  const dataFilter = useDesk(s => s.dataFilter)
   const [tab, setTab] = React.useState('content')
   const [leads, setLeads] = React.useState([])
   const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
@@ -55,6 +56,12 @@ export function DataView() {
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort }) }, [filter, query, bizRange, sort])
   React.useEffect(() => { setShown(30) }, [filter, query, sort])
+  React.useEffect(() => {
+    if (!dataFilter) return
+    setTab('content')
+    setFilter(dataFilter)
+    setDesk({ dataFilter: '' })
+  }, [dataFilter])
 
   const copyText = (text) => {
     if (!navigator.clipboard?.writeText) return toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
@@ -123,6 +130,7 @@ export function DataView() {
     { id: 'all', label: t('全部'), test: () => true },
     { id: 'draft', label: t('未发布'), test: row => row['状态'] !== '已发布' },
     { id: 'published', label: t('已发布'), test: row => row['状态'] === '已发布' },
+    { id: 'missing', label: t('缺数据'), test: row => row['状态'] === '已发布' && (!String(row['播放'] ?? '').trim() || !String(row['发布日'] ?? '').trim()) },
     { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
   ]
   const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
