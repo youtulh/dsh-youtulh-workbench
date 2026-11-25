@@ -2299,3 +2299,13 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-diag-inline-preview { margin-top: 14px; padding: 12px; border-radius: var(--r-md); background: var(--hover); }
 .md-diag-preview-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 .md-diag-preview-head b { font-size: 13px; }
+
+.md-diag-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.md-diag-tools input[type="text"], .md-diag-tools input:not([type]) { flex: 1 1 140px; min-width: 0; padding: 7px 9px; border: .5px solid var(--line); border-radius: 8px; background: var(--card); font: inherit; font-size: 12px; color: var(--ink); }
+.md-diag-archived { display: inline-flex; align-items: center; gap: 4px; color: var(--ink3); font-size: 11px; white-space: nowrap; }
+.md-diag-manage { margin-top: 8px; position: relative; }
+.md-diag-manage > summary { list-style: none; cursor: pointer; display: inline-flex; }
+.md-diag-manage > summary::-webkit-details-marker { display: none; }
+.md-diag-manage-menu { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 8px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-diag-manage-menu button { padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink2); font: inherit; font-size: 12px; cursor: pointer; }
+.md-diag-manage-menu button:hover { background: var(--hover); color: var(--ink); }

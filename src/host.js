@@ -587,6 +587,74 @@ async function route(ctx, store, desk, req, res) {
       })
       return json(res, 200, { row, spec, source, dir })
     }
+    case 'diagnostics/update': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const spec = readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('诊断卷文件不见了') })
+      const patch = body.patch ?? {}
+      const student = { ...(spec.student ?? {}), ...(patch.student ?? {}) }
+      const lesson = { ...(spec.lesson ?? {}), ...(patch.lesson ?? {}) }
+      const brand = { ...(spec.brand ?? {}), ...(patch.brand ?? {}) }
+      const next = { ...spec, student, lesson, brand }
+      writeManifest(root, id, next)
+      writeDiagnosticHtml(root, id, '课前诊断.html', renderDiagnosticHtml(next, { kind: 'pre' }))
+      const postSpec = readPostSpec(root, row)
+      const preResult = readDiagnosticResult(root, row, 'pre')
+      if (postSpec) writeDiagnosticHtml(root, id, '课后检测.html', renderDiagnosticHtml(postSpec, { kind: 'post', pre: preResult ? scoreDiagnostic(next, preResult.answers) : null }))
+      const rowNext = saveDiagnosticRow(root, {
+        ...row, student: student.name, grade: student.grade, subject: lesson.subject, lesson: lesson.title,
+        at: lesson.at, code: lesson.code, brand: brand.name, note: patch.note ?? row.note,
+      })
+      return json(res, 200, { row: rowNext, spec: next })
+    }
+    case 'diagnostics/duplicate': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const spec = readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('诊断卷文件不见了') })
+      const next = JSON.parse(JSON.stringify(spec))
+      const nextId = newId('DIAG')
+      next.id = nextId
+      next.createdAt = new Date().toISOString()
+      if (body.student?.name) next.student.name = String(body.student.name).trim().slice(0, 40)
+      if (body.student?.grade) next.student.grade = String(body.student.grade).trim().slice(0, 20)
+      next.title = String(body.title ?? next.title ?? '').slice(0, 80)
+      writeManifest(root, nextId, next)
+      writeDiagnosticHtml(root, nextId, '课前诊断.html', renderDiagnosticHtml(next, { kind: 'pre' }))
+      const rowNext = saveDiagnosticRow(root, {
+        id: nextId, createdAt: next.createdAt, status: '待作答', student: next.student.name, grade: next.student.grade,
+        subject: next.lesson.subject, lesson: next.lesson.title, at: next.lesson.at, code: next.lesson.code,
+        brand: next.brand.name, dir: join(LAYOUT.diagnostics, nextId), note: '复制自 ' + id,
+      })
+      return json(res, 200, { row: rowNext, spec: next })
+    }
+    case 'diagnostics/archive': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const archived = body.archived !== false
+      const rowNext = saveDiagnosticRow(root, {
+        ...row,
+        status: archived ? '已归档' : (row.postScore ? '已完成' : row.preScore ? '课前已回' : '待作答'),
+      })
+      return json(res, 200, { row: rowNext })
+    }
+    case 'diagnostics/reveal': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const dir = ensureDiagnosticDir(root, id)
+      const command = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
+      execFile(command, [dir], () => {})
+      return json(res, 200, { path: dir })
+    }
     case 'diagnostics/rebuild': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const id = String(body.id ?? '').trim()

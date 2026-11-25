@@ -1,6 +1,6 @@
 // 试听诊断：出卷、预览、导入回传、生成家长话术。
 import React from 'react'
-import { analyzeDiagnostic, createDiagnostic, createPostDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, rebuildDiagnostic, setDesk, toast, useDesk } from './desk.js'
+import { analyzeDiagnostic, archiveDiagnostic, createDiagnostic, createPostDiagnostic, duplicateDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, rebuildDiagnostic, revealDiagnostic, setDesk, toast, updateDiagnostic, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 
@@ -26,6 +26,8 @@ export function DiagnosticsView() {
   const [analysis, setAnalysis] = React.useState(null)
   const [analysisSource, setAnalysisSource] = React.useState('')
   const [preview, setPreview] = React.useState(null)
+  const [query, setQuery] = React.useState('')
+  const [showArchived, setShowArchived] = React.useState(false)
   const prefill = useDesk(s => s.diagPrefill)
 
   const load = React.useCallback(() => {
@@ -51,6 +53,11 @@ export function DiagnosticsView() {
   }, [selected])
 
   const rows = data?.rows ?? []
+  const visible = rows.filter(row => {
+    if (!showArchived && row.status === '已归档') return false
+    const q = query.trim().toLowerCase()
+    return !q || [row.student, row.lesson, row.code, row.at, row.brand].some(value => String(value ?? '').toLowerCase().includes(q))
+  })
   const current = rows.find(row => row.id === selected)
   const brand = data?.brand ?? {}
 
@@ -173,6 +180,82 @@ export function DiagnosticsView() {
     })
   }
 
+  const openEdit = () => {
+    if (!current) return
+    setDesk({
+      dialog: {
+        title: t('编辑诊断信息'),
+        submitLabel: t('保存'),
+        fields: [
+          { name: 'student', label: t('学生/家长称呼'), placeholder: t('小雪') },
+          { name: 'grade', label: t('孩子年级'), placeholder: t('高一') },
+          { name: 'lesson', label: t('课程名'), placeholder: t('氧化还原配平') },
+          { name: 'subject', label: t('科目'), placeholder: t('化学') },
+          { name: 'at', label: t('上课时间'), placeholder: t('2026-11-30 周日 19:00') },
+          { name: 'code', label: t('课次编码'), placeholder: t('TRIAL-HX-1130') },
+          { name: 'brand', label: t('品牌名'), placeholder: t('姜老师化学') },
+          { name: 'note', label: t('备注'), type: 'textarea', rows: 2 },
+        ],
+        initial: { student: current.student, grade: current.grade, lesson: current.lesson, subject: current.subject, at: current.at, code: current.code, brand: current.brand, note: current.note },
+        onSubmit: async values => {
+          try {
+            await updateDiagnostic(current.id, {
+              student: { name: values.student, grade: values.grade },
+              lesson: { title: values.lesson, subject: values.subject, at: values.at, code: values.code },
+              brand: { name: values.brand },
+              note: values.note,
+            })
+            toast(t('诊断信息已更新'))
+            setPreview(null)
+            await load()
+          } catch (err) { toast(err.message, { error: true }) }
+        },
+      },
+    })
+  }
+
+  const openDuplicate = () => {
+    if (!current) return
+    setDesk({
+      dialog: {
+        title: t('复制一份给另一个学生'),
+        submitLabel: t('复制'),
+        fields: [
+          { name: 'student', label: t('新学生称呼'), placeholder: t('比如：小周') },
+          { name: 'grade', label: t('年级'), placeholder: current.grade || t('高一') },
+        ],
+        initial: { student: '', grade: current.grade || '' },
+        onSubmit: async values => {
+          try {
+            const res = await duplicateDiagnostic(current.id, { name: values.student, grade: values.grade })
+            toast(t('已复制一份，原卷不动'))
+            await load()
+            setSelected(res.row.id)
+          } catch (err) { toast(err.message, { error: true }) }
+        },
+      },
+    })
+  }
+
+  const openArchive = () => {
+    if (!current) return
+    const archived = current.status === '已归档'
+    setDesk({
+      dialog: {
+        title: archived ? t('恢复这份诊断') : t('归档这份诊断'),
+        submitLabel: archived ? t('恢复') : t('归档'),
+        fields: [{ name: '_hint', type: 'hidden', label: archived ? t('恢复后会重新出现在列表里。') : t('归档后默认不显示，文件还在工作区里；可以再恢复。') }],
+        onSubmit: async () => {
+          try {
+            await archiveDiagnostic(current.id, !archived)
+            toast(archived ? t('已恢复') : t('已归档，文件还在原处'))
+            await load()
+          } catch (err) { toast(err.message, { error: true }) }
+        },
+      },
+    })
+  }
+
   return (
     <div className="md-page md-diagnostics">
       <header className="md-page-head">
@@ -196,7 +279,12 @@ export function DiagnosticsView() {
       ) : (
         <div className="md-diag-layout">
           <aside className="md-diag-list">
-            {rows.map(row => (
+            <div className="md-diag-tools">
+              <input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜学生、课程、课次编码')} />
+              <label className="md-diag-archived"><input type="checkbox" checked={showArchived} onChange={event => setShowArchived(event.target.checked)} />{t('显示已归档')}</label>
+              <span className="md-muted">{t('{n} 份', { n: visible.length })}</span>
+            </div>
+            {visible.map(row => (
               <button type="button" key={row.id} className={`md-diag-row ${row.id === selected ? 'is-on' : ''}`} onClick={() => setSelected(row.id)}>
                 <b>{row.student || t('未填学生')}{row.grade ? ` · ${row.grade}` : ''}</b>
                 <span>{row.lesson || t('未填课程')}</span>
@@ -250,6 +338,16 @@ export function DiagnosticsView() {
                   <a className="md-pill is-small" href={`media-desk/diagnostics/download?id=${encodeURIComponent(current.id)}&kind=post`} download>{t('下载课后卷')}</a>
                   {current.postScore ? <button type="button" className="md-pill is-small" onClick={() => analyze('post')} disabled={busy === 'analyze-post'}>{busy === 'analyze-post' ? t('正在写话术…') : t('生成课后话术')}</button> : null}
                 </div>
+
+                <details className="md-diag-manage">
+                  <summary className="md-pill is-small">{t('管理')}</summary>
+                  <div className="md-diag-manage-menu">
+                    <button type="button" onClick={openEdit}>{t('编辑信息')}</button>
+                    <button type="button" onClick={openDuplicate}>{t('复制一份')}</button>
+                    <button type="button" onClick={() => revealDiagnostic(current.id).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button>
+                    <button type="button" onClick={openArchive}>{current.status === '已归档' ? t('恢复') : t('归档')}</button>
+                  </div>
+                </details>
 
                 {analysis ? (
                   <div className="md-diag-analysis">

@@ -651,3 +651,19 @@ export function createPostDiagnostic(id, notes = '') {
 export function rebuildDiagnostic(id) {
   return request('diagnostics/rebuild', { id })
 }
+
+export function updateDiagnostic(id, patch) {
+  return request('diagnostics/update', { id, patch })
+}
+
+export function duplicateDiagnostic(id, student = {}) {
+  return request('diagnostics/duplicate', { id, student })
+}
+
+export function archiveDiagnostic(id, archived = true) {
+  return request('diagnostics/archive', { id, archived })
+}
+
+export function revealDiagnostic(id) {
+  return request('diagnostics/reveal', { id })
+}
