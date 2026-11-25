@@ -311,6 +311,7 @@ export function DataView() {
           <span className="md-muted">{t('{n} 条', { n: list.length })}</span>
         </div>
         {sort === 'rate' || sort === 'addRate' ? <p className="md-muted">{t('按效率排序时，播放少于 500 的内容排在最后，避免比率虚高。')}</p> : null}
+        {list.length === 0 ? <p className="md-muted md-dm-empty">{t('这个筛选下没有内容。')}</p> : null}
         </>
       ) : null}
 

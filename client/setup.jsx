@@ -52,6 +52,7 @@ export function SetupView() {
   const [root, setRoot] = React.useState('')
   const [stats, setStats] = React.useState(null)
   const [reviewData, setReviewData] = React.useState({ content: [], leads: [] })
+  const [reviewBusy, setReviewBusy] = React.useState(false)
   const UPGRADE_KEY = 'youtulh:upgrade-result'
   const [upgradeResult, setUpgradeResultState] = React.useState(() => {
     try { return JSON.parse(sessionStorage.getItem(UPGRADE_KEY) || 'null') } catch { return null }
@@ -65,9 +66,11 @@ export function SetupView() {
   }
 
   const loadReview = React.useCallback(() => {
-    Promise.all([fetchContent(), fetchLeads()])
+    setReviewBusy(true)
+    return Promise.all([fetchContent(), fetchLeads()])
       .then(([content, leads]) => setReviewData({ content: content.rows ?? content.content ?? [], leads: leads.leads ?? [] }))
       .catch(() => {})
+      .finally(() => setReviewBusy(false))
   }, [])
 
 
@@ -487,7 +490,7 @@ export function SetupView() {
             <b>{t('定位复盘')}</b>
             <span className="md-muted">{t('用最近的内容和线索，看看有没有跑偏')}</span>
             <span className="md-grow" />
-            <button type="button" className="md-inline-link" onClick={loadReview}>{t('刷新复盘')}</button>
+            <button type="button" className="md-inline-link" onClick={loadReview} disabled={reviewBusy}>{reviewBusy ? t('刷新中…') : t('刷新复盘')}</button>
           </div>
           <div className="md-review-stats">
             <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'data', focusId: null })}><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></button>
