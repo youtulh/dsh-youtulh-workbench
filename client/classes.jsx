@@ -2,7 +2,7 @@
 // 数据落在 班课.csv / 学生档案.csv / 课次记录.csv 三张表里。
 import React from 'react'
 import {
-  fetchLessons, removeClassRow, saveClassRow, saveLessons, saveStudentRow, setDesk, toast,
+  fetchLessons, removeClassRow, saveClassRow, saveLessons, saveStudentRow, setDesk, toast, useDesk,
 } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { ATTEND_OPTIONS, DEFAULT_CLASS_TOTAL, HOMEWORK_OPTIONS, MASTERY_OPTIONS, dayKey } from './util.js'
