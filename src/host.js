@@ -949,12 +949,15 @@ async function route(ctx, store, desk, req, res) {
       const pending = []
       let skipped = 0
       let adjusted = 0
+      let invalidStatus = 0
       for (const row of table.slice(1)) {
         const input = {}
         for (let i = 0; i < cols.length; i += 1) {
           if (cols[i]) input[cols[i]] = row[i] ?? ''
         }
         if (!String(input.name ?? '').trim()) { skipped += 1; continue }
+        const wantedStatus = String(input.status ?? '').trim()
+        if (wantedStatus && !['在读', '结课', '流失'].includes(wantedStatus)) invalidStatus += 1
         const wanted = String(input.className ?? '').trim()
         if (wanted) {
           const key = norm(wanted)
@@ -974,7 +977,7 @@ async function route(ctx, store, desk, req, res) {
         saveClass(root, { name })
         createdClasses += 1
       }
-      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped, createdClasses, adjusted })
+      return json(res, 200, { students: readStudents(root), classes: readClasses(root), imported, skipped, createdClasses, adjusted, invalidStatus })
     }
     case 'students/save': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

@@ -1980,3 +1980,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-student-card header, .md-student-tags { flex-wrap: wrap; }
   .md-biz-range { flex-wrap: wrap; }
 }
+
+/* 学生卡快捷结课 */
+.md-student-status { cursor: default; }

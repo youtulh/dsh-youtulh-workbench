@@ -727,4 +727,7 @@ export const PAGES = {
   下一步: 'Next',
   全部状态: 'All statuses',
   本月: 'This month',
+  '{n} 条状态认不出，按在读处理': '{n} statuses not recognised — treated as active',
+  标成结课了: 'Marked as finished',
+  改回在读了: 'Back to active',
 }

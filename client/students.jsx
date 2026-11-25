@@ -172,6 +172,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 : t('导入了 {n} 个学生', { n: data.imported }),
               data.skipped ? t('跳过 {n} 行（没写姓名）', { n: data.skipped }) : '',
               data.adjusted ? t('{n} 条班名按已有班对齐（空格/大小写不同）', { n: data.adjusted }) : '',
+              data.invalidStatus ? t('{n} 条状态认不出，按在读处理', { n: data.invalidStatus }) : '',
             ].filter(Boolean).join('；'))
           })
           .catch(err => toast(err.message, { error: true }))
@@ -266,6 +267,12 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 <button type="button" className="md-inline-link" onClick={() => setOpenStudent(openStudent === `${student.name}-${student.grade}` ? '' : `${student.name}-${student.grade}`)}>
                   {openStudent === `${student.name}-${student.grade}` ? t('收起课次') : t('课次')}
                 </button>
+                <button type="button" className="md-inline-link" onClick={() => {
+                  const next = (student.status || '在读') === '在读' ? '结课' : '在读'
+                  saveStudentRow({ ...student, status: next }, { name: student.name, grade: student.grade })
+                    .then(data => { onChanged?.(data); toast(next === '结课' ? t('标成结课了') : t('改回在读了')) })
+                    .catch(err => toast(err.message, { error: true }))
+                }}>{(student.status || '在读') === '在读' ? t('结课') : t('复课')}</button>
                 <button type="button" className="md-inline-link" onClick={() => open(student)}>{t('改')}</button>
                 <button type="button" className="md-inline-link" onClick={() => remove(student)}>{t('删除')}</button>
               </footer>
