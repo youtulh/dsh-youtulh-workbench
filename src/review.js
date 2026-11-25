@@ -136,6 +136,12 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   if (local && angled >= 5 && angleCounts['本地'] === 0) {
     notes.push({ key: 'review_local_angle_missing', params: { city } })
   }
+  if (angled >= 5) {
+    const topAngle = Object.entries(angleCounts).sort((a, b) => b[1] - a[1])[0]
+    if (topAngle[1] / angled >= 0.8) {
+      notes.push({ key: 'review_angle_skew', params: { angle: topAngle[0], n: topAngle[1], total: angled } })
+    }
+  }
   if (!won.length) notes.push({ key: 'review_no_won', params: {} })
 
   const nextTopics = suggestReviewTopics({

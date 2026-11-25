@@ -129,3 +129,10 @@ test('内容配比按角度统计；同城但没有本地内容会提醒', () =>
   assert.equal(out.angleCounts['家庭'], 1)
   assert.ok(out.notes.some(row => row.key === 'review_local_angle_missing'))
 })
+
+
+test('内容几乎全是同一类时，提示配比偏了', () => {
+  const content = Array.from({ length: 5 }, () => ({ '标题': '高二物理', '选题': '物理', '角度': '知识点' }))
+  const out = reviewPositioning({ positioning, content, leads: [] })
+  assert.ok(out.notes.some(row => row.key === 'review_angle_skew'))
+})

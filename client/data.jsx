@@ -146,7 +146,7 @@ export function DataView() {
   const scopedLeads = leads.filter(row => !cutoff || (row.date && row.date >= cutoff))
   const q = query.trim()
   const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row)
-    && (!q || [row['标题'], row['选题'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
+    && (!q || [row['标题'], row['选题'], row['角度'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
     .sort((a, b) => {
       if (sort === 'views') return num(b['播放']) - num(a['播放'])
       if (sort === 'dms') return num(b['私信']) - num(a['私信'])
