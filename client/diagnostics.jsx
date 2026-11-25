@@ -2,7 +2,7 @@
 import React from 'react'
 import { analyzeDiagnostic, createDiagnostic, createPostDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
-import { Dialog, Icon } from './ui.jsx'
+import { Icon } from './ui.jsx'
 
 const GENDERS = [{ value: '', label: '不说' }, { value: '男生', label: '男生' }, { value: '女生', label: '女生' }]
 const LEVELS = [{ value: '基础薄弱', label: '基础薄弱' }, { value: '中等', label: '中等' }, { value: '偏上', label: '偏上' }]
@@ -61,7 +61,8 @@ export function DiagnosticsView() {
 
   const openPreview = (kind = 'pre') => {
     if (!current) return
-    setPreview({ kind, url: `media-desk/diagnostics/preview?id=${encodeURIComponent(current.id)}&kind=${kind}` })
+    setPreview({ id: current.id, kind, url: `media-desk/diagnostics/preview?id=${encodeURIComponent(current.id)}&kind=${kind}` })
+    requestAnimationFrame(() => document.getElementById('diag-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   const openCreate = (prefill = {}) => setDesk({
@@ -113,7 +114,7 @@ export function DiagnosticsView() {
           toast(res.source === 'template' ? t('模型没通，先用化学模板卷；其他科目建议重试') : t('诊断卷出好了'))
           await load()
           setSelected(res.row.id)
-          setPreview({ kind: 'pre', url: `media-desk/diagnostics/preview?id=${encodeURIComponent(res.row.id)}&kind=pre` })
+          setPreview({ id: res.row.id, kind: 'pre', url: `media-desk/diagnostics/preview?id=${encodeURIComponent(res.row.id)}&kind=pre` })
         } catch (err) { toast(err.message, { error: true }) }
         setBusy('')
       },
@@ -215,7 +216,8 @@ export function DiagnosticsView() {
                     <p className="md-muted">{current.at || t('时间待定')} · {current.student || t('未填学生')} · {current.grade || ''}</p>
                   </div>
                   <span className="md-grow" />
-                  <button type="button" className="md-pill is-small" onClick={() => openPreview('pre')}>{t('打开诊断卷')}</button>
+                  <button type="button" className="md-pill is-small" onClick={() => openPreview('pre')}>{t('预览试填')}</button>
+                  <a className="md-pill is-small is-primary" href={`media-desk/diagnostics/download?id=${encodeURIComponent(current.id)}&kind=pre`} download>{t('下载发给学生')}</a>
                 </div>
 
                 <div className="md-diag-stats">
@@ -238,7 +240,8 @@ export function DiagnosticsView() {
                     <Icon name="spark" size={13} />{busy === 'analyze-pre' ? t('正在写话术…') : t('生成课前话术')}
                   </button>
                   <button type="button" className="md-pill is-small" onClick={openPost} disabled={busy === 'post'}>{busy === 'post' ? t('正在出卷…') : t('生成课后检测')}</button>
-                  <button type="button" className="md-pill is-small" onClick={() => openPreview('post')} disabled={!current.postScore && current.status !== '待课后'}>{t('打开课后检测')}</button>
+                  <button type="button" className="md-pill is-small" onClick={() => openPreview('post')} disabled={!current.postScore && current.status !== '待课后'}>{t('预览课后检测')}</button>
+                  <a className="md-pill is-small" href={`media-desk/diagnostics/download?id=${encodeURIComponent(current.id)}&kind=post`} download>{t('下载课后卷')}</a>
                   {current.postScore ? <button type="button" className="md-pill is-small" onClick={() => analyze('post')} disabled={busy === 'analyze-post'}>{busy === 'analyze-post' ? t('正在写话术…') : t('生成课后话术')}</button> : null}
                 </div>
 
@@ -269,17 +272,18 @@ export function DiagnosticsView() {
       )}
 
       {preview ? (
-        <Dialog title={preview.kind === 'post' ? t('课后检测预览') : t('诊断卷预览')} onClose={() => setPreview(null)} width={920}>
+        <div className="md-diag-inline-preview" id="diag-preview">
+          <div className="md-diag-preview-head">
+            <b>{preview.kind === 'post' ? t('课后检测预览') : t('诊断卷预览')}</b>
+            <span className="md-muted">{t('在下方直接试填；发给学生请点「下载发给学生」。')}</span>
+            <span className="md-grow" />
+            <a className="md-pill is-small is-primary" href={`media-desk/diagnostics/download?id=${encodeURIComponent(preview.id ?? current?.id ?? '')}&kind=${preview.kind}`} download>{t('下载发给学生')}</a>
+            <button type="button" className="md-inline-link" onClick={() => setPreview(null)}>{t('关闭')}</button>
+          </div>
           <div className="md-diag-preview">
             <iframe title={t('诊断卷预览')} src={preview.url} />
           </div>
-          <div className="md-diag-preview-foot">
-            <span className="md-muted">{t('可以直接在这里试填；发给家长时再打开独立页面。')}</span>
-            <span className="md-grow" />
-            <button type="button" className="md-inline-link" onClick={() => window.open(preview.url, '_blank', 'noopener')}>{t('在新窗口打开')}</button>
-            <button type="button" className="md-pill is-small" onClick={() => setPreview(null)}>{t('关闭')}</button>
-          </div>
-        </Dialog>
+        </div>
       ) : null}
     </div>
   )

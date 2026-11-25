@@ -2295,3 +2295,7 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-diag-preview-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 
 .md-diag-loading { margin-bottom: 12px; padding: 12px 14px; border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 .5px var(--line); color: var(--ink2); font-size: 12.5px; }
+
+.md-diag-inline-preview { margin-top: 14px; padding: 12px; border-radius: var(--r-md); background: var(--hover); }
+.md-diag-preview-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.md-diag-preview-head b { font-size: 13px; }

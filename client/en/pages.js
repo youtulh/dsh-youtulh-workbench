@@ -866,5 +866,10 @@ export const PAGES = {
   正在出卷: 'Generating…',
   '正在生成诊断卷…': 'Generating the diagnostic…',
   '课程名和上课时间是必填；不想填可以点上面的「用示例填一遍」。': 'Course name and class time are required — or use “Fill with example”.',
+  预览试填: 'Preview & try',
+  下载发给学生: 'Download for student',
+  预览课后检测: 'Preview post-test',
+  下载课后卷: 'Download post-test',
+  '在下方直接试填；发给学生请点「下载发给学生」。': 'Try it below; use “Download for student” to send it.',
 
 }

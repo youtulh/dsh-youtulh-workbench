@@ -494,6 +494,21 @@ async function route(ctx, store, desk, req, res) {
       if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
       return json(res, 200, { row, spec: readManifest(root, row) })
     }
+    if (path === 'diagnostics/download') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(url.searchParams.get('id') ?? '').trim()
+      const kind = String(url.searchParams.get('kind') ?? 'pre') === 'post' ? 'post' : 'pre'
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const html = readDiagnosticFile(root, row, kind === 'post' ? '课后检测.html' : '课前诊断.html')
+      if (!html) return json(res, 404, { error: tr('这份卷子还没生成') })
+      const name = `${row.student || '学生'}-${row.lesson || '试听'}-${kind === 'post' ? '课后检测' : '诊断卷'}.html`
+      res.statusCode = 200
+      res.setHeader('content-type', 'text/html; charset=utf-8')
+      res.setHeader('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(name)}`)
+      res.setHeader('cache-control', 'no-store')
+      return res.end(html)
+    }
     if (path === 'diagnostics/preview') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const id = String(url.searchParams.get('id') ?? '').trim()
