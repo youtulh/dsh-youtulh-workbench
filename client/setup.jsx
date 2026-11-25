@@ -479,9 +479,9 @@ export function SetupView() {
             <span className="md-muted">{t('用最近的内容和线索，看看有没有跑偏')}</span>
           </div>
           <div className="md-review-stats">
-            <div><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></div>
-            <div><b>{review.gradedLeads ? `${review.gradeMatched}/${review.gradedLeads}` : '—'}</b><span>{t('线索年级对得上')}</span></div>
-            <div><b>{review.wonCount}</b><span>{t('加微/报课')}</span></div>
+            <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'data', focusId: null })}><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></button>
+            <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{review.gradedLeads ? `${review.gradeMatched}/${review.gradedLeads}` : '—'}</b><span>{t('线索年级对得上')}</span></button>
+            <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{review.wonCount}</b><span>{t('加微/报课')}</span></button>
           </div>
           <ul className="md-review-notes">
             {review.notes.map(row => <li key={row.key}>{t(row.key, row.params)}</li>)}
