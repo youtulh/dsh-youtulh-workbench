@@ -88,10 +88,8 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   for (const row of leads) {
     const source = text(row.source, 80)
     if (!source) continue
-    const hit = recentContent.find(item => {
-      const title = text(item['标题'], 80)
-      return title.length >= 4 && (source.includes(title) || title.includes(source))
-    })
+    const hit = recentContent.find(item => [text(item['标题'], 80), text(item['选题'], 80)]
+      .some(word => word.length >= 4 && (source.includes(word) || word.includes(source))))
     if (hit) {
       const title = text(hit['标题'], 60)
       attributed.set(title, (attributed.get(title) ?? 0) + 1)

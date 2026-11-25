@@ -2080,3 +2080,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-focus { align-items: flex-start; flex-direction: column; }
   .md-persona-card dl { grid-template-columns: 1fr 1fr; }
 }
+
+.md-review-jump { margin-top: 6px; font-size: 12px; text-align: left; }

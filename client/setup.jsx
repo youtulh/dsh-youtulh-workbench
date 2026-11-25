@@ -487,6 +487,11 @@ export function SetupView() {
             {review.notes.map(row => <li key={row.key}>{t(row.key, row.params)}</li>)}
           </ul>
           <p className="md-review-note">{t('按最近 30 条内容和全部线索算，只做参考')}</p>
+          {review.topLeadContent ? (
+            <button type="button" className="md-inline-link md-review-jump" onClick={() => setDesk({ view: 'data', focusId: null, dataQuery: review.topLeadContent.title })}>
+              {t('看这条内容：{title}', { title: review.topLeadContent.title })}
+            </button>
+          ) : null}
           {review.nextTopics.length ? (
             <div className="md-review-next">
               <b>{t('下一步可以拍')}</b>
