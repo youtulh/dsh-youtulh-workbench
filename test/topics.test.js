@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { improvePrompt, localScript, localTopics, normalizeBrief, normalizeImprove, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt, variantsPrompt } from '../src/topics.js'
+import { improvePrompt, localScript, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt, variantsPrompt } from '../src/topics.js'
 
 const state = { positioning: { subject: '化学', grade: '高一', city: '北京' }, painPoints: ['期中 58 分还能补吗', '物质的量听不懂', '上课听懂了做题就废'] }
 
@@ -246,4 +246,20 @@ test('内容 prompt 把引流做成硬要求：选题能带动作，口播结尾
   assert.match(topicsPrompt(state, 10).system, /轻动作/)
   assert.match(topicsPrompt(state, 10).system, /不要直接写「加微信」/)
   assert.match(scriptPrompt(state, '期中 58 分先补哪').system, /引流动作/)
+})
+
+
+test('每条口播都带引流包：评论区不写加微信，私信先看卷子', () => {
+  const state = { positioning: { subject: '化学', grade: '高一', city: '北京', proof: '带过 3 届高三', entry: '物质的量' }, painPoints: [] }
+  const variants = localVariants(state, '期中 58 分先补哪')
+  assert.equal(variants.length, 3)
+  for (const row of variants) {
+    assert.ok(row.comment)
+    assert.ok(row.dm)
+    assert.doesNotMatch(row.comment, /加微信|微信号/)
+    assert.match(row.dm, /卷子/)
+  }
+  const normalized = normalizeScript({ title: 't', script: 's', comment: 'c', dm: 'd' })
+  assert.equal(normalized.comment, 'c')
+  assert.equal(normalized.dm, 'd')
 })

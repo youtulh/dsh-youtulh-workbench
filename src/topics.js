@@ -4,6 +4,7 @@ import { currentLang, tr } from './i18n.js'
 import { RED_LINES, styleBlock } from './style-guide.js'
 
 const text = (value, max = 400) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
+const shorten = (value, max) => { const row = text(value, max * 2); return row.length > max ? `${row.slice(0, max)}…` : row }
 
 function settingBlock(state) {
   const p = state?.positioning ?? {}
@@ -250,7 +251,21 @@ export function normalizeScript(json) {
     title: text(json?.title, 60),
     script: text(json?.script, 2000),
     tags: (Array.isArray(json?.tags) ? json.tags : []).map(row => text(row, 20).replace(/^#+/, '')).filter(Boolean).slice(0, 6),
+    comment: text(json?.comment, 300),
+    dm: text(json?.dm, 400),
   }
+}
+
+/** 评论区置顶 + 私信第一句：模型没给就本地拼，保证每条内容都有引流入口。 */
+export function leadPack(state, topic, variant = {}) {
+  const p = state?.positioning ?? {}
+  const who = [text(p.grade, 10), text(p.subject, 10)].filter(Boolean).join('') || '这门课'
+  const title = shorten(text(topic, 30), 18) || '孩子卡在哪'
+  const entry = shorten(text(p.entry, 30), 16) || '孩子卡在哪一章'
+  const proof = text(p.proof, 30)
+  const comment = text(variant.comment, 300) || `想判断孩子是不是「${title}」这种情况的家长，评论区说一声，我按顺序回。`
+  const dm = text(variant.dm, 400) || `家长您好，我是${who}老师${proof ? `，${proof}` : ''}。先别急着报课，把孩子最近一张卷子发我，我看看他卡在${entry}哪一步，再告诉你先补哪块。`
+  return { comment, dm }
 }
 
 /** 没模型时的一条完整口播：严格按六段结构拼，短句、口语、具体动作、留钩子。 */
@@ -332,8 +347,12 @@ ${given}
 - B 版：从具体知识点或场景切入（先说某一章、某类题）
 - C 版：从家长误区或反常识切入（先说家长做错了什么）
 三个版本的标题不能一样，开头第一句不能一样，但都要严格按上面的六段结构和红线写。
+每个版本再配两条发布时用的话：
+- comment：视频下面置顶的评论，引导家长评论或私信，不写「加微信」「微信号」「价格」；
+- dm：家长私信你时你回的第一句，先看卷子/判断卡点，不报价。
+三条视频的 comment / dm 不能写成同一句，要和各自内容对得上。
 
-只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]}]}`,
+只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…"},{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…"},{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…"}]}`,
     user: ask,
   }
 }
@@ -364,6 +383,7 @@ export function localVariants(state, topic) {
   const titles = [base.title, `${topic}（说清楚版）`, `${topic}（家长版）`]
   return opens.map((opening, index) => ({
     ...base,
+    ...leadPack(state, topic),
     variant: VARIANT_KEYS[index],
     title: titles[index],
     script: [...opening, base.script.split('\n').slice(2).join('\n')].filter(Boolean).join('\n'),
@@ -386,7 +406,7 @@ export function normalizeImprove(body) {
 export function improvePrompt(state, topic, variants, note, lessons = '', samples = []) {
   const pains = (state?.painPoints ?? []).slice(0, 8)
   const drafts = variants
-    .map((row, index) => `[${VARIANT_KEYS[index]}] ${row.title}\n${row.script}`)
+    .map((row, index) => `[${VARIANT_KEYS[index]}] ${row.title}\n${row.script}${row.comment ? `\n评论区：${row.comment}` : ''}${row.dm ? `\n私信：${row.dm}` : ''}`)
     .join('\n\n')
   const system = `你是给补课老师改短视频口播的编辑。老师已经看过三版，现在按他的一句要求改，不要推翻重写、不要换选题。
 ${settingBlock(state)}${pains.length ? `\n家长常愁的：${pains.join('、')}` : ''}
@@ -398,7 +418,9 @@ ${styleBlock(samples)}
 - 仍然一句话一行、按气口断句、开头 3 秒抓人、结尾只留一个动作
 - 他的要求和上面红线冲突时，按红线改，并在正文里体现出来${lessons}
 
-只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]},{"title":"…","script":"…","tags":["…"]}]}`
+保留每版原来的 comment / dm，内容改了要同步改，仍然不写「加微信」「价格」。
+
+只输出 JSON：{"variants":[{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…"},{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…"},{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…"}]}`
   return {
     system,
     user: `选题：${topic || '（沿用原来的）'}

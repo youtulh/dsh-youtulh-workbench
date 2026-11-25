@@ -10,7 +10,7 @@ import { createTools } from './tools.js'
 import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
-import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
+import { fillTopicAngles, guessTopicAngle, improvePrompt, leadPack, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, removeChat, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
 import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
@@ -582,6 +582,7 @@ async function route(ctx, store, desk, req, res) {
             if (variants.length) usedModel = true
           } catch { /* 单条失败就退回本地模板 */ }
           if (!variants.length) variants = localVariants(state, topic)
+          variants = variants.map(row => ({ ...row, ...leadPack(state, topic, row) }))
           return { topic, variants, source: brief ? 'brief' : 'topic' }
         }))
         groups.push(...rows)
@@ -602,6 +603,7 @@ async function route(ctx, store, desk, req, res) {
         const { text: raw } = await callModel(ctx, { ...improvePrompt(state, topic, before, note, lessons, voice), maxTokens: 2800, light: true })
         variants = normalizeVariants(extractJson(raw))
       } catch { /* 没模型就保持原样，交给页面提示 */ }
+      variants = variants.map(row => ({ ...row, ...leadPack(state, topic, row) }))
       return json(res, 200, { variants, source: variants.length ? 'model' : 'local' })
     }
     case 'content/adopt': {
@@ -611,12 +613,16 @@ async function route(ctx, store, desk, req, res) {
       if (!title || !script.trim()) return json(res, 400, { error: tr('没有可保存的稿子') })
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       ensureLayout(root)
-      const text = `【标题】${title}\n\n【口播文案】\n${script}\n\n【标签】${(Array.isArray(body.tags) ? body.tags : []).map(tag => `#${tag}`).join(' ')}`
+      const comment = String(body.comment ?? '').trim().slice(0, 300)
+      const dm = String(body.dm ?? '').trim().slice(0, 400)
+      const lead = [comment ? `\n\n【评论区第一条】\n${comment}` : '', dm ? `\n\n【私信第一句】\n${dm}` : ''].join('')
+      const text = `【标题】${title}\n\n【口播文案】\n${script}\n\n【标签】${(Array.isArray(body.tags) ? body.tags : []).map(tag => `#${tag}`).join(' ')}${lead}`
       const saved = await savePiece({ dir: join(root, LAYOUT.content), title: `${dayStamp()} ${folderName(title)}`, text, formats: ['md', 'docx'] })
       const row = recordContent(root, {
         '日期': dayStamp(), '创建时间': new Date().toISOString(), '批次': String(body.batch ?? ''),
         '选题': String(body.topic ?? ''), '标题': title,
         '标签': (Array.isArray(body.tags) ? body.tags : []).map(tag => `#${tag}`).join(' '),
+        '评论区': comment, '私信引导': dm,
         '采用': '采用', '状态': '未发布', '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '',
         '爆款': '', '分数': '', '目录': saved.dir, '备注': '采用的版本',
       })
@@ -634,12 +640,17 @@ async function route(ctx, store, desk, req, res) {
       if (!dir.startsWith(root) || !existsSync(dir)) return json(res, 404, { error: tr('找不到这条稿子，重新采用一次') })
       const title = String(body.title ?? '').trim() || basename(dir)
       const tags = Array.isArray(body.tags) ? body.tags : []
-      const text = `【标题】${title}\n\n【口播文案】\n${script}\n\n【标签】${tags.map(tag => `#${tag}`).join(' ')}`
+      const comment = String(body.comment ?? '').trim().slice(0, 300)
+      const dm = String(body.dm ?? '').trim().slice(0, 400)
+      const lead = [comment ? `\n\n【评论区第一条】\n${comment}` : '', dm ? `\n\n【私信第一句】\n${dm}` : ''].join('')
+      const text = `【标题】${title}\n\n【口播文案】\n${script}\n\n【标签】${tags.map(tag => `#${tag}`).join(' ')}${lead}`
       const saved = await savePiece({ dir: join(root, LAYOUT.content), title: basename(dir), text, formats: ['md', 'docx'] })
       updateContent(root, saved.dir, {
         '标题': title,
         '选题': String(body.topic ?? ''),
         '标签': tags.map(tag => `#${tag}`).join(' '),
+        ...(comment ? { '评论区': comment } : {}),
+        ...(dm ? { '私信引导': dm } : {}),
         '备注': '采用后改过一版',
       })
       rescore(root)

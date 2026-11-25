@@ -2019,3 +2019,22 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-persona-proof { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; font-size: 11.5px; }
 .md-persona-proof .md-chip { cursor: pointer; }
 .md-persona-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+
+/* 做内容：引流包 */
+.md-lead-pack { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 8px; margin-top: 6px; padding: 7px 9px; border-radius: var(--r-md); background: color-mix(in srgb, var(--hover) 60%, transparent); }
+.md-lead-pack-label { color: var(--accent); font-size: 10.5px; white-space: nowrap; }
+.md-lead-pack p { color: var(--ink2); font-size: 12px; line-height: 18px; }
+@media (max-width: 640px) {
+  .md-lead-pack { grid-template-columns: 1fr auto; }
+  .md-lead-pack-label { grid-column: 1 / -1; }
+}
+
+/* 内容卡：引流话术 */
+.md-content-lead { display: grid; gap: 4px; margin-top: 6px; padding: 8px 10px; border-radius: var(--r-md); background: color-mix(in srgb, var(--hover) 60%, transparent); }
+.md-content-lead p { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 8px; font-size: 12px; line-height: 18px; }
+.md-content-lead b { color: var(--accent); font-size: 10.5px; font-weight: 500; white-space: nowrap; }
+.md-content-lead span { color: var(--ink2); }
+@media (max-width: 640px) {
+  .md-content-lead p { grid-template-columns: 1fr auto; }
+  .md-content-lead b { grid-column: 1 / -1; }
+}

@@ -765,4 +765,6 @@ export const PAGES = {
   '凭什么信你（一条能验证的）': 'Why trust you (verifiable)',
   '带过 3 届高三、本地重点校在职、只做这一科 8 年': '3 cohorts, local key school, 8 years on this subject',
   凭什么信你: 'Why trust you',
+  评论区置顶: 'Pinned comment',
+  私信第一句: 'First reply in DM',
 }

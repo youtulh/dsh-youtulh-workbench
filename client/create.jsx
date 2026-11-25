@@ -182,7 +182,7 @@ export function CreateView() {
     const key = variantKey(group.topic, variant.title)
     setBusy(key)
     try {
-      const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], batch })
+      const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], comment: variant.comment ?? '', dm: variant.dm ?? '', batch })
       patchCreate(state => ({ adopted: { ...state.adopted, [key]: true }, dirs: { ...state.dirs, [key]: data.dir } }))
       toast(t('已保存到 {dir}，并记进内容库', { dir: data.dir }))
     } catch (err) { toast(err.message, { error: true }) }
@@ -194,7 +194,8 @@ export function CreateView() {
   }
 
   const copy = (variant) => {
-    copyText(`【标题】${variant.title}\n\n【口播文案】\n${variant.script}\n\n【标签】${(variant.tags ?? []).map(tag => `#${tag}`).join(' ')}`)
+    const lead = [variant.comment ? `\n\n【评论区第一条】\n${variant.comment}` : '', variant.dm ? `\n\n【私信第一句】\n${variant.dm}` : ''].join('')
+    copyText(`【标题】${variant.title}\n\n【口播文案】\n${variant.script}\n\n【标签】${(variant.tags ?? []).map(tag => `#${tag}`).join(' ')}${lead}`)
   }
 
   const startEdit = (group, variant) => {
@@ -220,7 +221,7 @@ export function CreateView() {
     }
     setBusy(`save-${key}`)
     try {
-      await post('content/revise', { dir, title: variant.title, topic: group.topic, script: text, tags: variant.tags ?? [] })
+      await post('content/revise', { dir, title: variant.title, topic: group.topic, script: text, tags: variant.tags ?? [], comment: variant.comment ?? '', dm: variant.dm ?? '' })
       toast(t('改好了，本地文件也更新了'))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -400,6 +401,20 @@ export function CreateView() {
                       <div className="md-script-lines">{variant.script.split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
                     )}
                     <div className="md-script-tags">{(variant.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
+                    {variant.comment ? (
+                      <div className="md-lead-pack">
+                        <span className="md-lead-pack-label">{t('评论区置顶')}</span>
+                        <p>{variant.comment}</p>
+                        <button type="button" className="md-inline-link" onClick={() => copyText(variant.comment)}>{t('复制')}</button>
+                      </div>
+                    ) : null}
+                    {variant.dm ? (
+                      <div className="md-lead-pack">
+                        <span className="md-lead-pack-label">{t('私信第一句')}</span>
+                        <p>{variant.dm}</p>
+                        <button type="button" className="md-inline-link" onClick={() => copyText(variant.dm)}>{t('复制')}</button>
+                      </div>
+                    ) : null}
                     <div className="md-script-actions">
                       <button type="button" className={`md-pill is-small ${isAdopted ? 'is-primary' : ''}`} onClick={() => adopt(group, variant)} disabled={isAdopted || busy === key || editKey === key}>
                         {isAdopted ? t('已采用') : busy === key ? t('保存中…') : t('采用这条')}

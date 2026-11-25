@@ -56,6 +56,11 @@ export function DataView() {
   React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort }) }, [filter, query, bizRange, sort])
   React.useEffect(() => { setShown(30) }, [filter, query, sort])
 
+  const copyText = (text) => {
+    if (!navigator.clipboard?.writeText) return toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
+    navigator.clipboard.writeText(text).then(() => toast(t('已复制'))).catch(() => toast(t('复制失败'), { error: true }))
+  }
+
   const patch = async (row, key, value) => {
     try {
       await updateContentRow(rowKey(row), { [key]: value })
@@ -310,6 +315,16 @@ export function DataView() {
                       </label>
                     ))}
                   </div>
+                  {row['评论区'] || row['私信引导'] ? (
+                    <div className="md-content-lead">
+                      {row['评论区'] ? (
+                        <p><b>{t('评论区置顶')}</b><span>{row['评论区']}</span><button type="button" className="md-inline-link" onClick={() => copyText(row['评论区'])}>{t('复制')}</button></p>
+                      ) : null}
+                      {row['私信引导'] ? (
+                        <p><b>{t('私信第一句')}</b><span>{row['私信引导']}</span><button type="button" className="md-inline-link" onClick={() => copyText(row['私信引导'])}>{t('复制')}</button></p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {num(row['播放']) >= 500 ? (
                     <p className="md-card-rate">
                       {t('私信/万播：{rate}', { rate: (num(row['私信']) / num(row['播放']) * 10000).toFixed(1) })}
