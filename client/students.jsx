@@ -103,6 +103,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
   useLang()
   const [query, setQuery] = React.useState(ROSTER_UI.query)
   const [filter, setFilter] = React.useState(ROSTER_UI.filter)
+  const [statusFilter, setStatusFilter] = React.useState('all')
   const [openStudent, setOpenStudent] = React.useState('')
   const [feedback, setFeedback] = React.useState(null)
   React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter }) }, [query, filter])
@@ -118,6 +119,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
   const list = students.filter(row => {
     const pass = filter === 'none' ? !row.className : !filter || row.className === filter
     if (!pass) return false
+    if (statusFilter !== 'all' && (row.status || '在读') !== statusFilter) return false
     const q = query.trim()
     return !q || [row.name, row.school, row.contact, row.layer, row.note, row.className, row.source].some(value => String(value ?? '').includes(q))
   })
@@ -130,7 +132,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         title: editing ? t('改学生档案') : t('加一个学生'),
         submitLabel: t('保存'),
         initial: editing
-          ? { name: student.name, grade: student.grade, school: student.school, contact: student.contact, className: student.className, layer: student.layer, source: student.source, note: student.note }
+          ? { name: student.name, grade: student.grade, school: student.school, contact: student.contact, className: student.className, layer: student.layer, status: student.status || '在读', source: student.source, note: student.note }
           : { className: filter && filter !== 'none' ? filter : '' },
         fields: [
           { name: 'name', label: t('姓名'), required: true },
@@ -138,6 +140,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           { name: 'school', label: t('学校'), placeholder: t('可不填') },
           { name: 'contact', label: t('微信 / 手机'), placeholder: t('家长的微信或电话，可不填') },
           { name: 'className', label: t('在哪个班'), type: 'select', options: [{ value: '', label: t('还没排班') }, ...classes.map(row => ({ value: row.name, label: row.name }))] },
+          { name: 'status', label: t('状态'), type: 'select', options: ['在读', '结课', '流失'].map(value => ({ value, label: t(value) })) },
           { name: 'layer', label: t('卡点层'), type: 'select', hint: t('选项来自各班的「分层」；也可以先在班里建好分层再选'), options: [{ value: '', label: t('还没标') }, ...layers.map(value => ({ value, label: t(value) }))] },
           { name: 'source', label: t('来源'), placeholder: t('哪条视频 / 谁介绍') },
           { name: 'note', label: t('备注'), type: 'textarea', rows: 2, placeholder: t('家长的顾虑、上课习惯都可以记在这里') },
@@ -206,6 +209,10 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           <option value="none">{t('还没排班')}</option>
           {classes.filter(row => row.status !== '结课').map(row => <option key={row.name} value={row.name}>{row.name}</option>)}
         </select>
+        <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+          <option value="all">{t('全部状态')}</option>
+          {['在读', '结课', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}
+        </select>
         <span className="md-grow" />
         <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入名单')}</button>
         <button type="button" className="md-pill is-small is-primary" onClick={() => open(null)}><Icon name="plus" size={13} />{t('加学生')}</button>
@@ -235,6 +242,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                     }
                   }}>{student.contact}</button>
                 ) : null}
+                {student.status && student.status !== '在读' ? <em className={`md-student-status ${student.status === '流失' ? 'is-lost' : ''}`}>{t(student.status)}</em> : null}
                 <span className="md-grow" />
                 {student.className ? <span className="md-student-class">{student.className}</span> : <span className="md-muted">{t('还没排班')}</span>}
               </header>

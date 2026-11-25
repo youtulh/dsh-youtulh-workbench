@@ -1971,3 +1971,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-lesson-prev { flex-basis: 100%; }
   .md-student-last { line-height: 18px; }
 }
+
+.md-student-status { padding: 0 6px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-style: normal; font-size: 10.5px; line-height: 17px; }
+.md-student-status.is-lost { color: var(--accent); }

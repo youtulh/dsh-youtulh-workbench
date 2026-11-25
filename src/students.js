@@ -8,13 +8,13 @@ export const HOMEWORK_OPTIONS = ['交', '未交']
 export const DEFAULT_TOTAL = 8
 export const MAX_TOTAL = 30
 
-export const STUDENT_COLUMNS = ['姓名', '年级', '学校', '微信', '卡点层', '班', '来源', '报课日期', '备注', '创建时间', '更新时间']
+export const STUDENT_COLUMNS = ['姓名', '年级', '学校', '微信', '卡点层', '班', '状态', '来源', '报课日期', '备注', '创建时间', '更新时间']
 export const CLASS_COLUMNS = ['班名', '上课时间', '总次数', '状态', '分层', '备注', '创建时间', '更新时间']
 export const LESSON_COLUMNS = ['班', '课次', '日期', '姓名', '出勤', '掌握', '作业', '备注', '更新时间']
 
 const STUDENT_FIELDS = {
   name: '姓名', grade: '年级', school: '学校', contact: '微信', layer: '卡点层', className: '班',
-  source: '来源', enrolledAt: '报课日期', note: '备注', createdAt: '创建时间', updatedAt: '更新时间',
+  status: '状态', source: '来源', enrolledAt: '报课日期', note: '备注', createdAt: '创建时间', updatedAt: '更新时间',
 }
 const CLASS_FIELDS = { name: '班名', time: '上课时间', total: '总次数', status: '状态', layers: '分层', note: '备注', createdAt: '创建时间', updatedAt: '更新时间' }
 const LESSON_FIELDS = { className: '班', no: '课次', date: '日期', name: '姓名', attend: '出勤', mastery: '掌握', homework: '作业', note: '备注', updatedAt: '更新时间' }
@@ -38,7 +38,7 @@ export function layersText(value) {
 
 const toStudent = (row) => ({
   name: row['姓名'] ?? '', grade: row['年级'] ?? '', school: row['学校'] ?? '', contact: row['微信'] ?? '', layer: row['卡点层'] ?? '',
-  className: row['班'] ?? '', source: row['来源'] ?? '', enrolledAt: row['报课日期'] ?? '',
+  className: row['班'] ?? '', status: ['结课', '流失'].includes(row['状态']) ? row['状态'] : '在读', source: row['来源'] ?? '', enrolledAt: row['报课日期'] ?? '',
   note: row['备注'] ?? '', createdAt: row['创建时间'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
 const toStudentRow = (student) => Object.fromEntries(Object.entries(STUDENT_FIELDS).map(([key, col]) => [col, student[key] ?? '']))
@@ -77,6 +77,7 @@ export function saveStudent(root, input = {}, original = null) {
   const put = (key, max) => { if (input[key] !== undefined) patch[key] = text(input[key], max) }
   put('name', 40); put('grade', 20); put('school', 40); put('contact', 40)
   put('layer', 30); put('className', 60); put('source', 60); put('enrolledAt', 20); put('note', 200)
+  if (input.status !== undefined) patch.status = ['结课', '流失'].includes(input.status) ? input.status : '在读'
   const name = text(input.name, 40)
   if (!name) throw new Error('学生姓名不能为空')
   patch.name = name
@@ -93,7 +94,7 @@ export function saveStudent(root, input = {}, original = null) {
     if (from && (from.name !== name || from.grade !== (patch.grade ?? from.grade))) renameLessonRows(root, from, name)
   } else {
     const next = {
-      name, grade, school: '', contact: '', layer: '', className: '', source: '', enrolledAt: dayStamp(), note: '',
+      name, grade, school: '', contact: '', layer: '', className: '', status: '在读', source: '', enrolledAt: dayStamp(), note: '',
       ...patch, createdAt: nowStamp(), updatedAt: nowStamp(),
     }
     if (!next.enrolledAt) next.enrolledAt = dayStamp()

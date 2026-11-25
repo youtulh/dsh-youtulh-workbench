@@ -303,3 +303,18 @@ test('老表头检测：能列出班课/学生/课次/线索', async () => {
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('学生状态：默认在读，可标结课/流失，再改回来', async () => {
+  const root = await temp()
+  try {
+    saveStudent(root, { name: '王', grade: '高一' })
+    assert.equal(readStudents(root)[0].status, '在读')
+    saveStudent(root, { name: '王', grade: '高一', status: '结课' })
+    assert.equal(readStudents(root)[0].status, '结课')
+    saveStudent(root, { name: '王', grade: '高一', status: '在读' })
+    assert.equal(readStudents(root)[0].status, '在读')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})
