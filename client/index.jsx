@@ -3,6 +3,7 @@ import React from 'react'
 import { CreateView } from './create.jsx'
 import { dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
 import { DataView } from './data.jsx'
+import { DiagnosticsView } from './diagnostics.jsx'
 import { DmView } from './dm.jsx'
 import { setAppCtx } from './launch.js'
 import { SetupView } from './setup.jsx'
@@ -20,13 +21,14 @@ const PANEL_ID = 'media-desk'
 const NAV = [
   { id: 'home', label: '首页', icon: 'wall' },
   { id: 'dm', label: '聊天台', icon: 'chat' },
+  { id: 'diagnose', label: '试听诊断', icon: 'spark' },
   { id: 'students', label: '学生', icon: 'target' },
   { id: 'content', label: '做内容', icon: 'pen' },
   { id: 'data', label: '看数据', icon: 'list' },
   { id: 'setup', label: '我的设定', icon: 'user' },
 ]
 
-const VIEWS = { home: WelcomeView, dm: DmView, students: StudentsView, content: CreateView, data: DataView, setup: SetupView }
+const VIEWS = { home: WelcomeView, dm: DmView, diagnose: DiagnosticsView, students: StudentsView, content: CreateView, data: DataView, setup: SetupView }
 
 function UpdateBadge() {
   const info = useVersionInfo()

@@ -13,6 +13,10 @@ import { localSuggestions, normalizeSuggestions, suggestPrompts } from './sugges
 import { fillTopicAngles, guessTopicAngle, improvePrompt, leadPack, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, removeChat, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
+import { decodeResult, localDiagnostic, normalizeDiagnostic, scoreDiagnostic, compareScores, encodeResult } from './diagnostics.js'
+import { analysisPrompt, diagnosticPrompt, localAnalysis, postDiagnosticPrompt } from './diagnostics-prompt.js'
+import { DIAG_COLUMNS, diagnosticDir, ensureDiagnosticDir, listDiagnostics, readDiagnosticFile, readDiagnosticResult, readManifest, readPostSpec, saveDiagnosticRow, writeDiagnosticFile, writeDiagnosticHtml, writeDiagnosticResult, writeManifest, writePostSpec } from './diagnostics-store.js'
+import { renderDiagnosticHtml } from './diagnostics-render.js'
 import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { legacyTables, readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
@@ -221,6 +225,30 @@ async function sendFile(req, res, file) {
   res.setHeader('content-length', info.size)
   if (req.method === 'HEAD') return res.end()
   return createReadStream(file).pipe(res)
+}
+
+function sendHtml(res, html) {
+  res.statusCode = 200
+  res.setHeader('content-type', 'text/html; charset=utf-8')
+  res.setHeader('cache-control', 'no-store')
+  res.end(html)
+}
+
+async function withBrandLogo(store, brand = {}) {
+  const out = { ...brand }
+  const raw = String(brand.logo ?? '').trim()
+  if (raw.startsWith('data:image/')) return out
+  const hit = /^(?:media-desk\/)?files\/([\w.-]+)$/.exec(raw)
+  if (!hit) return out
+  const ext = extname(hit[1]).toLowerCase()
+  const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }[ext]
+  if (!mime) return out
+  try {
+    const buffer = await readFile(join(store.filesDir, hit[1]))
+    if (buffer.length > 2 * 1024 * 1024) return out
+    out.logo = `data:${mime};base64,${buffer.toString('base64')}`
+  } catch { /* 没传 logo 就用字标 */ }
+  return out
 }
 
 function engineLabel(ctx) {
@@ -448,6 +476,34 @@ async function route(ctx, store, desk, req, res) {
       suggestCache = { key, at: Date.now(), list }
       return json(res, 200, { prompts: list, source })
     }
+    if (path === 'diagnostics') {
+      const settings = await desk.settings.read()
+      const root = resolveRoot(settings.saveRoot)
+      ensureLayout(root)
+      return json(res, 200, {
+        rows: listDiagnostics(root),
+        brand: settings.brand ?? {},
+        modelOk: modelStatus.ok,
+        modelError: modelStatus.error,
+      })
+    }
+    if (path === 'diagnostics/spec') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(url.searchParams.get('id') ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      return json(res, 200, { row, spec: readManifest(root, row) })
+    }
+    if (path === 'diagnostics/preview') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(url.searchParams.get('id') ?? '').trim()
+      const kind = String(url.searchParams.get('kind') ?? 'pre') === 'post' ? 'post' : 'pre'
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const html = readDiagnosticFile(root, row, kind === 'post' ? '课后检测.html' : '课前诊断.html')
+      if (!html) return json(res, 404, { error: tr('这份卷子还没生成') })
+      return sendHtml(res, html)
+    }
     if (path === 'workspace/info') {
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
@@ -466,6 +522,166 @@ async function route(ctx, store, desk, req, res) {
   if (path === 'upload') return handleUpload(req, store, res)
   const body = await readJson(req)
   switch (path) {
+    case 'diagnostics/create': {
+      const settings = await desk.settings.read()
+      const root = resolveRoot(settings.saveRoot)
+      ensureLayout(root)
+      const brand = await withBrandLogo(store, { ...(settings.brand ?? {}), ...(body.brand ?? {}) })
+      if (!brand.mark) brand.mark = String(brand.name ?? '').trim().slice(0, 1)
+      const lesson = body.lesson ?? {}
+      if (!String(lesson.title ?? '').trim()) return json(res, 400, { error: tr('先填课程名') })
+      const id = newId('DIAG')
+      const input = {
+        id, brand,
+        lesson,
+        student: body.student ?? {},
+        count: Number(body.count) === 10 ? 10 : 15,
+        createdAt: new Date().toISOString(),
+        method: String(body.method ?? '').trim(),
+      }
+      let spec = null
+      let source = 'model'
+      try {
+        const { text: raw } = await callModel(ctx, { ...diagnosticPrompt(await store.read(), input), maxTokens: 3600 })
+        spec = normalizeDiagnostic(extractJson(raw), input)
+      } catch (err) {
+        const subject = String(lesson.subject ?? settings.brand?.subject ?? '').trim()
+        if (subject === '化学' || /氧化还原|配平/.test(`${lesson.title} ${lesson.topic}`)) {
+          spec = localDiagnostic(input)
+          source = 'template'
+        } else {
+          return json(res, 400, { error: tr('诊断卷没生成出来：{msg}', { msg: err.message }) })
+        }
+      }
+      spec.id = id
+      const dir = writeManifest(root, id, spec)
+      const html = renderDiagnosticHtml(spec, { kind: 'pre' })
+      writeDiagnosticHtml(root, id, '课前诊断.html', html)
+      const row = saveDiagnosticRow(root, {
+        id, createdAt: spec.createdAt, status: '待作答', student: spec.student.name, grade: spec.student.grade,
+        subject: spec.lesson.subject, lesson: spec.lesson.title, at: spec.lesson.at, code: spec.lesson.code,
+        brand: spec.brand.name, dir: join(LAYOUT.diagnostics, id),
+        note: source === 'template' ? '模板卷（模型没通）' : '',
+      })
+      return json(res, 200, { row, spec, source, dir })
+    }
+    case 'diagnostics/post/create': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const spec = readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('诊断卷文件不见了') })
+      const preResult = readDiagnosticResult(root, row, 'pre')
+      const pre = preResult ? scoreDiagnostic(spec, preResult.answers) : null
+      let postSpec = null
+      try {
+        const { text: raw } = await callModel(ctx, { ...postDiagnosticPrompt(await store.read(), spec, pre, body.notes), maxTokens: 3200 })
+        const parsed = extractJson(raw)
+        postSpec = normalizeDiagnostic({ ...spec, questions: parsed.questions, verdicts: parsed.verdicts ?? spec.verdicts, title: spec.title }, { ...spec, id })
+      } catch (err) {
+        return json(res, 400, { error: tr('课后检测没生成出来：{msg}', { msg: err.message }) })
+      }
+      postSpec.id = id
+      writePostSpec(root, id, postSpec)
+      const html = renderDiagnosticHtml(postSpec, { kind: 'post', pre })
+      writeDiagnosticHtml(root, id, '课后检测.html', html)
+      const rowNext = saveDiagnosticRow(root, { ...row, status: '待课后', note: '课后检测已生成' })
+      return json(res, 200, { row: rowNext, spec: postSpec })
+    }
+    case 'diagnostics/import': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      let payload = body.payload
+      if (typeof payload === 'string') payload = decodeResult(payload)
+      if (!payload || typeof payload !== 'object') return json(res, 400, { error: tr('没有可导入的结果') })
+      const id = String(payload.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断，先确认结果码') })
+      const spec = payload.kind === 'post' ? (readPostSpec(root, row) || readManifest(root, row)) : readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('诊断卷文件不见了') })
+      if (!Array.isArray(payload.answers) || payload.answers.length !== spec.questions.length) {
+        return json(res, 400, { error: tr('答案数量和卷子对不上，让对方重新保存一次') })
+      }
+      const score = scoreDiagnostic(spec, payload.answers)
+      const kind = payload.kind === 'post' ? 'post' : 'pre'
+      writeDiagnosticResult(root, id, kind, { ...payload, score })
+      let rowNext = null
+      if (kind === 'post') {
+        const pre = readDiagnosticResult(root, row, 'pre')
+        const preSpec = readManifest(root, row)
+        const preScore = pre && preSpec ? scoreDiagnostic(preSpec, pre.answers) : null
+        const diff = preScore ? compareScores(preScore, score) : null
+        rowNext = saveDiagnosticRow(root, {
+          ...row, status: '已完成', postScore: `${score.correct}/${score.total}`,
+          progress: diff ? `${diff.delta >= 0 ? '+' : ''}${diff.delta}%` : '',
+        })
+      } else {
+        rowNext = saveDiagnosticRow(root, { ...row, status: '课前已回', preScore: `${score.correct}/${score.total}` })
+      }
+      return json(res, 200, { row: rowNext, score, kind })
+    }
+    case 'diagnostics/analyze': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const row = listDiagnostics(root).find(item => item.id === id)
+      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
+      const kind = body.kind === 'post' ? 'post' : 'pre'
+      const spec = kind === 'post' ? (readPostSpec(root, row) || readManifest(root, row)) : readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('诊断卷文件不见了') })
+      const result = readDiagnosticResult(root, row, kind)
+      if (!result) return json(res, 400, { error: tr('先导入这份结果') })
+      const pre = kind === 'post' ? readDiagnosticResult(root, row, 'pre') : null
+      const preSpec = kind === 'post' ? readManifest(root, row) : null
+      const preScore = pre && preSpec ? scoreDiagnostic(preSpec, pre.answers) : null
+      let analysis = null
+      let source = 'local'
+      try {
+        const { text: raw } = await callModel(ctx, { ...analysisPrompt(await store.read(), spec, { ...result, ...scoreDiagnostic(spec, result.answers) }, { kind, pre: preScore }), maxTokens: 1600 })
+        const parsed = extractJson(raw)
+        analysis = {
+          summary: String(parsed.summary ?? '').trim(),
+          findings: Array.isArray(parsed.findings) ? parsed.findings.map(row => String(row)).filter(Boolean).slice(0, 6) : [],
+          parentScript: String(parsed.parentScript ?? '').trim(),
+          trialFocus: Array.isArray(parsed.trialFocus) ? parsed.trialFocus.map(row => String(row)).filter(Boolean).slice(0, 6) : [],
+          nextStep: String(parsed.nextStep ?? '').trim(),
+          riskNote: String(parsed.riskNote ?? '').trim(),
+        }
+        if (analysis.parentScript) source = 'model'
+        else analysis = null
+      } catch { /* 没模型就本地拼 */ }
+      if (!analysis) analysis = localAnalysis(spec, { ...result, ...scoreDiagnostic(spec, result.answers) }, { kind, pre: preScore })
+      const md = `# 试听诊断解析
+
+- 学生：${spec.student.name || '孩子'}（${spec.student.grade || ''}）
+- 课程：${spec.lesson.title} · ${spec.lesson.at || ''}
+- 类型：${kind === 'post' ? '课后复测' : '课前诊断'}
+
+## 诊断摘要
+
+${analysis.summary}
+
+${analysis.findings.map(row => `- ${row}`).join('\n')}
+
+## 家长话术
+
+${analysis.parentScript}
+
+## 试听重点
+
+${analysis.trialFocus.map(row => `- ${row}`).join('\n')}
+
+## 下一步
+
+${analysis.nextStep}
+
+## 风险提醒
+
+${analysis.riskNote}
+`
+      writeDiagnosticFile(root, id, '解析与话术.md', md)
+      const rowNext = saveDiagnosticRow(root, { ...row, status: '已分析', note: analysis.summary })
+      return json(res, 200, { row: rowNext, analysis, source })
+    }
     case 'ops': {
       const label = typeof body.label === 'string' ? body.label : tr('操作')
       const ops = Array.isArray(body.ops) ? body.ops : []

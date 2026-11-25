@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>姜老师化学 · 试听课诊断卷</title>
+<style>
+  :root {
+    --ink: #14253a;
+    --deep: #1a3a5c;
+    --mid: #2b5a88;
+    --paper: #f7f3ea;
+    --porcelain: #fffdf8;
+    --line: rgba(20,37,58,.14);
+    --good: #2e9e63;
+    --bad: #d64545;
+    --warn: #d9a441;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+    background: #f7f3ea;
+    color: #14253a;
+    line-height: 1.6;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+
+  .head {
+    background: linear-gradient(135deg, #2b5a88, #1a3a5c 60%, #14253a);
+    color: #fff; border-radius: 18px; padding: 26px 22px;
+    box-shadow: 0 10px 30px rgba(20,37,58,.25);
+  }
+  .head .tag { font-size: 12.5px; letter-spacing: .16em; opacity: .85; font-weight: 700; }
+  .head h1 { font-size: 26px; font-weight: 800; margin-top: 8px; letter-spacing: .01em; }
+  .head p { font-size: 14px; opacity: .9; margin-top: 10px; line-height: 1.7; }
+  .layers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+  .layers .ch { font-size: 11.5px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); padding: 4px 10px; border-radius: 999px; }
+
+  .section { margin-top: 22px; }
+  .section .s-title { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .section .s-title .num { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; background: #2b5a88; color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .section .s-title h2 { font-size: 17px; font-weight: 800; }
+  .section .s-title .note { font-size: 12px; color: #7a8a9a; }
+
+  .q { background: #fffdf8; border: 1px solid var(--line); border-radius: 15px; padding: 16px 16px 14px; margin-top: 12px; }
+  .q .q-head { display: flex; gap: 8px; align-items: baseline; }
+  .q .q-no { font-weight: 800; color: #2b5a88; font-size: 14px; flex: 0 0 auto; }
+  .q .q-text { font-size: 15px; font-weight: 600; }
+  .q .q-formula { font-family: "Menlo","Consolas","SF Mono",monospace; font-size: 14.5px; font-weight: 600; color: #1a3a5c; background: #eef3f8; border-radius: 9px; padding: 9px 12px; margin-top: 10px; letter-spacing: .01em; }
+  .q .opts { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .q .opt {
+    width: 100%; text-align: left; border: 1.5px solid var(--line); background: #fff; border-radius: 11px;
+    padding: 11px 12px; font-size: 14.5px; color: #14253a; cursor: pointer; font-family: inherit;
+    display: flex; gap: 10px; align-items: baseline; transition: border-color .15s, background .15s;
+  }
+  .q .opt .key { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: #eef3f8; color: #2b5a88; font-weight: 800; font-size: 12.5px; display: flex; align-items: center; justify-content: center; }
+  .q .opt .val { flex: 1; }
+  .q .opt .val .f { font-family: "Menlo","Consolas","SF Mono",monospace; font-weight: 600; }
+  .q .opt.sel { border-color: #2b5a88; background: #eef3f8; }
+  .q .opt.sel .key { background: #2b5a88; color: #fff; }
+
+  .submit-bar { position: sticky; bottom: 0; background: linear-gradient(to top, #f7f3ea 70%, rgba(247,243,234,0)); padding: 16px 0 6px; margin-top: 26px; }
+  .submit-btn {
+    width: 100%; border: none; border-radius: 14px; padding: 17px; min-height: 56px;
+    background: linear-gradient(135deg, #2b5a88, #1a3a5c); color: #fff; font-size: 17px; font-weight: 700; letter-spacing: .08em;
+    cursor: pointer; box-shadow: 0 8px 22px rgba(20,37,58,.3);
+  }
+  .submit-btn:active { transform: scale(.99); }
+  .submit-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+  #report { margin-top: 24px; background: #fffdf8; border: 1px solid var(--line); border-radius: 18px; padding: 24px 20px; }
+  #report h3 { font-size: 19px; font-weight: 800; }
+  .score-big { font-size: 48px; font-weight: 800; color: #1a3a5c; margin-top: 6px; }
+  .score-big small { font-size: 15px; color: #7a8a9a; font-weight: 500; }
+  .layer-grid { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .layer-row { display: flex; align-items: center; gap: 10px; }
+  .layer-row .lname { flex: 0 0 150px; font-size: 13.5px; font-weight: 600; color: #3a4a5c; }
+  .layer-row .bar { flex: 1; height: 10px; background: #eef0f2; border-radius: 5px; overflow: hidden; }
+  .layer-row .bar .fill { height: 100%; border-radius: 5px; transition: width .4s ease; }
+  .layer-row .lscore { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #1a3a5c; width: 42px; text-align: right; }
+  .verdict { margin-top: 18px; border-radius: 13px; padding: 16px 16px; font-size: 14.5px; line-height: 1.75; }
+  .verdict .v-title { font-weight: 800; margin-bottom: 5px; display: block; font-size: 15px; }
+  .verdict.stuck { background: #fbefef; color: #9c3333; border: 1px solid #f0d3d3; }
+  .verdict.pass { background: #eef8f1; color: #1f6b43; border: 1px solid #cfe8d8; }
+  .verdict.mid { background: #fdf6e8; color: #8a6420; border: 1px solid #f0e3c0; }
+
+  .explain { margin-top: 8px; }
+  .explain summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #2b5a88; }
+  .explain .x-item { padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 13px; line-height: 1.7; color: #3a4a5c; }
+  .explain .x-item:last-child { border-bottom: none; }
+  .explain .x-item b { color: #14253a; }
+  .x-item.wrong-ans { color: #9c3333; }
+  .x-item .right { color: #1f6b43; font-weight: 700; }
+
+  .cta { margin-top: 16px; border-radius: 14px; padding: 18px 16px; background: linear-gradient(135deg, #2b5a88, #1a3a5c); color: #fff; text-align: center; }
+  .cta .cta-title { font-size: 16px; font-weight: 800; letter-spacing: .02em; }
+  .cta .cta-body { font-size: 13.5px; opacity: .93; margin-top: 8px; line-height: 1.7; }
+  .cta .cta-brand { font-weight: 700; }
+
+  @media print {
+    body { background: #fff; }
+    .submit-bar, #report .explain summary, .no-print { display: none !important; }
+    .head { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .q { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="tag">姜老师化学 · 试听课摸底诊断</div>
+    <h1>姜老师化学 · 试听课诊断卷</h1>
+    <p>15 题，分五层，从初三的「化合价」一路测到高一的「氧化还原配平」。做完点提交，立刻告诉你的卡点在哪一层——<b>哪个环节断了，姜老师试听课就从哪补起。</b></p>
+    <div class="layers">
+      <span class="ch">① 化合价</span>
+      <span class="ch">② 化学式</span>
+      <span class="ch">③ 普通配平</span>
+      <span class="ch">④ 氧化还原概念</span>
+      <span class="ch">⑤ 氧化还原配平</span>
+    </div>
+  </div>
+
+  <div id="questions"></div>
+
+  <div class="submit-bar no-print">
+    <button class="submit-btn" id="submit-btn" onclick="grade()">提交 · 看诊断结果</button>
+  </div>
+
+  <div id="report" style="display:none;"></div>
+</div>
+
+<script>
+var LAYERS = [
+  { name: '① 化合价', desc: '初三地基' },
+  { name: '② 化学式', desc: '原子团' },
+  { name: '③ 普通配平', desc: '观察法' },
+  { name: '④ 氧化还原概念', desc: '升失氧降得还' },
+  { name: '⑤ 氧化还原配平', desc: '三步法' }
+];
+
+var QUESTIONS = [
+  // 层1 化合价
+  { l:0, q:'Fe₂O₃ 中铁(Fe)元素的化合价是？', opts:['+2','+3','0','−3'], ans:1,
+    x:'O 是 −2，3 个 O 共 −6，所以 2 个 Fe 共 +6，每个 Fe 是 +3。' },
+  { l:0, q:'KMnO₄ 中锰(Mn)元素的化合价是？', opts:['+2','+4','+6','+7'], ans:3,
+    x:'K 是 +1，O 是 −2（4 个共 −8），所以 Mn = +1 + Mn + (−8) = 0，Mn = +7。' },
+  { l:0, q:'HNO₃ 中氮(N)元素的化合价是？', opts:['+3','+4','+5','−3'], ans:2,
+    x:'H 是 +1，O 是 −2（3 个共 −6），所以 N = +5。' },
+  // 层2 化学式
+  { l:1, q:'硝酸根离子的符号是？', opts:['NO₂⁻','NO₃⁻','NO⁻','NO₃'], ans:1,
+    x:'硝酸根是 NO₃⁻，带 1 个负电荷（整体 −1）。' },
+  { l:1, q:'Cu(NO₃)₂ 中氮(N)的化合价是？', opts:['+3','+4','+5','+6'], ans:2,
+    x:'NO₃⁻ 整体是 −1，其中 O 是 −2，所以 N = +5。' },
+  { l:1, q:'「氯化铁」的化学式是？', opts:['FeCl₂','FeCl₃','Fe₂Cl₃','FeCl'], ans:1,
+    x:'氯化「铁」指 +3 价的铁，氯是 −1，所以是 FeCl₃（FeCl₂ 是氯化亚铁）。' },
+  // 层3 普通配平
+  { l:2, q:'配平 H₂ + O₂ → H₂O，系数依次是？', opts:['1,1,1','2,1,2','1,2,2','2,2,2'], ans:1,
+    x:'2H₂ + O₂ = 2H₂O（最小公倍数法：O 取 2 和 1 的最小公倍数 2）。' },
+  { l:2, q:'配平 Fe + O₂ → Fe₃O₄，系数依次是？', opts:['3,2,1','1,2,1','2,3,1','3,4,1'], ans:0,
+    x:'3Fe + 2O₂ = Fe₃O₄。' },
+  { l:2, q:'配平 CH₄ + O₂ → CO₂ + H₂O，系数依次是？', opts:['1,2,1,2','1,3,1,2','1,1,1,1','2,2,1,2'], ans:0,
+    x:'CH₄ + 2O₂ = CO₂ + 2H₂O。' },
+  // 层4 氧化还原概念
+  { l:3, q:'铜从 Cu 变成 Cu²⁺ 的过程中，铜发生了？', opts:['得 2 个电子、被还原','失 2 个电子、被氧化','得 2 个电子、被氧化','失 2 个电子、被还原'], ans:1,
+    x:'0 → +2 升价，失电子，被氧化（口诀：升失氧，降得还）。' },
+  { l:3, q:'反应 Cu + HNO₃ → Cu(NO₃)₂ + NO↑ + H₂O 中，氧化剂是？', opts:['Cu','HNO₃','Cu(NO₃)₂','H₂O'], ans:1,
+    x:'HNO₃ 里的 N 从 +5 降到 +2，得电子、被还原，所以 HNO₃ 是氧化剂。' },
+  { l:3, q:'氧化还原配平「找升降」这一步，凑系数的依据是？', opts:['两边原子个数相等','失电子总数 = 得电子总数','系数都是整数','质量守恒'], ans:1,
+    x:'电子守恒——失的电子数 = 得的电子数，用最小公倍数凑系数。' },
+  // 层5 氧化还原配平
+  { l:4, q:'配平 Cu + HNO₃(稀) → Cu(NO₃)₂ + NO↑ + H₂O，系数依次是？', opts:['1,2,1,1,1','3,8,3,2,4','3,2,3,2,4','1,8,1,2,4'], ans:1,
+    x:'3Cu + 8HNO₃ = 3Cu(NO₃)₂ + 2NO↑ + 4H₂O（HNO₃ 拆成作氧化剂的 2 个 + 作酸根的 6 个）。' },
+  { l:4, q:'配平 C + HNO₃(浓) → CO₂ + NO₂ + H₂O，系数依次是？', opts:['1,4,1,4,2','1,2,1,2,1','2,4,2,4,2','1,4,1,2,2'], ans:0,
+    x:'C + 4HNO₃ = CO₂ + 4NO₂ + 2H₂O（C 升 4，N 降 1，最小公倍数 4）。' },
+  { l:4, q:'配平 Fe + CuSO₄ → FeSO₄ + Cu，系数依次是？', opts:['1,1,1,1','2,1,2,1','1,2,1,2','2,1,1,2'], ans:0,
+    x:'Fe + CuSO₄ = FeSO₄ + Cu，已经是平的（Fe 升 2、Cu 降 2，系数 1:1）。' }
+];
+
+var answers = new Array(QUESTIONS.length).fill(-1);
+var graded = false;
+
+function renderQuestions() {
+  var wrap = document.getElementById('questions');
+  var html = '';
+  var curLayer = -1;
+  QUESTIONS.forEach(function (q, i) {
+    if (q.l !== curLayer) {
+      curLayer = q.l;
+      if (curLayer > 0) html += '</div>';
+      html += '<div class="section"><div class="s-title"><span class="num">' + (curLayer+1) + '</span><h2>' + LAYERS[curLayer].name + '</h2><span class="note">' + LAYERS[curLayer].desc + '</span></div>';
+    }
+    html += '<div class="q" id="q' + i + '"><div class="q-head"><span class="q-no">' + (i+1) + '.</span><span class="q-text">' + q.q + '</span></div>';
+    html += '<div class="opts">';
+    var keys = ['A','B','C','D'];
+    q.opts.forEach(function (o, j) {
+      html += '<button class="opt" data-q="' + i + '" data-o="' + j + '" onclick="pick(' + i + ',' + j + ')"><span class="key">' + keys[j] + '</span><span class="val">' + o + '</span></button>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+function pick(qi, oi) {
+  if (graded) return;
+  answers[qi] = oi;
+  var qEl = document.getElementById('q' + qi);
+  var opts = qEl.querySelectorAll('.opt');
+  opts.forEach(function (b) { b.classList.remove('sel'); });
+  opts[oi].classList.add('sel');
+  document.getElementById('submit-btn').disabled = answers.some(function (a) { return a === -1; });
+}
+
+function grade() {
+  if (graded) return;
+  graded = true;
+  // 锁定题目，回显正确/错误
+  QUESTIONS.forEach(function (q, i) {
+    var qEl = document.getElementById('q' + i);
+    var opts = qEl.querySelectorAll('.opt');
+    opts.forEach(function (b, j) {
+      b.style.cursor = 'default';
+      if (j === q.ans) { b.style.borderColor = '#2e9e63'; b.style.background = '#eef8f1'; }
+      if (j === answers[i] && j !== q.ans) { b.style.borderColor = '#d64545'; b.style.background = '#fbefef'; }
+    });
+  });
+  document.getElementById('submit-btn').disabled = true;
+
+  // 分层统计
+  var layerRight = [0,0,0,0,0];
+  var totalRight = 0;
+  QUESTIONS.forEach(function (q, i) {
+    if (answers[i] === q.ans) { layerRight[q.l]++; totalRight++; }
+  });
+
+  // 找卡点：第一个「答对 ≤1 题」的层
+  var stuckLayer = -1;
+  for (var l = 0; l < 5; l++) {
+    if (layerRight[l] <= 1) { stuckLayer = l; break; }
+  }
+
+  var score = totalRight * 100 / 15;
+  var report = document.getElementById('report');
+  var html = '<h3>诊断结果</h3>';
+  html += '<div class="score-big">' + totalRight + '<small> / 15 题 · 正确率 ' + Math.round(score) + '%</small></div>';
+
+  // 分层条
+  html += '<div class="layer-grid">';
+  var colors = ['#2b5a88','#2e9e63','#d9a441','#d64545'];
+  LAYERS.forEach(function (L, l) {
+    var r = layerRight[l];
+    var pct = r / 3 * 100;
+    var color = (r === 3) ? '#2e9e63' : (r === 2 ? '#2b5a88' : (r === 1 ? '#d9a441' : '#d64545'));
+    html += '<div class="layer-row"><span class="lname">' + L.name + '</span><div class="bar"><div class="fill" style="width:' + pct + '%;background:' + color + '"></div></div><span class="lscore">' + r + '/3</span></div>';
+  });
+  html += '</div>';
+
+  // 判定文案
+  var verdicts = [
+    { title:'卡点在第 ① 层：化合价', body:'这是初三的地基，标不出化合价，后面升价降价就全崩。姜老师试听课要补的第一块就是它——40 分钟带你当场把化合价捋顺，后面才有落脚点。', cls:'stuck' },
+    { title:'卡点在第 ② 层：化学式 / 原子团', body:'NO₃⁻、SO₄²⁻ 这些原子团没记牢，配平第一步就写不对产物。姜老师试听课用「先工具后元素」的办法，先帮你把高频原子团一次记牢。', cls:'stuck' },
+    { title:'卡点在第 ③ 层：普通方程式配平', body:'观察法 / 最小公倍数法（初三就该会）没过关。姜老师试听课会把配平方法串成一条线，带你当场练到会。', cls:'stuck' },
+    { title:'卡点在第 ④ 层：氧化还原概念', body:'「升失氧、降得还」没建立，分不清谁被氧化、谁被还原。这是姜老师试听课的核心，一个口诀加几道题，帮你当场打通。', cls:'stuck' },
+    { title:'卡点在第 ⑤ 层：氧化还原配平', body:'前四层基础还行，就差三步法——尤其「原子团里部分元素变价」（HNO₃ 的 N 一半变 NO、一半留 NO₃⁻）。这正是姜老师试听课的钩子题，现场带你从标价一路配平到底。', cls:'stuck' },
+    { title:'五层全部过关 ✅', body:'氧化还原配平基础扎实，这一块不是你的坑。来姜老师试听课，直接挑战更高难度，顺便找找别的断层。', cls:'pass' }
+  ];
+
+  var v;
+  if (stuckLayer >= 0) v = verdicts[stuckLayer];
+  else if (layerRight[4] < 3) v = { title:'基础过关，配平再练练', body:'前四层都没问题，但第 ⑤ 层氧化还原配平还有小漏洞，多刷几道三步法配平题巩固。', cls:'mid' };
+  else v = verdicts[5];
+
+  html += '<div class="verdict ' + v.cls + '"><span class="v-title">' + v.title + '</span>' + v.body + '</div>';
+
+  // 错题解析
+  var wrongList = [];
+  QUESTIONS.forEach(function (q, i) {
+    if (answers[i] !== q.ans) wrongList.push({ i:i, q:q });
+  });
+  if (wrongList.length > 0) {
+    html += '<details class="explain" open><summary>错题解析（' + wrongList.length + ' 题）</summary>';
+    wrongList.forEach(function (w) {
+      var keys = ['A','B','C','D'];
+      html += '<div class="x-item"><b>第 ' + (w.i+1) + ' 题</b> · ' + w.q.q + '<br>';
+      if (answers[w.i] >= 0) html += '<span class="wrong-ans">你的答案：' + keys[answers[w.i]] + '</span>　';
+      html += '<span class="right">正确答案：' + keys[w.q.ans] + '</span><br><span style="color:#3a4a5c">' + w.q.x + '</span></div>';
+    });
+    html += '</details>';
+  }
+
+  html += '<div class="cta"><div class="cta-title">测出断层，只是第一步</div><div class="cta-body"><span class="cta-brand">姜老师化学 · 高一零基础线上小班</span><br>试听课「氧化还原配平」，带你从标化合价一路配平到底</div></div>';
+
+  report.innerHTML = html;
+  report.style.display = 'block';
+  report.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+renderQuestions();
+</script>
+</body>
+</html>

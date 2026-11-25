@@ -13,6 +13,7 @@ export const LAYOUT = {
   settings: '我的设定.md', style: '说话样本.md', content: '内容', dm: '私信', data: '数据', leads: '线索表.csv',
   students: '学生档案.csv', classes: '班课.csv', lessons: '课次记录.csv',
   chats: '对话记录.csv', cases: '案例库.csv', words: '平台词表.md', feedback: '家长反馈.csv',
+  diagnostics: '试听诊断', diagnosticsTable: '试听诊断.csv',
 }
 
 export const defaultRoot = () => join(homedir(), 'Documents', 'Youtulh 工作台')
@@ -30,7 +31,7 @@ export function resolveRoot(value) {
 }
 
 export function ensureLayout(root) {
-  for (const dir of [root, join(root, LAYOUT.content), join(root, LAYOUT.dm), join(root, LAYOUT.data)]) {
+  for (const dir of [root, join(root, LAYOUT.content), join(root, LAYOUT.dm), join(root, LAYOUT.data), join(root, LAYOUT.diagnostics)]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   }
 }

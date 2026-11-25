@@ -7,6 +7,7 @@ const DEFAULTS = {
   image: { source: 'http', protocol: 'openai', baseUrl: '', model: '', apiKey: '', size: '1536x1024', quality: '', toolSize: '1536x1024', toolQuality: '', extra: '' },
   // 助手文字模型：空对象表示跟随 DeepSeek Harness 默认模型
   assistant: { provider: '', model: '' },
+  brand: { name: '', teacher: '', logo: '', mark: '' },
   voice: '',
   exportDir: '',
   // 工作区根目录：内容、私信、数据和「我的设定.md」都写在这里；空表示用默认的 ~/Documents/Youtulh 工作台
@@ -32,7 +33,7 @@ export class Settings {
     // 每次都读文件：桌面版和 Web 版可能同时运行
     try {
       const saved = JSON.parse(await readFile(this.file, 'utf8'))
-      this.value = { ...DEFAULTS, ...saved, image: { ...DEFAULTS.image, ...saved.image }, assistant: { ...DEFAULTS.assistant, ...(saved.assistant ?? {}) } }
+      this.value = { ...DEFAULTS, ...saved, image: { ...DEFAULTS.image, ...saved.image }, assistant: { ...DEFAULTS.assistant, ...(saved.assistant ?? {}) }, brand: { ...DEFAULTS.brand, ...(saved.brand ?? {}) } }
     } catch (err) {
       if (err.code !== 'ENOENT') throw err
       this.value = structuredClone(DEFAULTS)
@@ -99,6 +100,11 @@ export class Settings {
       // provider 和 model 要么都填（指定模型），要么都空（跟随默认）
       if (Boolean(provider) !== Boolean(model)) throw Object.assign(new Error(tr('助手模型的提供方和模型要一起填')), { status: 400 })
       next.assistant = { provider, model }
+    }
+    if (patch.brand && typeof patch.brand === 'object') {
+      for (const key of ['name', 'teacher', 'logo', 'mark']) {
+        if (typeof patch.brand[key] === 'string') next.brand[key] = patch.brand[key].trim().slice(0, key === 'logo' ? 500 : 60)
+      }
     }
     if (typeof patch.voice === 'string') next.voice = patch.voice.slice(0, 8000)
     if (typeof patch.exportDir === 'string') next.exportDir = patch.exportDir.trim().slice(0, 500)

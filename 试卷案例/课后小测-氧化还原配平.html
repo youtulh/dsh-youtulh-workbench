@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>配平课后小测</title>
+<style>
+  :root {
+    --ink: #14253a;
+    --deep: #1a3a5c;
+    --mid: #2b5a88;
+    --paper: #f7f3ea;
+    --porcelain: #fffdf8;
+    --line: rgba(20,37,58,.14);
+    --good: #2e9e63;
+    --bad: #d64545;
+    --gold: #d9a441;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, sans-serif;
+    background: radial-gradient(120% 120% at 50% 0%, #2b5a88 0%, #1a3a5c 48%, #14253a 100%);
+    color: #14253a;
+    display: flex; flex-direction: column;
+    min-height: 100vh;
+  }
+  .screen { width: 100%; max-width: 560px; margin: 0 auto; padding: 20px 16px 28px; flex: 1; display: flex; flex-direction: column; }
+  .hidden { display: none !important; }
+
+  /* 卡片 */
+  .card {
+    background: var(--porcelain);
+    border-radius: 18px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.32);
+    padding: 22px 18px;
+  }
+
+  /* 开始屏 */
+  #start-screen { justify-content: center; text-align: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.12); color: #fff;
+    border: 1px solid rgba(255,255,255,.22);
+    padding: 7px 14px; border-radius: 999px;
+    font-size: 13px; letter-spacing: .12em; margin-bottom: 18px;
+  }
+  h1.title { color: #fff; font-size: 30px; line-height: 1.25; font-weight: 800; letter-spacing: .02em; }
+  .subtitle { color: rgba(255,255,255,.82); font-size: 15px; line-height: 1.65; margin: 14px auto 0; max-width: 400px; }
+  .start-card { margin-top: 28px; text-align: left; }
+  .start-card h3 { font-size: 15px; color: #2b5a88; letter-spacing: .06em; }
+  .start-card ul { list-style: none; margin-top: 12px; }
+  .start-card li { padding: 9px 0; font-size: 14.5px; color: #3a4a5c; border-bottom: 1px dashed var(--line); display: flex; gap: 9px; align-items: baseline; }
+  .start-card li:last-child { border-bottom: none; }
+  .start-card li b { color: #14253a; }
+  .start-btn {
+    margin-top: 24px; width: 100%;
+    background: linear-gradient(135deg, #2b5a88, #1a3a5c);
+    color: #fff; font-size: 18px; font-weight: 700; letter-spacing: .08em;
+    border: none; border-radius: 14px; padding: 17px; min-height: 56px;
+    cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.28);
+    transition: transform .08s ease;
+  }
+  .start-btn:active { transform: scale(.98); }
+
+  /* HUD */
+  #hud { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .progress { flex: 1; display: flex; gap: 6px; }
+  .progress .seg { flex: 1; height: 8px; border-radius: 4px; background: rgba(255,255,255,.18); transition: background .25s; }
+  .progress .seg.done { background: #fff; }
+  .progress .seg.cur { background: var(--gold); }
+  .score-chip {
+    background: rgba(255,255,255,.14); color: #fff;
+    border: 1px solid rgba(255,255,255,.24);
+    border-radius: 999px; padding: 7px 14px; font-size: 14px; font-weight: 700;
+    white-space: nowrap; min-height: 34px; display: flex; align-items: center;
+  }
+  .score-chip b { font-size: 16px; }
+
+  /* 题目卡 */
+  #question-card { padding: 20px 18px 18px; }
+  .q-tag { font-size: 12.5px; letter-spacing: .14em; color: #2b5a88; font-weight: 700; }
+  .q-text { margin-top: 10px; font-size: 17px; line-height: 1.6; font-weight: 700; color: #14253a; }
+  .q-formula {
+    margin-top: 12px; font-family: "Menlo", "Consolas", "SF Mono", monospace;
+    font-size: 15.5px; line-height: 1.7; color: #1a3a5c; font-weight: 600;
+    background: #eef3f8; border-radius: 10px; padding: 12px 14px; letter-spacing: .01em;
+  }
+  .opts { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .opt {
+    width: 100%; text-align: left;
+    border: 1.5px solid var(--line); background: #fff;
+    border-radius: 13px; padding: 14px 14px; min-height: 50px;
+    font-size: 15px; line-height: 1.55; color: #14253a; cursor: pointer;
+    display: flex; gap: 11px; align-items: center;
+    transition: border-color .15s, background .15s, transform .06s;
+    font-family: inherit;
+  }
+  .opt .key { flex: 0 0 auto; width: 27px; height: 27px; border-radius: 50%; background: #eef3f8; color: #2b5a88; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .opt .val { flex: 1; }
+  .opt .val .f { font-family: "Menlo","Consolas","SF Mono",monospace; font-weight: 600; }
+  .opt:active { transform: scale(.985); }
+  .opt.correct { border-color: var(--good); background: #eef8f1; }
+  .opt.correct .key { background: var(--good); color: #fff; }
+  .opt.wrong { border-color: var(--bad); background: #fbefef; }
+  .opt.wrong .key { background: var(--bad); color: #fff; }
+  .opt.dim { opacity: .45; }
+  .opt.locked { pointer-events: none; }
+
+  /* 解析 */
+  #feedback { margin-top: 14px; border-radius: 13px; padding: 14px 15px; font-size: 14px; line-height: 1.65; }
+  #feedback.good { background: #eef8f1; color: #1f6b43; border: 1px solid #cfe8d8; }
+  #feedback.bad  { background: #fbefef; color: #9c3333; border: 1px solid #f0d3d3; }
+  #feedback .fb-title { font-weight: 800; margin-bottom: 4px; display: block; }
+  .next-btn {
+    margin-top: 14px; width: 100%;
+    background: #14253a; color: #fff; font-size: 16px; font-weight: 700; letter-spacing: .08em;
+    border: none; border-radius: 14px; padding: 15px; min-height: 54px; cursor: pointer;
+    transition: transform .08s ease;
+  }
+  .next-btn:active { transform: scale(.98); }
+
+  /* 结束屏 */
+  #end-screen { justify-content: center; text-align: center; }
+  .end-card { padding: 30px 20px; text-align: center; }
+  .trophy { font-size: 52px; }
+  .stars { margin: 14px 0 6px; font-size: 30px; letter-spacing: 6px; }
+  .stars .off { opacity: .22; filter: grayscale(1); }
+  .end-score { font-size: 44px; font-weight: 800; color: #14253a; }
+  .end-score small { font-size: 16px; color: #7a8a9a; font-weight: 500; }
+  .end-verdict { margin-top: 10px; font-size: 15px; line-height: 1.65; color: #3a4a5c; }
+  .review { margin-top: 18px; text-align: left; }
+  .review-item { display: flex; gap: 9px; padding: 8px 0; font-size: 13.5px; border-bottom: 1px dashed var(--line); color: #3a4a5c; align-items: baseline; }
+  .review-item:last-child { border-bottom: none; }
+  .review-item .rk { flex: 0 0 auto; }
+  .restart-btn {
+    margin-top: 20px; width: 100%;
+    background: linear-gradient(135deg, #2b5a88, #1a3a5c); color: #fff;
+    font-size: 16px; font-weight: 700; letter-spacing: .08em;
+    border: none; border-radius: 14px; padding: 16px; min-height: 54px; cursor: pointer;
+  }
+  .restart-btn:active { transform: scale(.98); }
+
+  @keyframes pop { 0% { transform: scale(.92); opacity: .4; } 100% { transform: scale(1); opacity: 1; } }
+  .pop { animation: pop .3s ease; }
+</style>
+</head>
+<body>
+
+<script type="application/json" id="widget-config">
+{
+  "type": "game",
+  "gameType": "quiz",
+  "description": "氧化还原配平课后小测：5 道闯关题，测三步配平法（标化合价→找升降→电子守恒）的掌握情况",
+  "gameConfig": {
+    "controls": [],
+    "levels": [
+      { "id": "q1", "title": "第1关 · 顺序", "skill": "配平第一步" },
+      { "id": "q2", "title": "第2关 · 标价 Cu", "skill": "铜的化合价" },
+      { "id": "q3", "title": "第3关 · 标价 N", "skill": "氮的化合价" },
+      { "id": "q4", "title": "第4关 · 守恒", "skill": "最小公倍数" },
+      { "id": "q5", "title": "第5关 · 成品", "skill": "完整配平" }
+    ],
+    "successCondition": "答对全部 5 题（每题 20 分，满分 100）"
+  },
+  "scoring": {
+    "completionPoints": 100,
+    "accuracyBonus": "每题 20 分，答对即得"
+  },
+  "achievements": [
+    { "id": "perfect", "name": "配平大师", "description": "5 题全对，三步法完全掌握", "icon": "⚗️" }
+  ]
+}
+</script>
+
+<!-- 开始屏 -->
+<div class="screen" id="start-screen">
+  <div class="badge">氧化还原配平 · 课后自测</div>
+  <h1 class="title">配平课后小测</h1>
+  <p class="subtitle">5 道闯关题，测你这节课「三步配平法」掌握得怎么样。做完立刻出分、逐题讲解。</p>
+  <div class="card start-card">
+    <h3>测什么</h3>
+    <ul>
+      <li><b>①</b><span>配平第一步做什么</span></li>
+      <li><b>②③</b><span>Cu、N 的化合价怎么变</span></li>
+      <li><b>④</b><span>最小公倍数怎么凑</span></li>
+      <li><b>⑤</b><span>完整方程式配没配对</span></li>
+    </ul>
+    <button class="start-btn" onclick="startGame()">开始自测</button>
+  </div>
+</div>
+
+<!-- 游戏屏 -->
+<div class="screen hidden" id="game-screen">
+  <div id="hud">
+    <div class="progress" id="progress"></div>
+    <div class="score-chip">得分 <b id="score">0</b></div>
+  </div>
+  <div class="card" id="question-card">
+    <div class="q-tag" id="q-tag"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="q-formula hidden" id="q-formula"></div>
+    <div class="opts" id="opts"></div>
+  </div>
+  <div id="feedback" class="hidden"></div>
+  <button class="next-btn hidden" id="next-btn" onclick="nextQuestion()">下一题</button>
+</div>
+
+<!-- 结束屏 -->
+<div class="screen hidden" id="end-screen">
+  <div class="card end-card">
+    <div class="trophy" id="trophy">⚗️</div>
+    <div class="stars" id="stars"></div>
+    <div class="end-score"><span id="final-score">0</span><small> / 100</small></div>
+    <div class="end-verdict" id="verdict"></div>
+    <div class="review" id="review"></div>
+    <button class="restart-btn" onclick="restartGame()">再测一次</button>
+  </div>
+</div>
+
+<script>
+// ============ 题目数据 ============
+var QUESTIONS = [
+  {
+    tag: '第 1 关 · 顺序',
+    text: '配平一个氧化还原方程式，第一步应该做什么？',
+    formula: '',
+    opts: [
+      { k: 'A', v: '标出变了价的元素的化合价', f: false },
+      { k: 'B', v: '直接配平 H₂O 的系数', f: false },
+      { k: 'C', v: '数两边原子个数', f: false },
+      { k: 'D', v: '随便填系数试', f: false }
+    ],
+    answer: 0,
+    explain: '先标化合价，才知道哪些元素变了价、各升降多少。这是后面「找升降、配平」的地基。'
+  },
+  {
+    tag: '第 2 关 · 标价 Cu',
+    text: '反应 Cu + HNO₃(稀) → Cu(NO₃)₂ + NO↑ 里，Cu 的化合价怎么变？',
+    formula: '',
+    opts: [
+      { k: 'A', v: '0 → +2（升 2，失电子）', f: true },
+      { k: 'B', v: '+2 → 0（降 2，得电子）', f: false },
+      { k: 'C', v: '0 → +1（升 1）', f: false },
+      { k: 'D', v: '化合价不变', f: false }
+    ],
+    answer: 0,
+    explain: '单质 Cu 是 0 价，进入 Cu(NO₃)₂ 后是 +2，升 2 价、失电子（被氧化）。'
+  },
+  {
+    tag: '第 3 关 · 标价 N',
+    text: 'N 从 HNO₃ 变成 NO，化合价怎么变？',
+    formula: 'HNO₃ 里 N 是 +5，NO 里 N 是 +2',
+    opts: [
+      { k: 'A', v: '+5 → +2（降 3，得电子）', f: true },
+      { k: 'B', v: '+2 → +5（升 3，失电子）', f: false },
+      { k: 'C', v: '+5 → +4（降 1）', f: false },
+      { k: 'D', v: '化合价不变', f: false }
+    ],
+    answer: 0,
+    explain: 'HNO₃ 里 N 是 +5，进入 NO 变 +2，降 3 价、得电子（被还原）。注意：留在 NO₃⁻ 里的 N 还是 +5，没变价。'
+  },
+  {
+    tag: '第 4 关 · 守恒',
+    text: 'Cu 升 2 价、N 降 3 价，配主系数时 Cu 前面填几？',
+    formula: '最小公倍数：2 和 3 的最小公倍数是 6',
+    opts: [
+      { k: 'A', v: '3（Cu ×3 = 升 6）', f: true },
+      { k: 'B', v: '2（Cu ×2 = 升 4）', f: false },
+      { k: 'C', v: '6（Cu ×6）', f: false },
+      { k: 'D', v: '8（Cu ×8）', f: false }
+    ],
+    answer: 0,
+    explain: '电子守恒：失的电子 = 得的电子。最小公倍数 6，Cu 升 2 要 ×3（升 6），N 降 3 要 ×2（降 6），两边相等。'
+  },
+  {
+    tag: '第 5 关 · 成品',
+    text: 'Cu + HNO₃(稀) 配平后的完整方程式是？',
+    formula: 'Cu + HNO₃(稀) → Cu(NO₃)₂ + NO↑ + H₂O',
+    opts: [
+      { k: 'A', v: '3Cu + 8HNO₃ = 3Cu(NO₃)₂ + 2NO↑ + 4H₂O', f: true },
+      { k: 'B', v: 'Cu + 2HNO₃ = Cu(NO₃)₂ + 2NO↑ + H₂O', f: false },
+      { k: 'C', v: 'Cu + 4HNO₃ = Cu(NO₃)₂ + 2NO↑ + 2H₂O', f: false },
+      { k: 'D', v: '2Cu + 4HNO₃ = 2Cu(NO₃)₂ + NO↑ + 2H₂O', f: false }
+    ],
+    answer: 0,
+    explain: '关键：HNO₃ 要拆成「作氧化剂的 2 个 + 作酸根的 6 个」，一共 8 个；最后配水 4 个。校验：Cu 3=3、N 8=6+2、H 8=8、O 24=24。'
+  }
+];
+
+var cur = 0, score = 0, answered = false;
+var results = []; // 每题答对与否
+
+function startGame() {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('game-screen').classList.remove('hidden');
+  document.getElementById('end-screen').classList.add('hidden');
+  cur = 0; score = 0; results = [];
+  renderProgress();
+  renderQuestion();
+}
+
+function restartGame() { startGame(); }
+
+function renderProgress() {
+  var p = document.getElementById('progress');
+  p.innerHTML = '';
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var s = document.createElement('div');
+    s.className = 'seg' + (i < cur ? ' done' : (i === cur ? ' cur' : ''));
+    p.appendChild(s);
+  }
+  document.getElementById('score').textContent = score;
+}
+
+function renderQuestion() {
+  answered = false;
+  var q = QUESTIONS[cur];
+  document.getElementById('q-tag').textContent = q.tag + '（' + (cur + 1) + ' / ' + QUESTIONS.length + '）';
+  document.getElementById('q-text').textContent = q.text;
+  var f = document.getElementById('q-formula');
+  if (q.formula) { f.textContent = q.formula; f.classList.remove('hidden'); }
+  else { f.classList.add('hidden'); }
+
+  var opts = document.getElementById('opts');
+  opts.innerHTML = '';
+  q.opts.forEach(function (o, i) {
+    var b = document.createElement('button');
+    b.className = 'opt';
+    b.setAttribute('data-idx', i);
+    b.innerHTML = '<span class="key">' + o.k + '</span><span class="val">' + (o.f ? '<span class="f">' + o.v + '</span>' : o.v) + '</span>';
+    b.onclick = function () { answer(i); };
+    opts.appendChild(b);
+  });
+
+  var fb = document.getElementById('feedback');
+  fb.className = 'hidden'; fb.innerHTML = '';
+  document.getElementById('next-btn').classList.add('hidden');
+  document.getElementById('question-card').classList.remove('pop');
+  void document.getElementById('question-card').offsetWidth;
+  document.getElementById('question-card').classList.add('pop');
+}
+
+function answer(i) {
+  if (answered) return;
+  answered = true;
+  var q = QUESTIONS[cur];
+  var opts = document.querySelectorAll('#opts .opt');
+  var correct = (i === q.answer);
+  results.push(correct);
+
+  opts.forEach(function (b, idx) {
+    b.classList.add('locked');
+    if (idx === q.answer) b.classList.add('correct');
+    else if (idx === i) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+
+  if (correct) {
+    score += 20;
+    document.getElementById('score').textContent = score;
+    showFeedback(true, '答对了 +20', q.explain);
+  } else {
+    showFeedback(false, '再记一下：' + q.opts[q.answer].k + ' 才对', q.explain);
+  }
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('next-btn').textContent = (cur === QUESTIONS.length - 1) ? '看结果' : '下一题';
+}
+
+function showFeedback(good, title, body) {
+  var fb = document.getElementById('feedback');
+  fb.className = good ? 'good' : 'bad';
+  fb.innerHTML = '<span class="fb-title">' + (good ? '✓ ' : '✗ ') + title + '</span>' + body;
+}
+
+function nextQuestion() {
+  if (cur === QUESTIONS.length - 1) { endGame(); return; }
+  cur++;
+  renderProgress();
+  renderQuestion();
+}
+
+function endGame() {
+  document.getElementById('game-screen').classList.add('hidden');
+  document.getElementById('end-screen').classList.remove('hidden');
+  var right = results.filter(Boolean).length;
+  document.getElementById('final-score').textContent = score;
+
+  var stars = '';
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    stars += '<span class="' + (i < right ? '' : 'off') + '">★</span>';
+  }
+  document.getElementById('stars').innerHTML = stars;
+  document.getElementById('trophy').textContent = (right === QUESTIONS.length) ? '🏆' : (right >= 3 ? '⚗️' : '📖');
+
+  var verdicts = [
+    '三步法还没建立起来，建议把课上的「标化合价→找升降→电子守恒」重看一遍。',
+    '有印象但没吃透，重点回看第 1 步「标化合价」和第 4 步「凑最小公倍数」。',
+    '基本掌握了，第 2、3 步的化合价变化再巩固一下。',
+    '掌握得不错，就差「成品配平」那一步（HNO₃ 拆成 2+6）。',
+    '全对！三步配平法完全掌握，可以挑战更多氧化还原方程了。'
+  ];
+  document.getElementById('verdict').textContent = verdicts[right];
+
+  var review = '';
+  QUESTIONS.forEach(function (q, idx) {
+    var ok = results[idx];
+    review += '<div class="review-item"><span class="rk">' + (ok ? '✅' : '❌') + '</span><span><b>' + q.tag + '</b> · ' + (ok ? '答对' : '答案 ' + q.opts[q.answer].k) + '</span></div>';
+  });
+  document.getElementById('review').innerHTML = review;
+}
+
+// ============ postMessage listener（教学代理可驱动）============
+window.addEventListener('message', function (event) {
+  var d = event.data || {};
+  switch (d.type) {
+    case 'SET_WIDGET_STATE':
+      if (d.state && typeof d.state.cur === 'number') {
+        cur = d.state.cur;
+        renderProgress(); renderQuestion();
+      }
+      break;
+    case 'HIGHLIGHT_ELEMENT':
+      var h = document.querySelector(d.target);
+      if (h) {
+        h.style.outline = '3px solid rgba(217,164,65,.9)';
+        h.style.outlineOffset = '3px';
+        setTimeout(function () { h.style.outline = ''; h.style.outlineOffset = ''; }, 2500);
+      }
+      break;
+    case 'REVEAL_ELEMENT':
+      var r = document.querySelector(d.target);
+      if (r) { r.classList.remove('hidden'); r.style.opacity = '1'; }
+      break;
+    case 'ANNOTATE_ELEMENT':
+      var a = document.querySelector(d.target);
+      if (a && d.content) {
+        var tip = document.createElement('div');
+        tip.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:rgba(20,37,58,.96);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:999;box-shadow:0 6px 20px rgba(0,0,0,.3)';
+        tip.textContent = d.content;
+        document.body.appendChild(tip);
+        setTimeout(function () { tip.remove(); }, 3500);
+      }
+      break;
+  }
+});
+</script>
+</body>
+</html>

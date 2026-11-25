@@ -259,6 +259,12 @@ export function FunnelPanel({ students = [], onChanged }) {
                             setDesk({ view: 'dm', focusId: null, dmPerson: lead.name })
                           }}>{t('去聊天台')}</button>
                         ) : null}
+                        {stage === '约试听' ? (
+                          <button type="button" className="md-pill is-small" onClick={event => {
+                            event.stopPropagation()
+                            setDesk({ view: 'diagnose', focusId: null, diagPrefill: { name: lead.name, grade: lead.grade, pain: lead.painPoint, source: lead.source } })
+                          }}>{t('出诊断卷')}</button>
+                        ) : null}
                         {stage === '已报课' ? (
                           converted(lead)
                             ? <span className="md-muted">{t('已经转成学生了')}</span>

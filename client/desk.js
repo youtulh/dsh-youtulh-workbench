@@ -11,7 +11,7 @@ const CREATE_DRAFT_KEY = 'youtulh:create:v1'
 
 let snapshot = {
   state: null, model: null, modelOk: null, modelError: null, canUndo: false, error: null,
-  view: 'home', mode: 'scatter', focusId: null, dmPerson: '', dmFilter: '', studentFocus: '', studentClassFocus: '', setupSection: '', dataFilter: '', dataQuery: '', dataAngle: '', dmCases: false, classFocus: null, sheetOrigin: null, dockOpen: true, studioDock: false, chatQuote: null, query: '', kindFilter: 'all', related: null,
+  view: 'home', mode: 'scatter', focusId: null, dmPerson: '', dmFilter: '', studentFocus: '', studentClassFocus: '', setupSection: '', dataFilter: '', dataQuery: '', dataAngle: '', diagPrefill: null, dmCases: false, classFocus: null, sheetOrigin: null, dockOpen: true, studioDock: false, chatQuote: null, query: '', kindFilter: 'all', related: null,
   live: {}, settings: null, settingsOpen: false, modelPickOpen: false, thinking: false, toast: null, capture: null, dialog: null,
   create: { ...EMPTY_CREATE },
 }
@@ -622,3 +622,28 @@ export function fetchInsights() {
   return request('insights')
 }
 
+
+// ---- 试听诊断 ----
+export function fetchDiagnostics() {
+  return request('diagnostics')
+}
+
+export function createDiagnostic(payload) {
+  return request('diagnostics/create', payload)
+}
+
+export function fetchDiagnosticSpec(id) {
+  return request(`diagnostics/spec?id=${encodeURIComponent(id)}`)
+}
+
+export function importDiagnosticResult(payload) {
+  return request('diagnostics/import', payload)
+}
+
+export function analyzeDiagnostic(id, kind = 'pre') {
+  return request('diagnostics/analyze', { id, kind })
+}
+
+export function createPostDiagnostic(id, notes = '') {
+  return request('diagnostics/post/create', { id, notes })
+}
