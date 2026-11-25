@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchContent, fetchLeads, fetchPlatformWords, fetchVoice, fetchWorkspace, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchContent, fetchLeads, fetchPlatformWords, fetchVoice, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -49,7 +49,6 @@ export function SetupView() {
   const [backup, setBackup] = React.useState(null)
   const [backupBusy, setBackupBusy] = React.useState(false)
   const [backups, setBackups] = React.useState([])
-  const [root, setRoot] = React.useState('')
   const [stats, setStats] = React.useState(null)
   const [reviewData, setReviewData] = React.useState({ content: [], leads: [] })
   const [reviewBusy, setReviewBusy] = React.useState(false)
@@ -84,7 +83,6 @@ export function SetupView() {
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})
     fetchBackups().then(data => setBackups(data.backups ?? [])).catch(() => {})
-    fetchWorkspace().then(data => setRoot(data.root ?? '')).catch(() => {})
     fetchWorkspaceStats().then(setStats).catch(() => {})
     loadReview()
     fetchChatRecords().then(data => {
@@ -361,16 +359,6 @@ export function SetupView() {
       <section className="md-setup-card" id="setup-backup">
         <h2><span>8</span>{t('数据备份')}</h2>
         <p className="md-setup-hint">{t('你的数据（设定、线索、学生、课次、反馈、内容）都在电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。')}</p>
-        {root ? (
-          <div className="md-setup-path">
-            <code>{root}</code>
-            <button type="button" className="md-inline-link" onClick={() => revealDir(root).catch(err => toast(err.message, { error: true }))}>{t('打开数据文件夹')}</button>
-            <button type="button" className="md-inline-link" onClick={() => {
-              if (navigator.clipboard?.writeText) navigator.clipboard.writeText(root).then(() => toast(t('复制了路径'))).catch(() => toast(t('复制失败'), { error: true }))
-              else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
-            }}>{t('复制路径')}</button>
-          </div>
-        ) : null}
         {stats ? (
           <p className="md-muted">
             {t('线索 {leads} · 学生 {students} · 班 {classes} · 课次 {lessons} · 反馈 {feedback} · 备份 {backups}', stats)}
@@ -384,10 +372,6 @@ export function SetupView() {
               <div className="md-setup-path">
                 <code>{t('升级前的备份：{dir}', { dir: upgradeResult.backupDir })}</code>
                 <button type="button" className="md-inline-link" onClick={() => revealDir(upgradeResult.backupDir).catch(err => toast(err.message, { error: true }))}>{t('打开')}</button>
-                <button type="button" className="md-inline-link" onClick={() => {
-                  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(upgradeResult.backupDir).then(() => toast(t('复制了路径'))).catch(() => toast(t('复制失败'), { error: true }))
-                  else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
-                }}>{t('复制路径')}</button>
               </div>
             ) : null}
           </div>
@@ -422,17 +406,13 @@ export function SetupView() {
         <div className="md-setup-samples-foot">
           <span className={`md-muted ${backups[0] && Date.now() - backups[0].mtime > 7 * 86400000 ? 'md-legacy-note' : ''}`}>
             {backup
-              ? t('备份好了：{dir}', { dir: backup })
+              ? t('备份好了')
               : backups[0]
                 ? t('上次备份：{days} 天前', { days: Math.max(0, Math.floor((Date.now() - backups[0].mtime) / 86400000)) })
                 : t('还没备份过，建议现在备份一次')}
           </span>
           <span className="md-grow" />
           {backup ? <button type="button" className="md-inline-link" onClick={() => revealDir(backup).catch(err => toast(err.message, { error: true }))}>{t('打开备份文件夹')}</button> : null}
-          {backup ? <button type="button" className="md-inline-link" onClick={() => {
-            if (navigator.clipboard?.writeText) navigator.clipboard.writeText(backup).then(() => toast(t('复制了路径'))).catch(() => toast(t('复制失败'), { error: true }))
-            else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
-          }}>{t('复制路径')}</button> : null}
           <button type="button" className="md-pill is-small is-primary" disabled={backupBusy} onClick={() => {
             setBackupBusy(true)
             backupWorkspace()
