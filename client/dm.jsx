@@ -441,6 +441,11 @@ export function DmView() {
                     setHistory(`${t('对方')}：${row.incoming}${row.outgoing ? `\n${t('我方')}：${row.outgoing}` : ''}`)
                     setRaw('')
                     toast(t('已带入上一轮，粘对方的新消息就行'))
+                    requestAnimationFrame(() => {
+                      const input = document.querySelector('.md-dm-input textarea')
+                      input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      input?.focus()
+                    })
                   }}>{t('接着聊')}</button>
                   <select value={row.result || '未定'} onChange={event => {
                     updateChatLog(row.rowIndex, { result: event.target.value })
