@@ -598,7 +598,7 @@ export function DmView() {
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.source ? (
-                    contentTitles.length && !contentTitles.includes(lead.source) ? (
+                    contentTitles.length && !contentRows.some(row => row['标题'] === lead.source || row['选题'] === lead.source) ? (
                       <select
                         className="md-lead-source-fix"
                         title={t('来源不在内容库，选一条修正')}
