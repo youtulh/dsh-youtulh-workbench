@@ -2311,3 +2311,21 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-diag-manage-menu button:hover { background: var(--hover); color: var(--ink); }
 
 .md-diag-manage-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+
+.md-diag-stack { display: grid; gap: 8px; }
+.md-diag-item { border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); overflow: hidden; }
+.md-diag-item.is-open { box-shadow: inset 0 0 0 1.5px var(--accent), var(--dsw-elevation-soft); }
+.md-diag-item > .md-diag-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border: 0; background: transparent; text-align: left; color: var(--ink); }
+.md-diag-row-main { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.md-diag-row-main b { font-size: 14px; font-weight: 500; }
+.md-diag-row-main span { font-size: 12.5px; color: var(--ink2); }
+.md-diag-row-main small { font-size: 11px; color: var(--ink3); }
+.md-diag-row-side { display: flex; align-items: center; gap: 8px; flex: none; }
+.md-diag-chevron { font-style: normal; color: var(--ink3); font-size: 14px; width: 16px; text-align: center; }
+.md-diag-detail { padding: 4px 16px 16px; border-top: .5px solid var(--hairline); box-shadow: none; border-radius: 0; }
+.md-diag-empty { padding: 18px 0; }
+@media (max-width: 820px) {
+  .md-diag-stack .md-diag-tools { display: flex; }
+  .md-diag-item > .md-diag-row { padding: 11px 12px; }
+  .md-diag-detail { padding: 2px 12px 14px; }
+}

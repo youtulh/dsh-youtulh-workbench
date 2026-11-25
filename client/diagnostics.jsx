@@ -58,7 +58,7 @@ export function DiagnosticsView() {
     const q = query.trim().toLowerCase()
     return !q || [row.student, row.lesson, row.code, row.at, row.brand].some(value => String(value ?? '').toLowerCase().includes(q))
   })
-  const current = rows.find(row => row.id === selected)
+  const current = visible.find(row => row.id === selected) ?? null
   const brand = data?.brand ?? {}
 
   const copy = (text) => {
@@ -256,45 +256,8 @@ export function DiagnosticsView() {
     })
   }
 
-  return (
-    <div className="md-page md-diagnostics">
-      <header className="md-page-head">
-        <div>
-          <h1>{t('试听诊断')}</h1>
-          <p className="md-page-sub">{t('先诊断、再试听、课后复测。每份卷子都带着品牌、上课时间和课次编码。')}</p>
-        </div>
-        <span className="md-grow" />
-        <button type="button" className="md-inline-link" onClick={() => openCreate(DEMO)}>{t('用示例填一遍')}</button>
-        <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{busy === 'create' ? t('正在出卷…') : t('出一份诊断卷')}</button>
-        {current ? <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入结果')}</button> : null}
-      </header>
-
-      {busy === 'create' ? <div className="md-diag-loading"><span className="md-shimmer">{t('正在生成诊断卷…')}</span></div> : null}
-
-      {!data ? <p className="md-muted">{t('读取中…')}</p> : rows.length === 0 ? (
-        <div className="md-works-empty">
-          <p>{t('还没有试听诊断。先出一份卷子，发给家长做完，再把结果导回来。')}</p>
-          <button type="button" className="md-pill is-primary" onClick={openCreate}>{t('出一份诊断卷')}</button>
-        </div>
-      ) : (
-        <div className="md-diag-layout">
-          <aside className="md-diag-list">
-            <div className="md-diag-tools">
-              <input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜学生、课程、课次编码')} />
-              <label className="md-diag-archived"><input type="checkbox" checked={showArchived} onChange={event => setShowArchived(event.target.checked)} />{t('显示已归档')}</label>
-              <span className="md-muted">{t('{n} 份', { n: visible.length })}</span>
-            </div>
-            {visible.map(row => (
-              <button type="button" key={row.id} className={`md-diag-row ${row.id === selected ? 'is-on' : ''}`} onClick={() => setSelected(row.id)}>
-                <b>{row.student || t('未填学生')}{row.grade ? ` · ${row.grade}` : ''}</b>
-                <span>{row.lesson || t('未填课程')}</span>
-                <small>{row.at || t('时间待定')}</small>
-                <em className={`md-diag-status is-${row.status}`}>{t(row.status)}</em>
-              </button>
-            ))}
-          </aside>
-
-          <main className="md-diag-detail">
+  const detail = (
+    <>
             {current ? (
               <>
                 <div className="md-diag-head">
@@ -362,7 +325,53 @@ export function DiagnosticsView() {
                 <p className="md-muted md-diag-hint">{t('流程：出卷 → 发给家长 → 孩子做完点「保存结果给老师」→ 把结果码粘回「导入回传结果」。')}</p>
               </>
             ) : <p className="md-muted">{t('选一份诊断看详情')}</p>}
-          </main>
+    </>
+  )
+
+  return (
+    <div className="md-page md-diagnostics">
+      <header className="md-page-head">
+        <div>
+          <h1>{t('试听诊断')}</h1>
+          <p className="md-page-sub">{t('先诊断、再试听、课后复测。每份卷子都带着品牌、上课时间和课次编码。')}</p>
+        </div>
+        <span className="md-grow" />
+        <button type="button" className="md-inline-link" onClick={() => openCreate(DEMO)}>{t('用示例填一遍')}</button>
+        <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{busy === 'create' ? t('正在出卷…') : t('出一份诊断卷')}</button>
+        {current ? <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入结果')}</button> : null}
+      </header>
+
+      {busy === 'create' ? <div className="md-diag-loading"><span className="md-shimmer">{t('正在生成诊断卷…')}</span></div> : null}
+
+      {!data ? <p className="md-muted">{t('读取中…')}</p> : rows.length === 0 ? (
+        <div className="md-works-empty">
+          <p>{t('还没有试听诊断。先出一份卷子，发给家长做完，再把结果导回来。')}</p>
+          <button type="button" className="md-pill is-primary" onClick={openCreate}>{t('出一份诊断卷')}</button>
+        </div>
+      ) : (
+        <div className="md-diag-stack">
+          <div className="md-diag-tools">
+            <input value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜学生、课程、课次编码')} />
+            <label className="md-diag-archived"><input type="checkbox" checked={showArchived} onChange={event => setShowArchived(event.target.checked)} />{t('显示已归档')}</label>
+            <span className="md-muted">{t('{n} 份', { n: visible.length })}</span>
+          </div>
+          {visible.map(row => (
+            <section key={row.id} className={`md-diag-item ${row.id === selected ? 'is-open' : ''}`}>
+              <button type="button" className="md-diag-row" onClick={() => setSelected(row.id)} aria-expanded={row.id === selected}>
+                <span className="md-diag-row-main">
+                  <b>{row.student || t('未填学生')}{row.grade ? ` · ${row.grade}` : ''}</b>
+                  <span>{row.lesson || t('未填课程')}</span>
+                  <small>{row.at || t('时间待定')}</small>
+                </span>
+                <span className="md-diag-row-side">
+                  <em className={`md-diag-status is-${row.status}`}>{t(row.status)}</em>
+                  <i className="md-diag-chevron">{row.id === selected ? '−' : '+'}</i>
+                </span>
+              </button>
+              {row.id === selected ? <div className="md-diag-detail">{detail}</div> : null}
+            </section>
+          ))}
+          {visible.length === 0 ? <p className="md-muted md-diag-empty">{query ? t('没有匹配的诊断') : t('还没有可显示的诊断')}</p> : null}
         </div>
       )}
 
