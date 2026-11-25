@@ -17,6 +17,7 @@ export function FunnelPanel({ students = [], onChanged }) {
   const [refreshing, setRefreshing] = React.useState(false)
   const [query, setQuery] = React.useState('')
   const [sourceFilter, setSourceFilter] = React.useState('all')
+  const [leadSort, setLeadSort] = React.useState('recent')
   const [busy, setBusy] = React.useState('')
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
@@ -120,7 +121,12 @@ export function FunnelPanel({ students = [], onChanged }) {
   const q = query.trim()
   const filtered = leads.filter(lead => (sourceFilter === 'all' || lead.source === sourceFilter)
     && (!q || [lead.name, lead.grade, lead.painPoint, lead.raw, lead.next, lead.source].some(value => String(value ?? '').includes(q))))
-  const groups = LEAD_STAGES.map(stage => ({ stage, rows: filtered.filter(lead => lead.stage === stage) }))
+  const sorter = (a, b) => {
+    if (leadSort === 'due') return String(a.nextAt || '9999').localeCompare(String(b.nextAt || '9999'))
+    if (leadSort === 'followups') return (Number(b.followUps) || 0) - (Number(a.followUps) || 0)
+    return String(b.date || '').localeCompare(String(a.date || ''))
+  }
+  const groups = LEAD_STAGES.map(stage => ({ stage, rows: filtered.filter(lead => lead.stage === stage).sort(sorter) }))
 
   return (
     <div className="md-pipeline-wrap">
@@ -133,6 +139,11 @@ export function FunnelPanel({ students = [], onChanged }) {
         }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         <span className="md-grow" />
         <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜姓名、年级、卡点、来源')} />
+        <select className="md-case-result" value={leadSort} onChange={event => setLeadSort(event.target.value)}>
+          <option value="recent">{t('最近')}</option>
+          <option value="due">{t('最该跟进')}</option>
+          <option value="followups">{t('跟过最多')}</option>
+        </select>
         <select className="md-case-result" value={sourceFilter} onChange={event => setSourceFilter(event.target.value)}>
           <option value="all">{t('全部来源')}</option>
           {sources.map(source => <option key={source} value={source}>{source}</option>)}

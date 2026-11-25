@@ -36,7 +36,7 @@ const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
   raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
   fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
-  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '', caseQuery: '', caseFilter: 'all',
+  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '', leadSort: 'recent', caseQuery: '', caseFilter: 'all',
 }
 const DM_DRAFT = (() => {
   try {
@@ -69,6 +69,7 @@ export function DmView() {
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState(DM_DRAFT.filter)
   const [query, setQuery] = React.useState(DM_DRAFT.query)
+  const [leadSort, setLeadSort] = React.useState(DM_DRAFT.leadSort)
   const [composerOpen, setComposerOpen] = React.useState(false)
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
@@ -103,9 +104,9 @@ export function DmView() {
   const [chatShown, setChatShown] = React.useState(30)
 
   React.useEffect(() => {
-    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, caseQuery, caseFilter })
+    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter })
     try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
-  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, caseQuery, caseFilter])
+  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => {
@@ -324,8 +325,10 @@ export function DmView() {
     return pass && hit
   }).sort((a, b) => {
     // 看「该跟进」时按日期从早到晚，越拖越久的人排前面
-    if (filter !== 'due') return 0
-    return String(a.nextAt || '9999').localeCompare(String(b.nextAt || '9999'))
+    if (filter === 'due' || leadSort === 'due') return String(a.nextAt || '9999').localeCompare(String(b.nextAt || '9999'))
+    if (leadSort === 'followups') return (Number(b.followUps) || 0) - (Number(a.followUps) || 0)
+    if (leadSort === 'stage') return LEAD_STAGES.indexOf(a.stage) - LEAD_STAGES.indexOf(b.stage)
+    return String(b.date || '').localeCompare(String(a.date || ''))
   })
   const countOf = (id) => leads.filter(lead => (FILTERS.find(row => row.id === id) ?? FILTERS[0]).test(lead)).length
 
@@ -745,6 +748,9 @@ export function DmView() {
             ))}
           </div>
           <span className="md-grow" />
+          <select className="md-case-result" value={leadSort} onChange={event => setLeadSort(event.target.value)}>
+            {[['recent', t('最近')], ['due', t('最该跟进')], ['followups', t('跟过最多')], ['stage', t('按阶段')]].map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜家长、卡点、原话')} />
           {dueLeads.length ? (
             <button type="button" className="md-inline-link" onClick={() => copy(dueLeads.map(lead => {

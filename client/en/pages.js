@@ -820,5 +820,8 @@ export const PAGES = {
   写一条新回复: 'Write a reply',
   '粘对方最后一句，判断完给你两条能直接发的话': 'Paste their last message; get two ready-to-send replies.',
   展开: 'Open',
+  最该跟进: 'Most overdue',
+  跟过最多: 'Most follow-ups',
+  按阶段: 'By stage',
 
 }
