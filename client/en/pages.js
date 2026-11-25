@@ -871,5 +871,8 @@ export const PAGES = {
   预览课后检测: 'Preview post-test',
   下载课后卷: 'Download post-test',
   '在下方直接试填；发给学生请点「下载发给学生」。': 'Try it below; use “Download for student” to send it.',
+  更新卷面: 'Update paper',
+  '更新中…': 'Updating…',
+  '卷面更新好了，重新打开预览就能看到': 'Paper updated — reopen the preview.',
 
 }
