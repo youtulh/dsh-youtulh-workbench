@@ -308,7 +308,13 @@ export function DataView() {
                     ))}
                   </div>
                   {num(row['播放']) >= 500 ? (
-                    <p className="md-card-rate">{t('私信/万播：{rate}', { rate: (num(row['私信']) / num(row['播放']) * 10000).toFixed(1) })}</p>
+                    <p className="md-card-rate">
+                      {t('私信/万播：{rate}', { rate: (num(row['私信']) / num(row['播放']) * 10000).toFixed(1) })}
+                      {' · '}
+                      {t('加微/万播：{rate}', { rate: (num(row['加微']) / num(row['播放']) * 10000).toFixed(1) })}
+                    </p>
+                  ) : num(row['播放']) > 0 ? (
+                    <p className="md-card-rate">{t('播放不足 500，暂不计算比率')}</p>
                   ) : null}
                   <div className="md-card-metrics">
                     <label><span>{t('平台')}</span>

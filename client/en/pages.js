@@ -732,4 +732,6 @@ export const PAGES = {
   改回在读了: 'Back to active',
   '← 返回 {name} 的档案': '← Back to {name}',
   '私信/万播：{rate}': 'DMs per 10k: {rate}',
+  '加微/万播：{rate}': 'Adds per 10k: {rate}',
+  '播放不足 500，暂不计算比率': 'Under 500 views — ratio not calculated',
 }
