@@ -339,15 +339,12 @@ export function DiagnosticsView() {
                   {current.postScore ? <button type="button" className="md-pill is-small" onClick={() => analyze('post')} disabled={busy === 'analyze-post'}>{busy === 'analyze-post' ? t('正在写话术…') : t('生成课后话术')}</button> : null}
                 </div>
 
-                <details className="md-diag-manage">
-                  <summary className="md-pill is-small">{t('管理')}</summary>
-                  <div className="md-diag-manage-menu">
-                    <button type="button" onClick={openEdit}>{t('编辑信息')}</button>
-                    <button type="button" onClick={openDuplicate}>{t('复制一份')}</button>
-                    <button type="button" onClick={() => revealDiagnostic(current.id).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button>
-                    <button type="button" onClick={openArchive}>{current.status === '已归档' ? t('恢复') : t('归档')}</button>
-                  </div>
-                </details>
+                <div className="md-diag-manage-actions">
+                  <button type="button" className="md-pill is-small" onClick={openEdit}>{t('编辑信息')}</button>
+                  <button type="button" className="md-pill is-small" onClick={openDuplicate}>{t('复制一份')}</button>
+                  <button type="button" className="md-pill is-small" onClick={() => revealDiagnostic(current.id).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button>
+                  <button type="button" className="md-pill is-small" onClick={openArchive}>{current.status === '已归档' ? t('恢复') : t('归档')}</button>
+                </div>
 
                 {analysis ? (
                   <div className="md-diag-analysis">

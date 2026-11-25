@@ -2309,3 +2309,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-diag-manage-menu { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 8px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
 .md-diag-manage-menu button { padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink2); font: inherit; font-size: 12px; cursor: pointer; }
 .md-diag-manage-menu button:hover { background: var(--hover); color: var(--ink); }
+
+.md-diag-manage-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
