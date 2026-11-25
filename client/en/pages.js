@@ -707,4 +707,8 @@ export const PAGES = {
   持平: 'same',
   '已上 {n} 次': '{n} lessons',
   还没上过课: 'No lessons yet',
+  最新: 'Newest',
+  播放最多: 'Most views',
+  私信最多: 'Most DMs',
+  加微最多: 'Most adds',
 }

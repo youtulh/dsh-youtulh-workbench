@@ -14,7 +14,7 @@ const rowKey = row => row['目录'] || row['创建时间'] || row['标题']
 const EMPTY_FORM = { title: '', topic: '', platform: '', publishedAt: '', views: '', follows: '', dms: '', added: '' }
 
 // 看数据页的筛选/搜索：切到别的页面再回来不重置
-const DATA_UI = { filter: 'all', query: '', bizRange: 'all' }
+const DATA_UI = { filter: 'all', query: '', bizRange: 'all', sort: 'recent' }
 
 export function DataView() {
   useLang()
@@ -33,6 +33,7 @@ export function DataView() {
   const [leads, setLeads] = React.useState([])
   const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
   const [query, setQuery] = React.useState(DATA_UI.query)
+  const [sort, setSort] = React.useState(DATA_UI.sort)
   const [loadError, setLoadError] = React.useState('')
 
   const load = React.useCallback(() => {
@@ -49,7 +50,7 @@ export function DataView() {
   React.useEffect(() => { load() }, [load])
   React.useEffect(() => { fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}) }, [])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
-  React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange }) }, [filter, query, bizRange])
+  React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort }) }, [filter, query, bizRange, sort])
 
   const patch = async (row, key, value) => {
     try {
@@ -112,6 +113,12 @@ export function DataView() {
   const q = query.trim()
   const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row)
     && (!q || [row['标题'], row['选题'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
+    .sort((a, b) => {
+      if (sort === 'views') return num(b['播放']) - num(a['播放'])
+      if (sort === 'dms') return num(b['私信']) - num(a['私信'])
+      if (sort === 'added') return num(b['加微']) - num(a['加微'])
+      return String(b['发布日'] || b['创建时间']).localeCompare(String(a['发布日'] || a['创建时间']))
+    })
   const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
 
   return (
@@ -234,6 +241,11 @@ export function DataView() {
       {rows?.length ? (
         <div className="md-content-tools">
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜标题、选题、平台')} />
+          <select className="md-case-result" value={sort} onChange={event => setSort(event.target.value)}>
+            {[['recent', t('最新')], ['views', t('播放最多')], ['dms', t('私信最多')], ['added', t('加微最多')]].map(([id, label]) => (
+              <option key={id} value={id}>{label}</option>
+            ))}
+          </select>
           <span className="md-muted">{t('{n} 条', { n: list.length })}</span>
         </div>
       ) : null}
