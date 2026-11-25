@@ -22,6 +22,7 @@ const SECTIONS = [
   ['setup-cases', '案例库'],
   ['setup-backup', '数据备份'],
   ['setup-advice', '定位体检'],
+  ['setup-review', '定位复盘'],
 ]
 
 const BOUNDARY = [
@@ -474,7 +475,7 @@ export function SetupView() {
           </div>
         </div>
 
-        <div className="md-review">
+        <div className="md-review" id="setup-review">
           <div className="md-review-head">
             <b>{t('定位复盘')}</b>
             <span className="md-muted">{t('用最近的内容和线索，看看有没有跑偏')}</span>

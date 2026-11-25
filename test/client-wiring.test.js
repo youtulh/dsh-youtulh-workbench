@@ -22,7 +22,7 @@ for (const file of readdirSync(DIR)) {
 const WIRING = {
   'setup.jsx': [
     ['reviewPositioning', '复盘逻辑'],
-    ['<div className="md-review">', '复盘卡片'],
+    ['<div className="md-review"', '复盘卡片'],
     ['fetchContent()', '读取内容库'],
     ['fetchLeads()', '读取线索'],
   ],
