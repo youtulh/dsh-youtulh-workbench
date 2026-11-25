@@ -702,4 +702,7 @@ export const PAGES = {
   '把 {name} 加进班了': 'Added {name} to the class',
   '上次：{summary}': 'Last time: {summary}',
   没记: 'not recorded',
+  进步: 'better',
+  退步: 'worse',
+  持平: 'same',
 }

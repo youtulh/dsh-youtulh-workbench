@@ -455,7 +455,18 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
                 <div key={student.name} className={`md-lesson-row ${row.attend || row.mastery || row.homework ? '' : 'is-empty'}`}>
                   <b>{student.name}</b>
                   {previous[student.name] ? (
-                    <span className="md-lesson-prev">{t('上次：{summary}', { summary: [previous[student.name].mastery, previous[student.name].homework].filter(Boolean).join(' · ') || t('没记') })}</span>
+                    <span className="md-lesson-prev">
+                      {t('上次：{summary}', { summary: [previous[student.name].date, previous[student.name].mastery, previous[student.name].homework].filter(Boolean).join(' · ') || t('没记') })}
+                      {(() => {
+                        const rank = { 不会: 0, 半会: 1, 会: 2 }
+                        const before = rank[previous[student.name].mastery]
+                        const now = rank[row.mastery]
+                        if (before === undefined || now === undefined) return null
+                        if (now > before) return <em className="is-up">{t('进步')}</em>
+                        if (now < before) return <em className="is-down">{t('退步')}</em>
+                        return <em>{t('持平')}</em>
+                      })()}
+                    </span>
                   ) : null}
                   {[['attend', ATTEND_OPTIONS], ['mastery', MASTERY_OPTIONS], ['homework', HOMEWORK_OPTIONS]].map(([key, options]) => (
                     <div key={key} className="md-seg" role="group" aria-label={t(key === 'attend' ? '出勤' : key === 'mastery' ? '掌握' : '作业')}>
