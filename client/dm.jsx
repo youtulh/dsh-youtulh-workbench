@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchContent, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, removeLead, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
+import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchContent, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, removeChatLog, removeLead, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
@@ -799,6 +799,12 @@ export function DmView() {
                       {openChat === row.rowIndex ? t('收起') : t('看全文')}
                     </button>
                   ) : null}
+                  <button type="button" className="md-inline-link" onClick={() => {
+                    if (!window.confirm(t('删掉这一轮对话？线索和学生档案不受影响。'))) return
+                    removeChatLog(row.rowIndex)
+                      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length); toast(t('对话删掉了')) })
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>{t('删除')}</button>
                 </header>
                 {openChat !== row.rowIndex && !chatPerson ? <p className="md-chat-preview">{`${row.incoming.slice(0, 40)} → ${row.outgoing.slice(0, 40)}`}</p> : null}
                 {openChat === row.rowIndex || chatPerson ? (

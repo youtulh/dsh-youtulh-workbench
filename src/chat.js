@@ -86,6 +86,16 @@ export function updateCase(root, index, patch = {}) {
   return readCases(root)
 }
 
+/** 删掉一轮对话记录（测试数据、重复录入）。 */
+export function removeChat(root, index) {
+  const rows = readTable(root, LAYOUT.chats).rows
+  const at = Number(index)
+  if (!Number.isInteger(at) || at < 0 || at >= rows.length) return null
+  rows.splice(at, 1)
+  writeTable(root, LAYOUT.chats, CHAT_COLUMNS, rows)
+  return readChats(root)
+}
+
 /** 删掉一条导入的案例（导错了、不适用了）。 */
 export function removeCase(root, index) {
   const rows = readTable(root, LAYOUT.cases).rows

@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from '../src/chat.js'
+import { appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, platformWordsMarkdown, readCases, readChats, readPlatformWords, removeCase, removeChat, updateCase, updateChatRow, writePlatformWords } from '../src/chat.js'
 
 const state = { positioning: { subject: '物理', grade: '高二', city: '北京' }, painPoints: ['期中 58 分还能补吗'] }
 const temp = () => mkdtemp(join(tmpdir(), 'workbench-chat-'))
@@ -125,5 +125,18 @@ test('对话记录和案例库：写进去能读回来，案例按渠道取', as
     assert.equal(updateChatRow(root, 99, { result: '成交' }), null)
   } finally {
     await rm(root, { recursive: true, force: true })
+  }
+})
+
+
+test('对话记录能删一轮，越界返回 null', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-chat-del-'))
+  try {
+    appendChat(root, { channel: '微信', name: '王', incoming: '多少钱', outgoing: '先看卷子' })
+    assert.equal(readChats(root).length, 1)
+    assert.equal(removeChat(root, 0).length, 0)
+    assert.equal(removeChat(root, 3), null)
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })

@@ -11,7 +11,7 @@ import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
 import { fillTopicAngles, guessTopicAngle, improvePrompt, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
-import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, updateCase, updateChatRow, writePlatformWords } from './chat.js'
+import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, removeChat, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
 import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
@@ -824,6 +824,12 @@ async function route(ctx, store, desk, req, res) {
         stage: body.stage, result: body.result, note: body.note,
       })
       return json(res, 200, { rows })
+    }
+    case 'chat/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const rows = removeChat(root, body.index)
+      if (!rows) return json(res, 404, { error: tr('没找到这条对话') })
+      return json(res, 200, { rows, total: rows.length })
     }
     case 'chat/cases/update': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

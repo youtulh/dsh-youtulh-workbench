@@ -243,6 +243,10 @@ export async function removeChatCase(index) {
   return request('chat/cases/remove', { index })
 }
 
+export async function removeChatLog(index) {
+  return request('chat/remove', { index })
+}
+
 export async function updateChatCase(index, patch) {
   return request('chat/cases/update', { index, patch })
 }
