@@ -285,7 +285,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                     .map(row => (
                       <li key={`${row.className}-${row.no}`}>
                         {row.no >= 1 && row.className ? (
-                          <button type="button" className="md-lesson-jump" onClick={() => setDesk({ view: 'students', focusId: null, classFocus: { name: row.className, no: row.no } })}>
+                          <button type="button" className="md-lesson-jump" onClick={() => setDesk({ view: 'students', focusId: null, classFocus: { name: row.className, no: row.no, student: student.name } })}>
                             <span className="md-muted">{row.className}</span>
                             <b>{t('第 {n} 次', { n: row.no })}</b>
                             <span>{row.date || t('没填日期')}</span>

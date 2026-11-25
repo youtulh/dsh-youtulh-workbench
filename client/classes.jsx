@@ -27,10 +27,12 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
   const [showEnded, setShowEnded] = React.useState(false)
   const classFocus = useDesk(s => s.classFocus)
   const [focusNo, setFocusNo] = React.useState(null)
+  const [returnStudent, setReturnStudent] = React.useState('')
   React.useEffect(() => {
     if (!classFocus) return
     setSelected(classFocus.name)
     setFocusNo(classFocus.no)
+    setReturnStudent(classFocus.student || '')
     setDesk({ classFocus: null })
   }, [classFocus])
   const duplicateClasses = (() => {
@@ -128,15 +130,16 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
       students={students}
       allLessons={lessons}
       focusNo={focusNo}
+      returnStudent={returnStudent}
       onChanged={onChanged}
       onLessons={onLessons}
-      onBack={() => { setSelected(''); setFocusNo(null) }}
+      onBack={() => { setSelected(''); setFocusNo(null); setReturnStudent('') }}
       onRenamed={(name) => setSelected(name)}
     />
   )
 }
 
-function ClassDetail({ klass, students, allLessons = [], focusNo = null, onChanged, onLessons, onBack, onRenamed }) {
+function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnStudent = '', onChanged, onLessons, onBack, onRenamed }) {
   useLang()
   const roster = classRoster(students, klass.name)
   const rosterKey = roster.map(row => row.name).join('|')
@@ -344,6 +347,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, onChang
     <div className="md-class-detail">
       <div className="md-pipeline-tools">
         <button type="button" className="md-inline-link" onClick={onBack}>{t('← 返回班列表')}</button>
+        {returnStudent ? <button type="button" className="md-inline-link" onClick={() => { setDesk({ view: 'students', focusId: null, studentFocus: returnStudent, classFocus: null }); onBack() }}>{t('← 返回 {name} 的档案', { name: returnStudent })}</button> : null}
         <span className="md-grow" />
         <button type="button" className="md-pill is-small" onClick={toggleStatus}>{klass.status === '结课' ? t('重新开班') : t('结课')}</button>
         <button type="button" className="md-pill is-small" onClick={editClass}>{t('改班')}</button>
