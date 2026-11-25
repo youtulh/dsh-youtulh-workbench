@@ -7,15 +7,16 @@ import { dayKey } from './util.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
 
-function Step({ index, title, hint, done, action, onAction, primary }) {
+function Feature({ icon, title, hint, done, children }) {
   return (
-    <section className={`md-step ${primary ? 'is-primary' : ''} ${done ? 'is-done' : ''}`}>
-      <span className="md-step-index">{done ? <Icon name="check" size={12} /> : index}</span>
-      <div className="md-step-body">
-        <b>{title}</b>
-        <small>{hint}</small>
+    <section className="md-feature">
+      <div className="md-feature-head">
+        <span className="md-feature-icon"><Icon name={icon} size={17} /></span>
+        {done ? <em className="md-feature-chip">{t('已完成')}</em> : null}
       </div>
-      {action ? <button type="button" className={`md-pill ${primary ? 'is-primary' : ''}`} onClick={onAction}>{action}</button> : null}
+      <b>{title}</b>
+      <small>{hint}</small>
+      <div className="md-feature-actions">{children}</div>
     </section>
   )
 }
@@ -118,18 +119,18 @@ export function WelcomeView() {
   const staleAfter = medianGap ? Math.max(3, Math.min(14, Math.round(medianGap * 1.5))) : 7
   const stale = daysSincePublish !== null && daysSincePublish >= staleAfter
   const focus = due
-    ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('去跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
+    ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('处理跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
     : todo
       ? { title: t('回 {n} 条还没结果的私信', { n: todo }), hint: t('先判断是谁、在问什么，再回'), action: t('去聊天台'), run: () => go('dm') }
       : content.length === 0
-        ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('去做内容'), run: () => go('content') }
+        ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('开始创作'), run: () => go('content') }
         : !published.length
-          ? { title: t('把做好的口播发出去'), hint: t('内容库还没有已发布；发一条，才有数据可看'), action: t('去做内容'), run: () => go('content') }
+          ? { title: t('把做好的口播发出去'), hint: t('内容库还没有已发布；发一条，才有数据可看'), action: t('开始创作'), run: () => go('content') }
           : missingMetrics.length
-            ? { title: t('补 {n} 条已发布内容的数据', { n: missingMetrics.length }), hint: t('播放、私信、加微填上，定位复盘才有依据'), action: t('去补数据'), run: () => setDesk({ view: 'data', focusId: null, dataFilter: 'missing' }) }
+            ? { title: t('补 {n} 条已发布内容的数据', { n: missingMetrics.length }), hint: t('播放、私信、加微填上，定位复盘才有依据'), action: t('补齐数据'), run: () => setDesk({ view: 'data', focusId: null, dataFilter: 'missing' }) }
             : stale
-            ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: medianGap ? t('你通常每 {n} 天发一条；稳定更新比偶尔爆一条更有用', { n: medianGap }) : t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('去做内容'), run: () => go('content') }
-            : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('去看数据'), run: () => go('data') }
+            ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: medianGap ? t('你通常每 {n} 天发一条；稳定更新比偶尔爆一条更有用', { n: medianGap }) : t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('开始创作'), run: () => go('content') }
+            : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('内容数据'), run: () => go('data') }
 
   return (
     <div className="md-page md-welcome md-workflow">
@@ -186,31 +187,26 @@ export function WelcomeView() {
         </section>
       ) : null}
 
-      <div className="md-quick-links">
-        <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('聊天台')}</button>
-        <button type="button" className="md-inline-link" onClick={() => go('data')}>{t('看数据')}</button>
-        <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'setup', focusId: null, setupSection: 'setup-advice' })}>{t('定位复盘')}</button>
-      </div>
-
-
-      <div className="md-steps">
-        <Step
-          index={1}
-          title={t('认识你')}
-          hint={positioning.target ? t('科目、年级、城市、目标客户') : t('还差目标客户：先选一类家长')}
-          done={configured && Boolean(positioning.target)}
-          action={t('改一下')}
-          onAction={() => go('setup')}
-        />
-        <Step index={2} title={t('做第一条口播')} hint={t('选题 → 每个 3 版 → 改一版 → 采用这条')} action={t('开始')} onAction={() => go('content')} primary />
-        <Step index={3} title={t('聊天台、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
-        <Step index={4} title={t('报课之后')} hint={t('转成学生、建班，每次课记出勤和掌握')} action={t('去学生')} onAction={() => go('students')} />
+      <div className="md-features">
+        <Feature icon="user" title={t('个人定位')} hint={t('科目、年级、城市、目标家长；随时回看定位复盘')} done={configured && Boolean(positioning.target)}>
+          <button type="button" className="md-pill is-small" onClick={() => go('setup')}>{t('调整定位')}</button>
+        </Feature>
+        <Feature icon="pen" title={t('内容创作')} hint={content.length ? t('已有 {n} 条内容，接着做下一条', { n: content.length }) : t('选题、三版口播、评论区与私信话术')}>
+          <button type="button" className="md-pill is-small is-primary" onClick={() => go('content')}>{content.length ? t('继续创作') : t('开始创作')}</button>
+          <button type="button" className="md-pill is-small" onClick={() => go('data')}>{t('内容数据')}</button>
+        </Feature>
+        <Feature icon="chat" title={t('聊天台')} hint={t('平台私信、微信沟通、跟进记录和成交')}>
+          <button type="button" className="md-pill is-small" onClick={() => go('dm')}>{t('进入聊天台')}</button>
+        </Feature>
+        <Feature icon="target" title={t('学生管理')} hint={t('学生档案、班课、课次与家长反馈')}>
+          <button type="button" className="md-pill is-small" onClick={() => go('students')}>{t('进入学生管理')}</button>
+        </Feature>
       </div>
 
       <div className="md-funnel">
         <div className="md-funnel-head">
           <span className="md-eyebrow">{t('线索')}</span>
-          <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('打开线索表')}</button>
+          <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('查看线索表')}</button>
         </div>
         <dl>
           <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd>{newThisWeek ? <small>{t('本周 +{n}', { n: newThisWeek })}</small> : null}</div>

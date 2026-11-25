@@ -2231,3 +2231,14 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-content-card .md-card-foot .md-inline-link { white-space: nowrap; }
   .md-content-card { padding: 14px; }
 }
+
+/* 首页四个并列功能 */
+.md-features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 14px 0 18px; }
+.md-feature { position: relative; display: flex; flex-direction: column; gap: 7px; min-height: 178px; padding: 18px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-feature-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.md-feature-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 11px; background: color-mix(in srgb, var(--accent) 9%, var(--card)); color: var(--accent); }
+.md-feature > b { font-size: 16px; font-weight: 500; line-height: 24px; }
+.md-feature > small { flex: 1; color: var(--ink3); font-size: 12.5px; line-height: 19px; }
+.md-feature-chip { padding: 0 7px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-size: 10.5px; font-style: normal; line-height: 19px; }
+.md-feature-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+@media (max-width: 720px) { .md-features { grid-template-columns: minmax(0, 1fr); } .md-feature { min-height: 0; } }
