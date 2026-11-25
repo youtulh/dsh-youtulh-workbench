@@ -28,6 +28,9 @@ export function DiagnosticsView() {
   const [preview, setPreview] = React.useState(null)
   const [query, setQuery] = React.useState('')
   const [showArchived, setShowArchived] = React.useState(false)
+  const [creating, setCreating] = React.useState(false)
+  const [form, setForm] = React.useState({})
+  const [formError, setFormError] = React.useState('')
   const prefill = useDesk(s => s.diagPrefill)
 
   const load = React.useCallback(() => {
@@ -72,61 +75,78 @@ export function DiagnosticsView() {
     requestAnimationFrame(() => document.getElementById('diag-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
-  const openCreate = (prefill = {}) => setDesk({
-    dialog: {
-      title: t('出一份试听诊断卷'),
-      submitLabel: t('生成诊断卷'),
-      fields: [
-        { name: '_hint', type: 'hidden', label: t('课程名和上课时间是必填；不想填可以点上面的「用示例填一遍」。') },
-        { name: 'studentName', label: t('学生/家长称呼'), placeholder: t('比如：小雪') },
-        { name: 'studentGrade', label: t('孩子年级'), placeholder: t('高一') },
-        { name: 'gender', label: t('性别（只影响例子，不影响难度）'), type: 'select', options: GENDERS },
-        { name: 'level', label: t('当前水平'), type: 'select', options: LEVELS },
-        { name: 'score', label: t('最近分数（可不填）'), placeholder: t('比如：58') },
-        { name: 'pain', label: t('卡点/家长原话'), type: 'textarea', rows: 2, placeholder: t('比如：期中 58，氧化还原一听就乱') },
-        { name: 'resistances', label: t('学习阻力（逗号分隔）'), placeholder: t('计算、概念、审题、作业、动力') },
-        { name: 'goal', label: t('这次试听想先解决什么'), placeholder: t('先补化合价') },
-        { name: 'lessonTitle', label: t('课程名（必填）'), required: true, placeholder: t('氧化还原配平') },
-        { name: 'subject', label: t('科目'), placeholder: t('化学') },
-        { name: 'grade', label: t('课程年级'), placeholder: t('高一') },
-        { name: 'at', label: t('上课时间（必填）'), required: true, placeholder: t('2026-11-30 周日 19:00') },
-        { name: 'code', label: t('课次编码'), placeholder: t('TRIAL-HX-1130') },
-        { name: 'topic', label: t('试听重点（一句话）'), placeholder: t('从化合价一路配平到氧化还原') },
-        { name: 'brandName', label: t('品牌名'), placeholder: brand.name || t('比如：姜老师化学') },
-        { name: 'brandTeacher', label: t('老师署名'), placeholder: brand.teacher || t('姜老师') },
-        { name: 'count', label: t('题量'), type: 'select', options: COUNTS },
-      ],
-      initial: {
-        gender: prefill.gender ?? '', level: prefill.level ?? '基础薄弱', count: '15',
-        subject: prefill.subject ?? '', grade: prefill.grade ?? '',
-        studentName: prefill.name ?? '', studentGrade: prefill.grade ?? '',
-        score: prefill.score ?? '', pain: prefill.pain ?? '', resistances: prefill.resistances ?? '', goal: prefill.goal ?? '',
-        lessonTitle: prefill.lessonTitle ?? '', at: prefill.at ?? '', code: prefill.code ?? '', topic: prefill.topic ?? '',
-        brandName: prefill.brandName ?? brand.name ?? '', brandTeacher: prefill.brandTeacher ?? brand.teacher ?? '',
-      },
-      onSubmit: async values => {
-        setBusy('create')
-        toast(t('正在出诊断卷，约 10–20 秒…'))
-        try {
-          const res = await createDiagnostic({
-            brand: { name: values.brandName || brand.name, teacher: values.brandTeacher || brand.teacher, logo: brand.logo ?? '', mark: brand.mark ?? '' },
-            lesson: { title: values.lessonTitle, subject: values.subject, grade: values.grade || values.studentGrade, at: values.at, code: values.code, topic: values.topic },
-            student: {
-              name: values.studentName, grade: values.studentGrade || values.grade, gender: values.gender,
-              level: values.level, score: values.score, pain: values.pain, goal: values.goal,
-              resistances: String(values.resistances ?? '').split(/[，,、;；\n]+/).map(row => row.trim()).filter(Boolean),
-            },
-            count: Number(values.count) || 15,
-          })
-          toast(res.source === 'template' ? t('模型没通，先用化学模板卷；其他科目建议重试') : t('诊断卷出好了'))
-          await load()
-          setSelected(res.row.id)
-          setPreview({ id: res.row.id, kind: 'pre', url: `media-desk/diagnostics/preview?id=${encodeURIComponent(res.row.id)}&kind=pre` })
-        } catch (err) { toast(err.message, { error: true }) }
-        setBusy('')
-      },
-    },
+  const makeForm = (prefill = {}) => ({
+    gender: '', level: '基础薄弱', count: '15', subject: '', grade: prefill.grade ?? '',
+    score: prefill.score ?? '',
+    pain: prefill.pain ?? '', resistances: prefill.resistances ?? '', goal: prefill.goal ?? '',
+    lessonTitle: prefill.lessonTitle ?? '', at: prefill.at ?? '', code: prefill.code ?? '', topic: prefill.topic ?? '',
+    brandName: prefill.brandName ?? brand.name ?? '', brandTeacher: prefill.brandTeacher ?? brand.teacher ?? '',
+    ...prefill,
+    studentName: prefill.name ?? prefill.studentName ?? '', studentGrade: prefill.grade ?? prefill.studentGrade ?? '',
   })
+
+  const openCreate = (prefill = {}) => {
+    setForm(makeForm(prefill))
+    setFormError('')
+    setCreating(true)
+    requestAnimationFrame(() => document.getElementById('diag-create')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
+  const setField = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
+
+  const submitCreate = async () => {
+    if (!String(form.lessonTitle ?? '').trim() || !String(form.at ?? '').trim()) {
+      setFormError(t('课程名和上课时间是必填。'))
+      toast(t('课程名和上课时间是必填'), { error: true })
+      return
+    }
+    setFormError('')
+    setBusy('create')
+    toast(t('正在出诊断卷，约 10–20 秒…'))
+    try {
+      const res = await createDiagnostic({
+        brand: { name: form.brandName || brand.name, teacher: form.brandTeacher || brand.teacher, logo: brand.logo ?? '', mark: brand.mark ?? '' },
+        lesson: { title: form.lessonTitle, subject: form.subject, grade: form.grade || form.studentGrade, at: form.at, code: form.code, topic: form.topic },
+        student: {
+          name: form.studentName, grade: form.studentGrade || form.grade, gender: form.gender,
+          level: form.level, score: form.score, pain: form.pain, goal: form.goal,
+          resistances: String(form.resistances ?? '').split(/[，,、;；\n]+/).map(row => row.trim()).filter(Boolean),
+        },
+        count: Number(form.count) || 15,
+      })
+      toast(res.source === 'template' ? t('模型没通，先用化学模板卷；其他科目建议重试') : t('诊断卷出好了'))
+      setCreating(false)
+      await load()
+      setSelected(res.row.id)
+      setPreview({ id: res.row.id, kind: 'pre', url: `media-desk/diagnostics/preview?id=${encodeURIComponent(res.row.id)}&kind=pre` })
+      requestAnimationFrame(() => document.getElementById('diag-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    } catch (err) {
+      setFormError(err.message)
+      toast(err.message, { error: true })
+    }
+    setBusy('')
+  }
+
+  const textField = (name, label, placeholder, { wide = false, type = 'text' } = {}) => (
+    <label className={`md-create-field${wide ? ' is-wide' : ''}`}>
+      <span>{label}</span>
+      <input type={type} value={form[name] ?? ''} placeholder={placeholder} onChange={event => setField(name, event.target.value)} />
+    </label>
+  )
+  const areaField = (name, label, placeholder, { wide = true } = {}) => (
+    <label className={`md-create-field${wide ? ' is-wide' : ''}`}>
+      <span>{label}</span>
+      <textarea rows={2} value={form[name] ?? ''} placeholder={placeholder} onChange={event => setField(name, event.target.value)} />
+    </label>
+  )
+  const selectField = (name, label, options) => (
+    <label className="md-create-field">
+      <span>{label}</span>
+      <select value={form[name] ?? ''} onChange={event => setField(name, event.target.value)}>
+        {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
+  )
 
   const openImport = () => {
     if (!current) return
@@ -340,6 +360,64 @@ export function DiagnosticsView() {
         <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{busy === 'create' ? t('正在出卷…') : t('出一份诊断卷')}</button>
         {current ? <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入结果')}</button> : null}
       </header>
+
+      {creating ? (
+        <section className="md-diag-create" id="diag-create">
+          <header className="md-create-head">
+            <div>
+              <h2>{t('新诊断卷')}</h2>
+              <p>{t('填学生和这次课的信息，生成后直接下载发学生。')}</p>
+            </div>
+            <span className="md-grow" />
+            <button type="button" className="md-inline-link" onClick={() => setForm(makeForm(DEMO))}>{t('填入示例')}</button>
+            <button type="button" className="md-inline-link" onClick={() => setCreating(false)}>{t('关闭')}</button>
+          </header>
+
+          <div className="md-create-section">
+            <h3>{t('学生')}</h3>
+            <div className="md-create-grid">
+              {textField('studentName', t('学生/家长称呼'), t('比如：小雪'))}
+              {textField('studentGrade', t('孩子年级'), t('高一'))}
+              {selectField('gender', t('性别'), GENDERS)}
+              {selectField('level', t('当前水平'), LEVELS)}
+              {textField('score', t('最近分数（可不填）'), t('比如：58'))}
+              {textField('resistances', t('学习阻力（逗号分隔）'), t('计算、概念、审题'))}
+              {areaField('pain', t('卡点/家长原话'), t('比如：期中 58，氧化还原一听就乱'))}
+              {textField('goal', t('这次试听想先解决什么'), t('先补化合价'), { wide: true })}
+            </div>
+          </div>
+
+          <div className="md-create-section">
+            <h3>{t('课程')}</h3>
+            <div className="md-create-grid">
+              {textField('lessonTitle', t('课程名（必填）'), t('氧化还原配平'))}
+              {textField('subject', t('科目'), t('化学'))}
+              {textField('grade', t('课程年级'), t('高一'))}
+              {textField('at', t('上课时间（必填）'), t('2026-11-30 周日 19:00'))}
+              {textField('code', t('课次编码'), t('TRIAL-HX-1130'))}
+              {textField('topic', t('试听重点（一句话）'), t('从化合价一路配平到氧化还原'))}
+            </div>
+          </div>
+
+          <div className="md-create-section">
+            <h3>{t('品牌和题量')}</h3>
+            <div className="md-create-grid">
+              {textField('brandName', t('品牌名'), brand.name || t('比如：姜老师化学'))}
+              {textField('brandTeacher', t('老师署名'), brand.teacher || t('姜老师'))}
+              {selectField('count', t('题量'), COUNTS)}
+            </div>
+          </div>
+
+          <footer className="md-create-foot">
+            <span className={formError ? 'md-create-error' : 'md-muted'}>{formError || t('课程名和上课时间必填。')}</span>
+            <span className="md-grow" />
+            <button type="button" className="md-pill is-small" onClick={() => setCreating(false)} disabled={busy === 'create'}>{t('取消')}</button>
+            <button type="button" className="md-pill is-small is-primary" onClick={submitCreate} disabled={busy === 'create'}>
+              {busy === 'create' ? t('正在出卷…') : t('生成诊断卷')}
+            </button>
+          </footer>
+        </section>
+      ) : null}
 
       {busy === 'create' ? <div className="md-diag-loading"><span className="md-shimmer">{t('正在生成诊断卷…')}</span></div> : null}
 

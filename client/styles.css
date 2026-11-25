@@ -2332,3 +2332,21 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 .md-dialog-head { position: sticky; top: 0; z-index: 3; padding-top: 2px; background: var(--card); }
 .md-dialog-head .md-icon-btn { position: relative; z-index: 4; pointer-events: auto; }
+
+.md-diag-create { margin-bottom: 12px; padding: 16px 18px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-create-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.md-create-head h2 { font-size: 18px; line-height: 26px; font-weight: 500; }
+.md-create-head p { color: var(--ink3); font-size: 12px; line-height: 18px; margin-top: 2px; }
+.md-create-section { margin-top: 12px; padding-top: 10px; border-top: .5px solid var(--hairline); }
+.md-create-section h3 { color: var(--ink2); font-size: 12px; font-weight: 500; margin-bottom: 8px; }
+.md-create-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
+.md-create-field { display: grid; gap: 4px; min-width: 0; }
+.md-create-field.is-wide { grid-column: 1 / -1; }
+.md-create-field > span { color: var(--ink2); font-size: 12px; line-height: 17px; }
+.md-create-field input, .md-create-field select, .md-create-field textarea { width: 100%; min-width: 0; padding: 7px 10px; border: .5px solid var(--line-strong); border-radius: var(--r-md); background: var(--card); color: var(--ink); font: inherit; font-size: 13px; line-height: 20px; outline: 0; }
+.md-create-field input, .md-create-field select { height: 34px; }
+.md-create-field textarea { resize: vertical; }
+.md-create-field input:focus, .md-create-field select:focus, .md-create-field textarea:focus { border-color: var(--ink); }
+.md-create-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: .5px solid var(--hairline); }
+.md-create-error { color: var(--danger, #b42318); font-size: 12px; }
+@media (max-width: 640px) { .md-create-grid { grid-template-columns: minmax(0, 1fr); } .md-create-field.is-wide { grid-column: auto; } }
