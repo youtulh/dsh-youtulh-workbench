@@ -2212,3 +2212,22 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   font-size: 12.5px;
 }
 .md-data { width: min(1040px, 100%); }
+
+/* 内容卡在不同屏宽下都要能读：指标自动换列，底部动作不挤成竖排 */
+.md-content-card .md-card-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+.md-content-card .md-card-metrics label { min-width: 0; }
+.md-content-card .md-card-metrics span { white-space: nowrap; }
+.md-content-card .md-card-metrics input { width: 100%; }
+.md-content-card .md-card-foot {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.md-content-card .md-card-foot > * { flex: none; white-space: nowrap; }
+.md-content-card .md-card-foot .md-grow { flex: 1 1 24px; min-width: 24px; }
+@media (max-width: 520px) {
+  .md-content-card .md-card-foot .md-inline-link { white-space: nowrap; }
+  .md-content-card { padding: 14px; }
+}
