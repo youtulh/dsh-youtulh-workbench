@@ -816,4 +816,9 @@ export const PAGES = {
   这条内容的私信第一句: 'From this piece',
   内容配比: 'Content mix',
   'review_local_angle_missing': 'You teach locally, but none of the recent pieces is a local one — add one about {city} schools/exams.',
+  聊天台: 'Chat desk',
+  写一条新回复: 'Write a reply',
+  '粘对方最后一句，判断完给你两条能直接发的话': 'Paste their last message; get two ready-to-send replies.',
+  展开: 'Open',
+
 }

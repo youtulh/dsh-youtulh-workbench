@@ -69,6 +69,7 @@ export function DmView() {
   const [lessons, setLessons] = React.useState([])
   const [filter, setFilter] = React.useState(DM_DRAFT.filter)
   const [query, setQuery] = React.useState(DM_DRAFT.query)
+  const [composerOpen, setComposerOpen] = React.useState(false)
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
   const [chats, setChats] = React.useState([])
@@ -177,6 +178,15 @@ export function DmView() {
     setDesk({ dmPerson: '' })
     requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }, [dmPerson])
+
+  const openComposer = () => {
+    setComposerOpen(true)
+    requestAnimationFrame(() => {
+      const input = document.querySelector('.md-dm-input textarea')
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      input?.focus()
+    })
+  }
 
   const run = async () => {
     if (!raw.trim()) return
@@ -323,7 +333,7 @@ export function DmView() {
     <div className="md-page md-dm">
       <header className="md-page-head">
         <div>
-          <h1>{t('回私信')}</h1>
+          <h1>{t('聊天台')}</h1>
           <p className="md-page-sub">{t('上面是最近的对话；选一个人接着聊，或写一条新回复。判断、话术、记录都在这一页。')}</p>
         </div>
       </header>
@@ -382,11 +392,7 @@ export function DmView() {
                 .join('\n\n'))}>{t('复制整段')}</button>
             </>
           ) : null}
-          <button type="button" className="md-pill is-small is-primary" onClick={() => {
-            const input = document.querySelector('.md-dm-input textarea')
-            input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            input?.focus()
-          }}>{t('写一条新回复')}</button>
+          <button type="button" className="md-pill is-small is-primary" onClick={openComposer}>{t('写一条新回复')}</button>
           <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
         </header>
         {chatsError && chats.length ? (
@@ -405,7 +411,7 @@ export function DmView() {
         ) : chats.length === 0 ? (
           <div className="md-works-empty">
             <p>{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
-            <button type="button" className="md-pill" onClick={() => document.querySelector('.md-dm-input textarea')?.focus()}>{t('去写第一句')}</button>
+            <button type="button" className="md-pill" onClick={openComposer}>{t('去写第一句')}</button>
           </div>
         ) : (
           chatView === 'people' && !chatPerson ? (
@@ -441,11 +447,7 @@ export function DmView() {
                     setHistory(`${t('对方')}：${row.incoming}${row.outgoing ? `\n${t('我方')}：${row.outgoing}` : ''}`)
                     setRaw('')
                     toast(t('已带入上一轮，粘对方的新消息就行'))
-                    requestAnimationFrame(() => {
-                      const input = document.querySelector('.md-dm-input textarea')
-                      input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                      input?.focus()
-                    })
+                    openComposer()
                   }}>{t('接着聊')}</button>
                   <select value={row.result || '未定'} onChange={event => {
                     updateChatLog(row.rowIndex, { result: event.target.value })
@@ -520,7 +522,17 @@ export function DmView() {
         </div>
       ) : null}
 
-      <section className="md-dm-input">
+      <section className={`md-dm-input ${composerOpen ? 'is-open' : 'is-collapsed'}`}>
+        <div className="md-composer-head">
+          <div>
+            <b>{t('写一条新回复')}</b>
+            <small>{t('粘对方最后一句，判断完给你两条能直接发的话')}</small>
+          </div>
+          <span className="md-grow" />
+          <button type="button" className="md-pill is-small" onClick={() => setComposerOpen(value => !value)}>{composerOpen ? t('收起') : t('展开')}</button>
+        </div>
+        {composerOpen ? (
+        <>
         <div className="md-channel-tabs">
           {CHANNELS.map(item => (
             <button type="button" key={item} className={channel === item ? 'is-on' : ''} onClick={() => setChannel(item)}>
@@ -582,6 +594,8 @@ export function DmView() {
             <Icon name="chat" size={14} />{busy === 'draft' ? t('正在判断…') : t('判断一下')}
           </button>
         </div>
+        </>
+        ) : null}
       </section>
 
       {result ? (

@@ -2126,3 +2126,10 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-chat-log .md-tile-head h2 { margin-right: 2px; }
 .md-chat-log .md-lead-tabs { flex-wrap: wrap; }
 .md-chat-log .md-tile-meta { margin-left: 0; }
+
+/* 聊天台：新回复默认收起，首屏先看对话 */
+.md-composer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
+.md-composer-head b { font-size: 14px; font-weight: 500; }
+.md-composer-head small { display: block; color: var(--ink3); font-size: 11.5px; line-height: 17px; }
+.md-dm-input.is-collapsed { padding-bottom: 14px; }
+.md-dm-input.is-collapsed .md-composer-head { margin-bottom: 0; }
