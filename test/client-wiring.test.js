@@ -17,3 +17,21 @@ for (const file of readdirSync(DIR)) {
     })
   }
 }
+
+// 定位复盘：逻辑有、页面没有，曾经真的发生过；这里把「卡片必须接上」钉死。
+const WIRING = {
+  'setup.jsx': [
+    ['reviewPositioning', '复盘逻辑'],
+    ['<div className="md-review">', '复盘卡片'],
+    ['fetchContent()', '读取内容库'],
+    ['fetchLeads()', '读取线索'],
+  ],
+}
+for (const [file, checks] of Object.entries(WIRING)) {
+  const source = readFileSync(new URL(file, DIR), 'utf8')
+  for (const [needle, label] of checks) {
+    test(`${file}：${label}已接上`, () => {
+      assert.ok(source.includes(needle), `${file} 缺少 ${label}（${needle}）`)
+    })
+  }
+}

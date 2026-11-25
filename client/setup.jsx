@@ -479,8 +479,8 @@ export function SetupView() {
             <span className="md-muted">{t('用最近的内容和线索，看看有没有跑偏')}</span>
           </div>
           <div className="md-review-stats">
-            <div><b>{review.contentMatched}/{review.contentTotal}</b><span>{t('内容贴定位')}</span></div>
-            <div><b>{review.gradeMatched}/{review.gradedLeads}</b><span>{t('线索年级对得上')}</span></div>
+            <div><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></div>
+            <div><b>{review.gradedLeads ? `${review.gradeMatched}/${review.gradedLeads}` : '—'}</b><span>{t('线索年级对得上')}</span></div>
             <div><b>{review.wonCount}</b><span>{t('加微/报课')}</span></div>
           </div>
           <ul className="md-review-notes">
