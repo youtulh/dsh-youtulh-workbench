@@ -534,7 +534,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
           </div>
         </section>
       ) : null}
-      <p className="md-muted">{t('课次记录存在工作区的 课次记录.csv，Excel 也能看。')}</p>
+      <p className="md-muted">{t('每次课都会自动记下来，方便回看。')}</p>
     </div>
   )
 }

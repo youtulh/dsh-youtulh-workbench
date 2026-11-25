@@ -42,14 +42,14 @@ export function SettingsDialog() {
         </label>
 
         <label className="md-field">
-          <span>{t('工作区根目录')}</span>
+          <span>{t('数据保存位置')}</span>
           <input value={form.saveRoot} onChange={event => set('saveRoot', event.target.value)} placeholder="~/Documents/Youtulh 工作台" />
           <small>{t('设定、账号数据、线索表、内容和数据都写在这里；留空用默认位置。')}</small>
         </label>
 
         <label className="md-field">
           <span>{t('导出目录（可选）')}</span>
-          <input value={form.exportDir} onChange={event => set('exportDir', event.target.value)} placeholder={t('留空表示写到工作区里')} />
+          <input value={form.exportDir} onChange={event => set('exportDir', event.target.value)} placeholder={t('留空表示用默认位置')} />
         </label>
 
         <div className="md-version">

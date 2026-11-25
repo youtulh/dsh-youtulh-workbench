@@ -6,7 +6,6 @@ import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS, dayKey } from './util.js'
 import { Icon, Pager } from './ui.jsx'
-import { WorksPanel } from './works.jsx'
 
 const num = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0
 const rowKey = row => row['目录'] || row['创建时间'] || row['标题']
@@ -32,7 +31,6 @@ export function DataView() {
   const dataFilter = useDesk(s => s.dataFilter)
   const dataQuery = useDesk(s => s.dataQuery)
   const dataAngle = useDesk(s => s.dataAngle)
-  const [tab, setTab] = React.useState('content')
   const [leads, setLeads] = React.useState([])
   const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
   const [query, setQuery] = React.useState(DATA_UI.query)
@@ -180,9 +178,7 @@ export function DataView() {
       <header className="md-page-head">
         <div>
           <h1>{t('看数据')}</h1>
-          <p className="md-page-sub">{tab === 'files'
-            ? t('工作区里的文件夹和文件，直接看、直接开，改了这里也跟着变。')
-            : t('每条内容回填播放、涨粉、私信：以前发过的视频也能补录。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
+          <p className="md-page-sub">{t('每条内容回填播放、涨粉、私信：以前发过的视频也能补录。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
         </div>
         <span style={{ flex: 1 }} />
         <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
@@ -192,15 +188,7 @@ export function DataView() {
             toast(t('刷新好了'))
           } finally { setRefreshing(false) }
         }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
-        <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
-          <Icon name="folder" size={14} />{t('打开工作区')}
-        </button>
       </header>
-
-      <div className="md-content-tabs md-data-tabs">
-        <button type="button" className={tab === 'content' ? 'is-on' : ''} onClick={() => setTab('content')}>{t('内容库')}</button>
-        <button type="button" className={tab === 'files' ? 'is-on' : ''} onClick={() => setTab('files')}>{t('工作区文件')}</button>
-      </div>
 
       <div className="md-biz-head">
         <span>{t('私信漏斗（线索表）')}</span>
@@ -217,8 +205,7 @@ export function DataView() {
         <button type="button" onClick={() => setDesk({ view: 'students', focusId: null })}><b>{scopedLeads.filter(row => row.stage === '已报课').length || '—'}</b><span>{t('报课')}</span></button>
       </section>
 
-      {tab === 'files' ? <WorksPanel /> : (
-        <>
+      <>
       <div className="md-biz-head"><span>{t('内容结果（内容库）')}</span></div>
       <section className="md-data-summary">
         <div><b>{stats.count ?? 0}</b><span>{t('条内容')}</span></div>
@@ -421,10 +408,8 @@ export function DataView() {
         <Pager page={pageSafe} pageSize={pageSize} total={list.length} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1) }} />
       ) : null}
 
-      <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: root || '~/Documents/Youtulh 工作台' })}</p>
       {!positioning.subject ? <p className="md-muted">{t('还没填设定，先去「我的设定」把科目和年级填上。')}</p> : null}
         </>
-      )}
     </div>
   )
 }

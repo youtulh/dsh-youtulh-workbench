@@ -56,7 +56,7 @@ export function StudentsView() {
       <header className="md-page-head">
         <div>
           <h1>{t('学生')}</h1>
-          <p className="md-page-sub">{t('私信 → 微信 → 试听 → 报课 → 班课，一条线看下来；开的班、每次课、谁卡在哪，都落在工作区的表格里。')}</p>
+          <p className="md-page-sub">{t('私信 → 微信 → 试听 → 报课 → 班课，一条线看下来；开的班、每次课、谁卡在哪，都会自动存好。')}</p>
         </div>
         <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
           setRefreshing(true)
@@ -409,7 +409,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
         </section>
       ) : null}
 
-      <p className="md-muted">{t('学生档案存在工作区的 学生档案.csv；卡点层跟着班走。')}</p>
+      <p className="md-muted">{t('学生档案会按班和课次自动整理。')}</p>
     </div>
   )
 }

@@ -405,7 +405,6 @@ export function DmView() {
             </>
           ) : null}
           <button type="button" className="md-pill is-small is-primary" onClick={openComposer}>{t('写一条新回复')}</button>
-          <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
         </header>
         {chatsError && chats.length ? (
           <div className="md-load-error">
@@ -731,7 +730,7 @@ export function DmView() {
       <section className="md-tile md-dm-leads" id="dm-leads">
         <header className="md-tile-head">
           <h2>{t('线索表')}</h2>
-          <span className="md-tile-meta">{t('{n} 条 · 工作区里的 线索表.csv', { n: leads.length })}</span>
+          <span className="md-tile-meta">{t('{n} 条线索', { n: leads.length })}</span>
           <span className="md-grow" />
           <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'students', focusId: null })}>{t('看漏斗 →')}</button>
           <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
@@ -739,9 +738,6 @@ export function DmView() {
             try { await Promise.all([reload(), reloadChats()]); toast(t('刷新好了')) }
             finally { setRefreshing(false) }
           }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
-          <button type="button" className="md-pill is-small" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
-            <Icon name="folder" size={13} />{t('打开工作区')}
-          </button>
         </header>
 
         <div className="md-lead-tools">
@@ -904,7 +900,7 @@ export function DmView() {
                   <div className="md-lead-draft">
                     <textarea rows={3} value={draftEdit} onChange={event => setDraftEdit(event.target.value)} placeholder={t('这条还没记话术')} />
                     <div className="md-lead-draft-foot">
-                      <span className="md-muted">{t('话术会写回 线索表.csv，加到微信的经验也从这里来。')}</span>
+                      <span className="md-muted">{t('保存后会记进线索表，加到微信的经验也从这里来。')}</span>
                       <span className="md-grow" />
                       <button type="button" className="md-pill is-small" onClick={() => mark(lead, { draft: draftEdit })}>{t('保存话术')}</button>
                     </div>

@@ -76,7 +76,7 @@ class PanelBoundary extends React.Component {
     return (
       <div className="md-page md-crash">
         <h1>{this.props.page ? t('{page}这一页出错了', { page: t(this.props.page) }) : t('工作台这一页出错了')}</h1>
-        <p className="md-muted">{t('你的数据都在工作区的文件里，没有丢。先点重新加载；还不行就把下面这行发给我。')}</p>
+        <p className="md-muted">{t('你的数据都还在，没有丢。先点重新加载；还不行就把下面这行发给我。')}</p>
         <pre className="md-crash-detail">{String(this.state.error?.message || this.state.error)}</pre>
         <div className="md-create-actions">
           <button type="button" className="md-pill" onClick={() => this.setState({ error: null })}>{t('重试')}</button>

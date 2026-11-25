@@ -826,7 +826,6 @@ export const PAGES = {
   '聊天台、看数据': 'Chat desk & data',
   '共 {n} 条 · 第 {page}/{pages} 页': '{n} items · page {page}/{pages}',
   每页: 'Per page',
-  条: 'items',
   上一页: 'Previous',
   下一页: 'Next',
   跳到: 'Jump to',

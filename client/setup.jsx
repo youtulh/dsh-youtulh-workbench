@@ -315,7 +315,7 @@ export function SetupView() {
           />
         </label>
         <div className="md-setup-samples-foot">
-          <span className="md-muted">{t('存进工作区的 说话样本.md；改这个文件也一样生效。')}</span>
+          <span className="md-muted">{t('存进本机，下次生成会用上。')}</span>
           <span className="md-grow" />
           <button type="button" className="md-pill is-small" onClick={saveVoiceSamples} disabled={voiceBusy}>
             {voiceBusy ? t('保存中…') : t('保存原话')}
@@ -360,11 +360,11 @@ export function SetupView() {
 
       <section className="md-setup-card" id="setup-backup">
         <h2><span>8</span>{t('数据备份')}</h2>
-        <p className="md-setup-hint">{t('整个工作区（设定、线索、学生、课次、反馈、内容）就在你的电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。')}</p>
+        <p className="md-setup-hint">{t('你的数据（设定、线索、学生、课次、反馈、内容）都在电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。')}</p>
         {root ? (
           <div className="md-setup-path">
             <code>{root}</code>
-            <button type="button" className="md-inline-link" onClick={() => revealDir(root).catch(err => toast(err.message, { error: true }))}>{t('打开工作区')}</button>
+            <button type="button" className="md-inline-link" onClick={() => revealDir(root).catch(err => toast(err.message, { error: true }))}>{t('打开数据文件夹')}</button>
             <button type="button" className="md-inline-link" onClick={() => {
               if (navigator.clipboard?.writeText) navigator.clipboard.writeText(root).then(() => toast(t('复制了路径'))).catch(() => toast(t('复制失败'), { error: true }))
               else toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
@@ -439,7 +439,7 @@ export function SetupView() {
               .then(data => { setBackup(data.dir); fetchBackups().then(next => setBackups(next.backups ?? [])).catch(() => {}); toast(t('备份好了')) })
               .catch(err => toast(err.message, { error: true }))
               .finally(() => setBackupBusy(false))
-          }}>{backupBusy ? t('备份中…') : t('备份工作区')}</button>
+          }}>{backupBusy ? t('备份中…') : t('备份数据')}</button>
         </div>
         {backups.length ? (
           <details className="md-setup-backups">
