@@ -136,7 +136,7 @@ export function WelcomeView() {
     <div className="md-page md-welcome md-workflow">
       <header className="md-hero">
         <p className="md-eyebrow">{t('Youtulh 工作台')}</p>
-        <h1 className="md-display">{t('定位 · 内容 · 私信 · 学生')}</h1>
+        <h1 className="md-display">{t('把对的人，带进课堂')}</h1>
         <p className="md-lede">{t('先定只带哪类家长，再做内容把家长带来；在聊天台接住私信，报课后进学生档案。每个动作都留痕，越用越顺。')}</p>
         {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         {positioning.target ? <p className="md-note">{t('你现在抓的是：{target}', { target: positioning.target })}</p> : null}
