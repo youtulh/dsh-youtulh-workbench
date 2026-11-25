@@ -117,6 +117,10 @@ export function DataView() {
       if (sort === 'views') return num(b['播放']) - num(a['播放'])
       if (sort === 'dms') return num(b['私信']) - num(a['私信'])
       if (sort === 'added') return num(b['加微']) - num(a['加微'])
+      if (sort === 'rate') {
+        const rate = row => (num(row['播放']) > 0 ? num(row['私信']) / num(row['播放']) * 10000 : 0)
+        return rate(b) - rate(a)
+      }
       return String(b['发布日'] || b['创建时间']).localeCompare(String(a['发布日'] || a['创建时间']))
     })
   const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
@@ -242,7 +246,7 @@ export function DataView() {
         <div className="md-content-tools">
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜标题、选题、平台')} />
           <select className="md-case-result" value={sort} onChange={event => setSort(event.target.value)}>
-            {[['recent', t('最新')], ['views', t('播放最多')], ['dms', t('私信最多')], ['added', t('加微最多')]].map(([id, label]) => (
+            {[['recent', t('最新')], ['views', t('播放最多')], ['dms', t('私信最多')], ['added', t('加微最多')], ['rate', t('每万播私信最高')]].map(([id, label]) => (
               <option key={id} value={id}>{label}</option>
             ))}
           </select>

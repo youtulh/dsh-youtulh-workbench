@@ -711,4 +711,5 @@ export const PAGES = {
   播放最多: 'Most views',
   私信最多: 'Most DMs',
   加微最多: 'Most adds',
+  每万播私信最高: 'Best DMs per 10k views',
 }
