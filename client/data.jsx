@@ -5,7 +5,7 @@ import { createContent, fetchContent, fetchLeads, fetchWorkspace, importData, re
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS, dayKey } from './util.js'
-import { Icon } from './ui.jsx'
+import { Icon, Pager } from './ui.jsx'
 import { WorksPanel } from './works.jsx'
 
 const num = value => Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0
@@ -40,7 +40,8 @@ export function DataView() {
   const [angleFilter, setAngleFilter] = React.useState(DATA_UI.angleFilter)
   const [loadError, setLoadError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
-  const [shown, setShown] = React.useState(30)
+  const [page, setPage] = React.useState(1)
+  const [pageSize, setPageSize] = React.useState(20)
 
   const load = React.useCallback(() => {
     setLoadError('')
@@ -58,7 +59,7 @@ export function DataView() {
   React.useEffect(() => { loadLeads() }, [loadLeads])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort, angleFilter }) }, [filter, query, bizRange, sort, angleFilter])
-  React.useEffect(() => { setShown(30) }, [filter, query, sort])
+  React.useEffect(() => { setPage(1) }, [filter, query, sort, angleFilter, pageSize])
   React.useEffect(() => {
     if (!dataFilter) return
     setTab('content')
@@ -169,6 +170,9 @@ export function DataView() {
       }
       return String(b['发布日'] || b['创建时间']).localeCompare(String(a['发布日'] || a['创建时间']))
     })
+  const pages = Math.max(1, Math.ceil(list.length / pageSize))
+  const pageSafe = Math.min(page, pages)
+  const pageRows = list.slice((pageSafe - 1) * pageSize, pageSafe * pageSize)
   const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
 
   return (
@@ -334,7 +338,7 @@ export function DataView() {
 
       {list.length ? (
         <ul className="md-content-list">
-          {list.slice(0, shown).map(row => (
+          {pageRows.map(row => (
             <li className="md-content-card" key={rowKey(row)}>
               <header className="md-card-head">
                 <h3>{row['标题']}</h3>
@@ -413,8 +417,8 @@ export function DataView() {
         </ul>
       ) : null}
 
-      {rows?.length && list.length > shown ? (
-        <button type="button" className="md-inline-link md-load-more" onClick={() => setShown(value => value + 30)}>{t('显示更多（还有 {n} 条）', { n: list.length - shown })}</button>
+      {rows?.length ? (
+        <Pager page={pageSafe} pageSize={pageSize} total={list.length} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1) }} />
       ) : null}
 
       <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: root || '~/Documents/Youtulh 工作台' })}</p>

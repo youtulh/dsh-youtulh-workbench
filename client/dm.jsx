@@ -4,7 +4,7 @@ import React from 'react'
 import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchContent, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, removeChatLog, removeLead, revealDir, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { t, useLang } from './i18n.js'
-import { Icon } from './ui.jsx'
+import { Icon, Pager } from './ui.jsx'
 import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS, dayKey } from './util.js'
 
 const todayKey = () => dayKey(new Date())
@@ -70,6 +70,8 @@ export function DmView() {
   const [filter, setFilter] = React.useState(DM_DRAFT.filter)
   const [query, setQuery] = React.useState(DM_DRAFT.query)
   const [leadSort, setLeadSort] = React.useState(DM_DRAFT.leadSort)
+  const [leadPage, setLeadPage] = React.useState(1)
+  const [leadPageSize, setLeadPageSize] = React.useState(20)
   const [composerOpen, setComposerOpen] = React.useState(false)
   const [openDraft, setOpenDraft] = React.useState(-1)
   const [draftEdit, setDraftEdit] = React.useState('')
@@ -101,7 +103,8 @@ export function DmView() {
   const prefilledPerson = React.useRef('')
   const autoHistoryFor = React.useRef('')
   const [openChat, setOpenChat] = React.useState(-1)
-  const [chatShown, setChatShown] = React.useState(30)
+  const [chatPage, setChatPage] = React.useState(1)
+  const [chatPageSize, setChatPageSize] = React.useState(20)
 
   React.useEffect(() => {
     Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter })
@@ -315,8 +318,10 @@ export function DmView() {
       && (!chatPerson || row.name === chatPerson))
   // 只看一个人时按时间正序，读起来像一条时间线
   if (chatPerson) chatRows.reverse()
-  React.useEffect(() => { setChatShown(30) }, [chatFilter, chatResult, chatPerson])
-  const chatLimit = chatPerson ? 50 : chatShown
+  React.useEffect(() => { setChatPage(1) }, [chatFilter, chatResult, chatPerson, chatPageSize])
+  const chatPages = Math.max(1, Math.ceil(chatRows.length / chatPageSize))
+  const chatPageSafe = Math.min(chatPage, chatPages)
+  const pageChats = chatRows.slice((chatPageSafe - 1) * chatPageSize, chatPageSafe * chatPageSize)
 
   const filtered = leads.filter(lead => {
     const pass = (FILTERS.find(row => row.id === filter) ?? FILTERS[0]).test(lead)
@@ -330,6 +335,10 @@ export function DmView() {
     if (leadSort === 'stage') return LEAD_STAGES.indexOf(a.stage) - LEAD_STAGES.indexOf(b.stage)
     return String(b.date || '').localeCompare(String(a.date || ''))
   })
+  React.useEffect(() => { setLeadPage(1) }, [filter, query, leadSort, leadPageSize])
+  const leadPages = Math.max(1, Math.ceil(filtered.length / leadPageSize))
+  const leadPageSafe = Math.min(leadPage, leadPages)
+  const pageLeads = filtered.slice((leadPageSafe - 1) * leadPageSize, leadPageSafe * leadPageSize)
   const countOf = (id) => leads.filter(lead => (FILTERS.find(row => row.id === id) ?? FILTERS[0]).test(lead)).length
 
   return (
@@ -435,9 +444,10 @@ export function DmView() {
               {people.length === 0 ? <li className="md-muted">{t('这个渠道还没有对话')}</li> : null}
             </ul>
           ) : (
+          <>
           <ul className="md-chat-list">
             {chatRows.length === 0 ? <li className="md-muted">{chatPerson ? t('还没有和 {name} 的对话', { name: chatPerson }) : t('这个筛选下没有对话')}</li> : null}
-            {chatRows.slice(0, chatLimit).map(row => (
+            {pageChats.map(row => (
               <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
                 <header>
                   <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
@@ -505,14 +515,9 @@ export function DmView() {
                 ) : null}
               </li>
             ))}
-            {!chatPerson && chatRows.length > chatShown ? (
-              <li className="md-chat-more">
-                <button type="button" className="md-inline-link" onClick={() => setChatShown(n => n + 30)}>
-                  {t('显示更多（还有 {n} 轮）', { n: chatRows.length - chatShown })}
-                </button>
-              </li>
-            ) : null}
           </ul>
+          <Pager page={chatPageSafe} pageSize={chatPageSize} total={chatRows.length} onPage={setChatPage} onPageSize={size => { setChatPageSize(size); setChatPage(1) }} />
+          </>
           )
         )}
       </section>
@@ -778,8 +783,9 @@ export function DmView() {
         ) : filtered.length === 0 ? (
           <p className="md-muted md-dm-empty">{filter === 'due' ? t('今天没有到期要跟进的线索。') : t('这个筛选下没有线索。')}</p>
         ) : (
+          <>
           <ul className="md-lead-list">
-            {filtered.map(lead => (
+            {pageLeads.map(lead => (
               <li className="md-lead" key={`${lead.rowIndex}-${lead.date}-${lead.raw.slice(0, 8)}`}>
                 <div className="md-lead-head">
                   <b>{lead.name || lead.grade || t('未填')}</b>
@@ -907,6 +913,8 @@ export function DmView() {
               </li>
             ))}
           </ul>
+          <Pager page={leadPageSafe} pageSize={leadPageSize} total={filtered.length} onPage={setLeadPage} onPageSize={size => { setLeadPageSize(size); setLeadPage(1) }} />
+          </>
         )}
       </section>
 

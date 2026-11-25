@@ -194,3 +194,25 @@ export function Empty({ title, hint, action }) {
     </div>
   )
 }
+
+/** 列表翻页：每页条数可选，页码自动夹在有效区间。 */
+export function Pager({ page = 1, pageSize = 20, total = 0, onPage, onPageSize, sizes = [10, 20, 50] }) {
+  if (!total) return null
+  const pages = Math.max(1, Math.ceil(total / pageSize))
+  const current = Math.min(Math.max(1, page), pages)
+  return (
+    <div className="md-pager">
+      <span className="md-muted">{t('共 {n} 条 · 第 {page}/{pages} 页', { n: total, page: current, pages })}</span>
+      <span className="md-grow" />
+      <label className="md-pager-size">
+        <span>{t('每页')}</span>
+        <select value={pageSize} onChange={event => onPageSize?.(Number(event.target.value))}>
+          {sizes.map(size => <option key={size} value={size}>{size}</option>)}
+        </select>
+        <span>{t('条')}</span>
+      </label>
+      <button type="button" className="md-pill is-small" disabled={current <= 1} onClick={() => onPage?.(current - 1)}>{t('上一页')}</button>
+      <button type="button" className="md-pill is-small" disabled={current >= pages} onClick={() => onPage?.(current + 1)}>{t('下一页')}</button>
+    </div>
+  )
+}
