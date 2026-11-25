@@ -76,6 +76,7 @@ export function DmView() {
   const [casesOpen, setCasesOpen] = React.useState(false)
   const [contentRows, setContentRows] = React.useState([])
   const contentTitles = React.useMemo(() => contentRows.map(row => row['标题']).filter(Boolean).slice(0, 60), [contentRows])
+  const contentSources = React.useMemo(() => [...new Set(contentRows.flatMap(row => [row['标题'], row['选题']]).filter(Boolean))].slice(0, 80), [contentRows])
   const [caseQuery, setCaseQuery] = React.useState(DM_DRAFT.caseQuery)
   const [caseFilter, setCaseFilter] = React.useState(DM_DRAFT.caseFilter)
   const [chatTotal, setChatTotal] = React.useState(0)
@@ -483,7 +484,7 @@ export function DmView() {
           </div>
 
           <datalist id="md-content-titles">
-            {contentTitles.map(title => <option key={title} value={title} />)}
+            {contentSources.map(title => <option key={title} value={title} />)}
           </datalist>
           <div className="md-dm-ledger">
             <div className="md-dm-ledger-grid">
@@ -610,7 +611,7 @@ export function DmView() {
                         }}
                       >
                         <option value={lead.source}>{lead.source} · {t('不在内容库')}</option>
-                        {contentTitles.map(title => <option key={title} value={title}>{title}</option>)}
+                        {contentSources.map(title => <option key={title} value={title}>{title}</option>)}
                       </select>
                     ) : (
                       <span className="md-lead-source">{t('来源：{source}', { source: lead.source })}</span>

@@ -2087,3 +2087,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-lead-promise { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; width: 100%; margin: 2px 0 0; padding: 4px 6px; border-radius: var(--r-xs); background: color-mix(in srgb, var(--hover) 55%, transparent); font-size: 11px; line-height: 16px; }
 .md-lead-promise span { color: var(--accent); white-space: nowrap; }
 .md-lead-promise b { font-weight: 400; color: var(--ink2); }
+
+.md-lead-promise b { overflow-wrap: anywhere; }
