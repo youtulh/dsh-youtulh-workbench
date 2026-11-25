@@ -70,6 +70,7 @@ export function renderDiagnosticHtml(spec, { kind = 'pre', pre = null } = {}) {
   .btn.ghost { background:var(--porcelain); color:var(--ink); border:1px solid var(--line); }
   .btn.primary { background:linear-gradient(135deg,#2b5a88,#1a3a5c); color:#fff; box-shadow:0 8px 20px rgba(20,37,58,.28); }
   .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn.is-waiting { opacity:.62; }
   .saved { text-align:center; color:#7a8a9a; font-size:11.5px; margin-top:7px; min-height:17px; }
   #report { margin-top:20px; }
   .card { padding:20px 17px; border-radius:18px; background:var(--porcelain); border:1px solid var(--line); }
@@ -133,8 +134,8 @@ export function renderDiagnosticHtml(spec, { kind = 'pre', pre = null } = {}) {
   </div>` : ''}
 
   <div class="bar no-print">
-    <div class="bar-row"><button class="btn ghost" id="save-btn" type="button">保存答案</button><button class="btn primary" id="submit-btn" type="button" disabled>提交看结果</button></div>
-    <div class="saved" id="saved"></div>
+    <div class="bar-row"><button class="btn ghost" id="save-btn" type="button">保存答案</button><button class="btn primary" id="submit-btn" type="button">看诊断结果</button></div>
+    <div class="saved" id="saved">答案只在这台设备上批改，不上传；做完可以保存结果发给老师。</div>
   </div>
 
   <div id="report" class="hidden"></div>
@@ -162,7 +163,7 @@ window.__YT_DIAG__ = ${safeJson({ spec, kind, pre })};
     } catch (e) {}
   }
   function ready() { return answers.every(function (a) { return a >= 0; }); }
-  function sync() { $('submit-btn').disabled = !ready(); if (ready()) save(); }
+  function sync() { $('submit-btn').classList.toggle('is-waiting', !ready()); if (ready()) save(); }
   function render() {
     var html = '';
     var current = '';
@@ -219,7 +220,15 @@ window.__YT_DIAG__ = ${safeJson({ spec, kind, pre })};
     return 'YT-DIAG1:' + btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');
   }
   function submit() {
-    if (submitted || !ready()) return;
+    if (submitted) return;
+    var missing = answers.filter(function (a) { return a < 0; }).length;
+    if (missing) {
+      $('saved').textContent = '还有 ' + missing + ' 题没答，先把它们选上再批改；答案会一条条存在这台设备上。';
+      var first = answers.indexOf(-1);
+      var q = document.querySelector('.q[data-q="' + first + '"]');
+      if (q) q.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     submitted = true;
     var result = score();
     var verdict = spec.verdicts[result.band] || { title: '诊断完成', body: '' };
@@ -251,7 +260,7 @@ window.__YT_DIAG__ = ${safeJson({ spec, kind, pre })};
       html += '<div class="compare">课前正确率 <b>' + data.pre.percent + '%</b> → 这次 <b>' + result.percent + '%</b>，' + (result.percent > data.pre.percent ? '进步 ' + (result.percent - data.pre.percent) + ' 个百分点。' : '先稳住这一段，别急着加量。') + '</div>';
     }
     html += '<div class="cta"><b>' + (data.kind === 'post' ? '把这次进步，变成下一步' : '测出断层，只是第一步') + '</b><p>' + (data.kind === 'post' ? '老师会根据这份结果，安排后续补漏；有不懂的地方，主讲和助教会盯到你会。' : '带着这份结果来试听，老师就从卡住的那一层开始讲。') + '</p></div>';
-    html += '<div class="result-actions no-print"><button class="btn primary" type="button" id="copy-btn">复制结果给老师</button><button class="btn ghost" type="button" id="download-btn">下载结果文件</button></div><textarea class="result-code no-print" id="result-code" readonly></textarea></div>';
+    html += '<div class="result-actions no-print"><button class="btn primary" type="button" id="copy-btn">复制结果给老师</button><button class="btn ghost" type="button" id="download-btn">保存结果</button></div><textarea class="result-code no-print" id="result-code" readonly></textarea></div>';
     $('report').innerHTML = html;
     $('report').classList.remove('hidden');
     $('result-code').value = code();
