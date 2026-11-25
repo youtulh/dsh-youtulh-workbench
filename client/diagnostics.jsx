@@ -25,7 +25,6 @@ export function DiagnosticsView() {
   const [busy, setBusy] = React.useState('')
   const [analysis, setAnalysis] = React.useState(null)
   const [analysisSource, setAnalysisSource] = React.useState('')
-  const [preview, setPreview] = React.useState(null)
   const [query, setQuery] = React.useState('')
   const [showArchived, setShowArchived] = React.useState(false)
   const [creating, setCreating] = React.useState(false)
@@ -37,7 +36,7 @@ export function DiagnosticsView() {
     return fetchDiagnostics()
       .then(next => {
         setData(next)
-        setSelected(prev => prev && next.rows.some(row => row.id === prev) ? prev : (next.rows[0]?.id ?? ''))
+        setSelected(prev => prev && next.rows.some(row => row.id === prev) ? prev : '')
       })
       .catch(err => toast(err.message, { error: true }))
   }, [])
@@ -67,12 +66,6 @@ export function DiagnosticsView() {
   const copy = (text) => {
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
     else toast(t('这个环境不能直接复制'), { error: true })
-  }
-
-  const openPreview = (kind = 'pre') => {
-    if (!current) return
-    setPreview({ id: current.id, kind, url: `media-desk/diagnostics/preview?id=${encodeURIComponent(current.id)}&kind=${kind}` })
-    requestAnimationFrame(() => document.getElementById('diag-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
   const makeForm = (prefill = {}) => ({
@@ -117,9 +110,8 @@ export function DiagnosticsView() {
       toast(res.source === 'template' ? t('模型没通，先用化学模板卷；其他科目建议重试') : t('诊断卷出好了'))
       setCreating(false)
       await load()
-      setSelected(res.row.id)
-      setPreview({ id: res.row.id, kind: 'pre', url: `media-desk/diagnostics/preview?id=${encodeURIComponent(res.row.id)}&kind=pre` })
-      requestAnimationFrame(() => document.getElementById('diag-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+      setSelected('')
+      toast(t('诊断卷已存好，在下面列表里；要发给学生就点「打开所在文件夹」。'))
     } catch (err) {
       setFormError(err.message)
       toast(err.message, { error: true })
@@ -226,7 +218,6 @@ export function DiagnosticsView() {
               note: values.note,
             })
             toast(t('诊断信息已更新'))
-            setPreview(null)
             await load()
           } catch (err) { toast(err.message, { error: true }) }
         },
@@ -287,8 +278,7 @@ export function DiagnosticsView() {
                     <p className="md-muted">{current.at || t('时间待定')} · {current.student || t('未填学生')} · {current.grade || ''}</p>
                   </div>
                   <span className="md-grow" />
-                  <button type="button" className="md-pill is-small" onClick={() => openPreview('pre')}>{t('预览试填')}</button>
-                  <a className="md-pill is-small is-primary" href={`media-desk/diagnostics/download?id=${encodeURIComponent(current.id)}&kind=pre`} download>{t('下载发给学生')}</a>
+                  <button type="button" className="md-pill is-small is-primary" onClick={() => revealDiagnostic(current.id).catch(err => toast(err.message, { error: true }))}>{t('打开所在文件夹')}</button>
                 </div>
 
                 <div className="md-diag-stats">
@@ -311,15 +301,12 @@ export function DiagnosticsView() {
                     <Icon name="spark" size={13} />{busy === 'analyze-pre' ? t('正在写话术…') : t('生成课前话术')}
                   </button>
                   <button type="button" className="md-pill is-small" onClick={openPost} disabled={busy === 'post'}>{busy === 'post' ? t('正在出卷…') : t('生成课后检测')}</button>
-                  <button type="button" className="md-pill is-small" onClick={() => openPreview('post')} disabled={!current.postScore && current.status !== '待课后'}>{t('预览课后检测')}</button>
-                  <a className="md-pill is-small" href={`media-desk/diagnostics/download?id=${encodeURIComponent(current.id)}&kind=post`} download>{t('下载课后卷')}</a>
                   {current.postScore ? <button type="button" className="md-pill is-small" onClick={() => analyze('post')} disabled={busy === 'analyze-post'}>{busy === 'analyze-post' ? t('正在写话术…') : t('生成课后话术')}</button> : null}
                 </div>
 
                 <div className="md-diag-manage-actions">
                   <button type="button" className="md-pill is-small" onClick={openEdit}>{t('编辑信息')}</button>
                   <button type="button" className="md-pill is-small" onClick={openDuplicate}>{t('复制一份')}</button>
-                  <button type="button" className="md-pill is-small" onClick={() => revealDiagnostic(current.id).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button>
                   <button type="button" className="md-pill is-small" onClick={openArchive}>{current.status === '已归档' ? t('恢复') : t('归档')}</button>
                 </div>
 
@@ -366,7 +353,7 @@ export function DiagnosticsView() {
           <header className="md-create-head">
             <div>
               <h2>{t('新诊断卷')}</h2>
-              <p>{t('填学生和这次课的信息，生成后直接下载发学生。')}</p>
+              <p>{t('填学生和这次课的信息，生成后会直接加到下面列表。')}</p>
             </div>
             <span className="md-grow" />
             <button type="button" className="md-inline-link" onClick={() => setForm(makeForm(DEMO))}>{t('填入示例')}</button>
@@ -435,7 +422,7 @@ export function DiagnosticsView() {
           </div>
           {visible.map(row => (
             <section key={row.id} className={`md-diag-item ${row.id === selected ? 'is-open' : ''}`}>
-              <button type="button" className="md-diag-row" onClick={() => setSelected(row.id)} aria-expanded={row.id === selected}>
+              <button type="button" className="md-diag-row" onClick={() => setSelected(prev => prev === row.id ? '' : row.id)} aria-expanded={row.id === selected}>
                 <span className="md-diag-row-main">
                   <b>{row.student || t('未填学生')}{row.grade ? ` · ${row.grade}` : ''}</b>
                   <span>{row.lesson || t('未填课程')}</span>
@@ -453,20 +440,7 @@ export function DiagnosticsView() {
         </div>
       )}
 
-      {preview ? (
-        <div className="md-diag-inline-preview" id="diag-preview">
-          <div className="md-diag-preview-head">
-            <b>{preview.kind === 'post' ? t('课后检测预览') : t('诊断卷预览')}</b>
-            <span className="md-muted">{t('在下方直接试填；发给学生请点「下载发给学生」。')}</span>
-            <span className="md-grow" />
-            <a className="md-pill is-small is-primary" href={`media-desk/diagnostics/download?id=${encodeURIComponent(preview.id ?? current?.id ?? '')}&kind=${preview.kind}`} download>{t('下载发给学生')}</a>
-            <button type="button" className="md-inline-link" onClick={() => setPreview(null)}>{t('关闭')}</button>
-          </div>
-          <div className="md-diag-preview">
-            <iframe title={t('诊断卷预览')} src={preview.url} />
-          </div>
-        </div>
-      ) : null}
+
     </div>
   )
 }
