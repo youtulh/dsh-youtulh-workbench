@@ -221,6 +221,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
     return { ...prev, [name]: { ...row, [key]: row[key] === value ? '' : value } }
   })
   const fillAll = (key, value) => setDraft(prev => Object.fromEntries(Object.entries(prev).map(([name, row]) => [name, { ...row, [key]: value }])))
+  const setNote = (name, value) => setDraft(prev => ({ ...prev, [name]: { ...(prev[name] ?? emptyDraft()), note: value } }))
 
   const saveLesson = async () => {
     const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft()) }))
@@ -519,6 +520,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
                       ))}
                     </div>
                   ))}
+                  <input className="md-lesson-note" value={row.note || ''} onChange={event => setNote(student.name, event.target.value)} placeholder={t('这节课的备注（可不填）')} />
                 </div>
               )
             })}

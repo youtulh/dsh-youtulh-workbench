@@ -743,4 +743,5 @@ export const PAGES = {
   '还有 {n} 个学生标着在读，': '{n} students are still marked active — ',
   去学生档案调整: 'adjust in student roster',
   '{page}这一页出错了': '{page} hit an error',
+  '这节课的备注（可不填）': 'Lesson note (optional)',
 }

@@ -2001,3 +2001,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 @media (max-width: 640px) {
   .md-student-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.md-lesson-note { flex: 1 1 12em; min-width: 8em; padding: 2px 7px; border: .5px solid var(--line); border-radius: var(--r-xs); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 11.5px; }
+.md-lesson-note:focus { border-color: var(--accent); }
