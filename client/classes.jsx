@@ -456,7 +456,10 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
       ) : null}
 
       {klass.status === '结课' ? (
-        <p className="md-muted md-class-ended-note">{t('这个班已结课：还能补改以前的课次记录；要接着上，点上面「重新开班」。')}</p>
+        <p className="md-muted md-class-ended-note">
+          {t('这个班已结课：还能补改以前的课次记录；要接着上，点上面「重新开班」。')}
+          {roster.some(row => (row.status || '在读') === '在读') ? ` ${t('还有 {n} 个学生标着在读，需要的话去学生档案调整。', { n: roster.filter(row => (row.status || '在读') === '在读').length })}` : ''}
+        </p>
       ) : null}
 
       {roster.length ? (
