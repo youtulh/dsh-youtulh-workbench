@@ -2157,3 +2157,12 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 @media (max-width: 720px) {
   .md-dm-input { padding: 14px; }
 }
+
+/* 聊天台：页面始终有明确滚动条，底部留出呼吸空间 */
+.md-page {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 64px;
+}
+.md-chat-log { min-height: 110px; }
