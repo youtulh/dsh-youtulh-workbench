@@ -104,6 +104,9 @@ export function WelcomeView() {
   const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
   const trials = leads.filter(row => row.stage === '约试听').length
   const due = leads.filter(row => row.nextAt && row.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(row.stage)).length
+  const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
+  const newThisWeek = leads.filter(row => row.date && row.date >= weekStart).length
+  const addedThisWeek = leads.filter(row => row.date && row.date >= weekStart && ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
   const publishedAll = content.filter(row => row['状态'] === '已发布')
   const published = publishedAll.filter(row => row['发布日'])
   const missingMetrics = publishedAll.filter(row => !String(row['播放'] ?? '').trim() || !String(row['发布日'] ?? '').trim())
@@ -210,12 +213,12 @@ export function WelcomeView() {
           <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('打开线索表')}</button>
         </div>
         <dl>
-          <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd></div>
+          <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd>{newThisWeek ? <small>{t('本周 +{n}', { n: newThisWeek })}</small> : null}</div>
           <div><dt>{t('待跟进')}</dt><dd>{todo || '—'}</dd></div>
           <button type="button" className={`md-funnel-stat ${due ? 'is-due' : ''}`} disabled={!due} onClick={() => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' })}>
             <dt>{t('该跟进')}</dt><dd>{due || '—'}</dd>
           </button>
-          <div><dt>{t('已加微')}</dt><dd>{added || '—'}</dd></div>
+          <div><dt>{t('已加微')}</dt><dd>{added || '—'}</dd>{addedThisWeek ? <small>{t('本周 +{n}', { n: addedThisWeek })}</small> : null}</div>
           <div><dt>{t('约试听')}</dt><dd>{trials || '—'}</dd></div>
         </dl>
       </div>

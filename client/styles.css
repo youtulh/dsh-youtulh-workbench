@@ -2105,3 +2105,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 .md-review-mix { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: 7px; color: var(--ink2); font-size: 11.5px; }
 .md-review-mix .md-inline-link { font-size: 11.5px; }
+
+.md-funnel dl small { display: block; color: var(--ink3); font-size: 9.5px; margin-top: 1px; }
