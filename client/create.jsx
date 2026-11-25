@@ -430,7 +430,7 @@ export function CreateView() {
                       </button>
                       {editKey === key ? null : <button type="button" className="md-inline-link" onClick={() => startEdit(group, variant)}>{t('改一下')}</button>}
                       <button type="button" className="md-inline-link" onClick={() => copy(variant)}>{t('复制全文')}</button>
-                      <button type="button" className="md-inline-link" onClick={() => copyPack(variant)}>{t('复制发布包')}</button>
+                      <button type="button" className="md-inline-link" title={t('一次复制标题、标签、口播、评论区置顶和私信第一句')} onClick={() => copyPack(variant)}>{t('复制发布文案')}</button>
                       <button type="button" className="md-inline-link" onClick={() => copyText(variant.title)}>{t('复制标题')}</button>
                     </div>
                   </li>

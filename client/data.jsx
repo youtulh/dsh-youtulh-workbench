@@ -373,7 +373,7 @@ export function DataView() {
                 </select>
                 <span className="md-grow" />
                 {row['目录'] ? <button type="button" className="md-inline-link" onClick={() => revealDir(row['目录']).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button> : null}
-                <button type="button" className="md-inline-link" onClick={() => copyPack(row)}>{t('复制发布包')}</button>
+                <button type="button" className="md-inline-link" title={t('一次复制标题、标签、口播、评论区置顶和私信第一句')} onClick={() => copyPack(row)}>{t('复制发布文案')}</button>
                 <button type="button" className="md-inline-link" onClick={() => remove(row)}>{t('删除')}</button>
               </footer>
             </li>

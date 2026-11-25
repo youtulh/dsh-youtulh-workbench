@@ -831,5 +831,7 @@ export const PAGES = {
   跳到: 'Jump to',
   '高级：旧版本数据（一般不用管）': 'Advanced: old data (usually not needed)',
   刷新线索: 'Refresh leads',
+  复制发布文案: 'Copy publishing copy',
+  '一次复制标题、标签、口播、评论区置顶和私信第一句': 'Copies title, tags, script, pinned comment and first DM reply in one go.',
 
 }
