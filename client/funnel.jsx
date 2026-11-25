@@ -156,7 +156,10 @@ export function FunnelPanel({ students = [], onChanged }) {
           <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>{t('去回私信')}</button>
         </div>
       ) : filtered.length === 0 ? (
-        <p className="md-muted md-dm-empty">{t('这个筛选下没有线索。')}</p>
+        <div className="md-dm-empty">
+          <p className="md-muted">{t('这个筛选下没有线索。')}</p>
+          <button type="button" className="md-pill is-small" onClick={() => { setQuery(''); setSourceFilter('all') }}>{t('清空筛选')}</button>
+        </div>
       ) : (
         <div className="md-pipeline">
           {groups.map(({ stage, rows }) => (
