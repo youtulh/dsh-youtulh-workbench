@@ -2107,3 +2107,10 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-review-mix .md-inline-link { font-size: 11.5px; }
 
 .md-funnel dl small { display: block; color: var(--ink3); font-size: 9.5px; margin-top: 1px; }
+
+/* 回私信改成聊天台：对话先出现，页面稳定滚动，不被宽内容撑破 */
+.md-main { min-height: 0; }
+.md-page { height: 100%; overscroll-behavior: contain; overflow-x: clip; }
+.md-dm { min-width: 0; max-width: 100%; }
+.md-dm > * { min-width: 0; }
+.md-chat-log { max-width: 100%; }

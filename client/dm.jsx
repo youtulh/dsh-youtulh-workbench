@@ -324,7 +324,7 @@ export function DmView() {
       <header className="md-page-head">
         <div>
           <h1>{t('回私信')}</h1>
-          <p className="md-page-sub">{t('平台私信先接住、一两句挪到私信；微信里再给判断、约诊断或试听。挑一句话发出去，顺手记一笔，后面才有的复盘。')}</p>
+          <p className="md-page-sub">{t('上面是最近的对话；选一个人接着聊，或写一条新回复。判断、话术、记录都在这一页。')}</p>
         </div>
       </header>
 
@@ -337,6 +337,175 @@ export function DmView() {
           <button type="button" className="md-pill is-small" onClick={() => setDesk({ view: 'setup', focusId: null })}>{t('去填设定')}</button>
         </div>
       ) : null}
+
+      <section className="md-tile md-chat-log" id="dm-chat-log">
+        <header className="md-tile-head">
+          <h2>{t('最近对话')}</h2>
+          <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chatTotal || chats.length })}</span>
+          {chatTotal > chats.length ? <span className="md-muted">{t('页面只看最近 {n} 轮', { n: chats.length })}</span> : null}
+          {chatStats.length ? (
+            <span className="md-chat-stats">
+              {chatStats.map(item => <em key={item.result} className={`is-${item.result === '流失' ? 'lost' : 'won'}`}>{t(item.result)} {item.n}</em>)}
+            </span>
+          ) : null}
+          <span className="md-grow" />
+          <div className="md-lead-tabs">
+            {[['turns', '按轮次'], ['people', '按人']].map(([id, label]) => (
+              <button type="button" key={id} className={chatView === id ? 'is-on' : ''} onClick={() => setChatView(id)}>{t(label)}</button>
+            ))}
+          </div>
+          {chatView === 'people' && !chatPerson ? (
+            <select className="md-chat-result-filter" value={peopleSort} onChange={event => setPeopleSort(event.target.value)}>
+              {[['recent', '按最近聊'], ['turns', '按轮数'], ['result', '按结果']].map(([id, label]) => (
+                <option key={id} value={id}>{t(label)}</option>
+              ))}
+            </select>
+          ) : null}
+          <select className="md-chat-result-filter" value={chatResult} onChange={event => setChatResult(event.target.value)}>
+            {[['all', '全部结果'], ['未定', '未定'], ['成交', '成交'], ['约试听', '约试听'], ['加微', '加微'], ['流失', '流失']].map(([id, label]) => (
+              <option key={id} value={id}>{t(label)}</option>
+            ))}
+          </select>
+          <div className="md-lead-tabs">
+            {[['all', '全部'], ['平台私信', '平台私信'], ['微信', '微信']].map(([id, label]) => (
+              <button type="button" key={id} className={chatFilter === id ? 'is-on' : ''} onClick={() => setChatFilter(id)}>{t(label)}</button>
+            ))}
+          </div>
+          {chatPerson ? (
+            <>
+              <button type="button" className="md-chat-person" onClick={() => setChatPerson('')}>
+                {t('只看 {name}', { name: chatPerson })}<span>×</span>
+              </button>
+              <button type="button" className="md-inline-link" onClick={() => copy(chatRows
+                .filter(row => row.name === chatPerson)
+                .map(row => `${t('对方')}：${row.incoming}\n${t('我方')}：${row.outgoing}`)
+                .join('\n\n'))}>{t('复制整段')}</button>
+            </>
+          ) : null}
+          <button type="button" className="md-pill is-small is-primary" onClick={() => {
+            const input = document.querySelector('.md-dm-input textarea')
+            input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            input?.focus()
+          }}>{t('写一条新回复')}</button>
+          <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
+        </header>
+        {chatsError && chats.length ? (
+          <div className="md-load-error">
+            <p>{t('刷新失败：{msg}，下面是上次的数据', { msg: chatsError })}</p>
+            <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>
+          </div>
+        ) : null}
+        {chatsError && !chats.length ? (
+          <div className="md-load-error">
+            <p>{t('读取失败：{msg}', { msg: chatsError })}</p>
+            <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>
+          </div>
+        ) : !chatsReady && chats.length === 0 ? (
+          <p className="md-muted md-dm-empty">{t('读取中…')}</p>
+        ) : chats.length === 0 ? (
+          <div className="md-works-empty">
+            <p>{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
+            <button type="button" className="md-pill" onClick={() => document.querySelector('.md-dm-input textarea')?.focus()}>{t('去写第一句')}</button>
+          </div>
+        ) : (
+          chatView === 'people' && !chatPerson ? (
+            <ul className="md-chat-people">
+              {people.map(person => (
+                <li key={person.key || 'none'}>
+                  <button type="button" className="md-chat-person-row" onClick={() => { if (person.key) setChatPerson(person.key) }} disabled={!person.key}>
+                    <b>{person.name}</b>
+                    <span className="md-chat-channel">{t(person.channel)}</span>
+                    <span className="md-muted">{t('{n} 轮', { n: person.turns })}</span>
+                    <span className="md-grow" />
+                    <em className={`is-${['成交', '加微', '约试听'].includes(person.lastResult) ? 'won' : person.lastResult === '流失' ? 'lost' : 'plain'}`}>{t(person.lastResult)}</em>
+                    <span className="md-muted">{person.lastDate}</span>
+                    {person.lastIncoming ? <span className="md-chat-person-preview">{person.lastIncoming.slice(0, 30)}</span> : null}
+                  </button>
+                </li>
+              ))}
+              {people.length === 0 ? <li className="md-muted">{t('这个渠道还没有对话')}</li> : null}
+            </ul>
+          ) : (
+          <ul className="md-chat-list">
+            {chatRows.length === 0 ? <li className="md-muted">{chatPerson ? t('还没有和 {name} 的对话', { name: chatPerson }) : t('这个筛选下没有对话')}</li> : null}
+            {chatRows.slice(0, chatLimit).map(row => (
+              <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
+                <header>
+                  <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
+                  {row.name ? <button type="button" className="md-inline-link" onClick={() => setChatPerson(row.name)}>{row.name}</button> : null}
+                  <span className="md-muted">{row.date} {row.stage ? `· ${t(row.stage)}` : ''}</span>
+                  {String(row.note || '').includes('改过') ? <em className="md-chat-edited">{t('改过')}</em> : null}
+                  <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => {
+                    setChannel(row.channel)
+                    setHistory(`${t('对方')}：${row.incoming}${row.outgoing ? `\n${t('我方')}：${row.outgoing}` : ''}`)
+                    setRaw('')
+                    toast(t('已带入上一轮，粘对方的新消息就行'))
+                  }}>{t('接着聊')}</button>
+                  <select value={row.result || '未定'} onChange={event => {
+                    updateChatLog(row.rowIndex, { result: event.target.value })
+                      .then(data => {
+                        setChats(data.rows ?? [])
+                        if (data.leads) setLeads(data.leads)
+                        if (data.studentCreated) toast(t('成交，顺手建了学生档案'))
+                        else if (['加微', '约试听', '成交'].includes(event.target.value) && data.leads) toast(t('结果记下了，线索阶段也一起更新'))
+                      })
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>
+                    {['未定', '加微', '约试听', '成交', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}
+                  </select>
+                  {!chatPerson ? (
+                    <button type="button" className="md-inline-link" onClick={() => setOpenChat(openChat === row.rowIndex ? -1 : row.rowIndex)}>
+                      {openChat === row.rowIndex ? t('收起') : t('看全文')}
+                    </button>
+                  ) : null}
+                  <button type="button" className="md-inline-link" onClick={() => {
+                    if (!window.confirm(t('删掉这一轮对话？线索和学生档案不受影响。'))) return
+                    removeChatLog(row.rowIndex)
+                      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length); toast(t('对话删掉了')) })
+                      .catch(err => toast(err.message, { error: true }))
+                  }}>{t('删除')}</button>
+                </header>
+                {openChat !== row.rowIndex && !chatPerson ? <p className="md-chat-preview">{`${row.incoming.slice(0, 40)} → ${row.outgoing.slice(0, 40)}`}</p> : null}
+                {openChat === row.rowIndex || chatPerson ? (
+                  <div className="md-chat-full">
+                    <p><b>{t('对方')}</b>{row.incoming}</p>
+                    <p><b>{t('我方')}</b>{row.outgoing}</p>
+                    <button type="button" className="md-inline-link" onClick={() => copy(row.outgoing)}>{t('复制我方这句')}</button>
+                    {leadOf(row.name) ? (
+                      <div className="md-chat-lead">
+                        <span>{t('线索阶段：{stage}', { stage: t(leadOf(row.name).stage || '私信') })}</span>
+                        <label>
+                          <b>{t('下一步')}</b>
+                          <input
+                            defaultValue={leadOf(row.name).next || ''}
+                            placeholder={t('周四晚 8 点试听')}
+                            onBlur={event => {
+                              const lead = leadOf(row.name)
+                              if (event.target.value === (lead.next || '')) return
+                              updateLead(lead.rowIndex, { next: event.target.value })
+                                .then(data => { if (data.leads) setLeads(data.leads); toast(t('下一步存好了')) })
+                                .catch(err => toast(err.message, { error: true }))
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            ))}
+            {!chatPerson && chatRows.length > chatShown ? (
+              <li className="md-chat-more">
+                <button type="button" className="md-inline-link" onClick={() => setChatShown(n => n + 30)}>
+                  {t('显示更多（还有 {n} 轮）', { n: chatRows.length - chatShown })}
+                </button>
+              </li>
+            ) : null}
+          </ul>
+          )
+        )}
+      </section>
 
       {lessons.length ? (
         <div className="md-lessons">
@@ -713,170 +882,6 @@ export function DmView() {
               </li>
             ))}
           </ul>
-        )}
-      </section>
-
-      <section className="md-tile md-chat-log" id="dm-chat-log">
-        <header className="md-tile-head">
-          <h2>{t('最近对话')}</h2>
-          <span className="md-tile-meta">{t('{n} 轮 · 标了结果，下一句会参考', { n: chatTotal || chats.length })}</span>
-          {chatTotal > chats.length ? <span className="md-muted">{t('页面只看最近 {n} 轮', { n: chats.length })}</span> : null}
-          {chatStats.length ? (
-            <span className="md-chat-stats">
-              {chatStats.map(item => <em key={item.result} className={`is-${item.result === '流失' ? 'lost' : 'won'}`}>{t(item.result)} {item.n}</em>)}
-            </span>
-          ) : null}
-          <span className="md-grow" />
-          <div className="md-lead-tabs">
-            {[['turns', '按轮次'], ['people', '按人']].map(([id, label]) => (
-              <button type="button" key={id} className={chatView === id ? 'is-on' : ''} onClick={() => setChatView(id)}>{t(label)}</button>
-            ))}
-          </div>
-          {chatView === 'people' && !chatPerson ? (
-            <select className="md-chat-result-filter" value={peopleSort} onChange={event => setPeopleSort(event.target.value)}>
-              {[['recent', '按最近聊'], ['turns', '按轮数'], ['result', '按结果']].map(([id, label]) => (
-                <option key={id} value={id}>{t(label)}</option>
-              ))}
-            </select>
-          ) : null}
-          <select className="md-chat-result-filter" value={chatResult} onChange={event => setChatResult(event.target.value)}>
-            {[['all', '全部结果'], ['未定', '未定'], ['成交', '成交'], ['约试听', '约试听'], ['加微', '加微'], ['流失', '流失']].map(([id, label]) => (
-              <option key={id} value={id}>{t(label)}</option>
-            ))}
-          </select>
-          <div className="md-lead-tabs">
-            {[['all', '全部'], ['平台私信', '平台私信'], ['微信', '微信']].map(([id, label]) => (
-              <button type="button" key={id} className={chatFilter === id ? 'is-on' : ''} onClick={() => setChatFilter(id)}>{t(label)}</button>
-            ))}
-          </div>
-          {chatPerson ? (
-            <>
-              <button type="button" className="md-chat-person" onClick={() => setChatPerson('')}>
-                {t('只看 {name}', { name: chatPerson })}<span>×</span>
-              </button>
-              <button type="button" className="md-inline-link" onClick={() => copy(chatRows
-                .filter(row => row.name === chatPerson)
-                .map(row => `${t('对方')}：${row.incoming}\n${t('我方')}：${row.outgoing}`)
-                .join('\n\n'))}>{t('复制整段')}</button>
-            </>
-          ) : null}
-          <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
-        </header>
-        {chatsError && chats.length ? (
-          <div className="md-load-error">
-            <p>{t('刷新失败：{msg}，下面是上次的数据', { msg: chatsError })}</p>
-            <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>
-          </div>
-        ) : null}
-        {chatsError && !chats.length ? (
-          <div className="md-load-error">
-            <p>{t('读取失败：{msg}', { msg: chatsError })}</p>
-            <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>
-          </div>
-        ) : !chatsReady && chats.length === 0 ? (
-          <p className="md-muted md-dm-empty">{t('读取中…')}</p>
-        ) : chats.length === 0 ? (
-          <div className="md-works-empty">
-            <p>{t('还没有对话记录。给出一句建议后点「我发了，记一笔」，这里就会多一轮。')}</p>
-            <button type="button" className="md-pill" onClick={() => document.querySelector('.md-dm-input textarea')?.focus()}>{t('去写第一句')}</button>
-          </div>
-        ) : (
-          chatView === 'people' && !chatPerson ? (
-            <ul className="md-chat-people">
-              {people.map(person => (
-                <li key={person.key || 'none'}>
-                  <button type="button" className="md-chat-person-row" onClick={() => { if (person.key) setChatPerson(person.key) }} disabled={!person.key}>
-                    <b>{person.name}</b>
-                    <span className="md-chat-channel">{t(person.channel)}</span>
-                    <span className="md-muted">{t('{n} 轮', { n: person.turns })}</span>
-                    <span className="md-grow" />
-                    <em className={`is-${['成交', '加微', '约试听'].includes(person.lastResult) ? 'won' : person.lastResult === '流失' ? 'lost' : 'plain'}`}>{t(person.lastResult)}</em>
-                    <span className="md-muted">{person.lastDate}</span>
-                    {person.lastIncoming ? <span className="md-chat-person-preview">{person.lastIncoming.slice(0, 30)}</span> : null}
-                  </button>
-                </li>
-              ))}
-              {people.length === 0 ? <li className="md-muted">{t('这个渠道还没有对话')}</li> : null}
-            </ul>
-          ) : (
-          <ul className="md-chat-list">
-            {chatRows.length === 0 ? <li className="md-muted">{chatPerson ? t('还没有和 {name} 的对话', { name: chatPerson }) : t('这个筛选下没有对话')}</li> : null}
-            {chatRows.slice(0, chatLimit).map(row => (
-              <li key={row.rowIndex} className={`md-chat-row ${['成交', '加微', '约试听'].includes(row.result) ? 'is-won' : row.result === '流失' ? 'is-lost' : ''}`}>
-                <header>
-                  <span className={`md-chat-channel ${row.channel === '微信' ? 'is-wechat' : ''}`}>{t(row.channel)}</span>
-                  {row.name ? <button type="button" className="md-inline-link" onClick={() => setChatPerson(row.name)}>{row.name}</button> : null}
-                  <span className="md-muted">{row.date} {row.stage ? `· ${t(row.stage)}` : ''}</span>
-                  {String(row.note || '').includes('改过') ? <em className="md-chat-edited">{t('改过')}</em> : null}
-                  <span className="md-grow" />
-                  <button type="button" className="md-inline-link" onClick={() => {
-                    setChannel(row.channel)
-                    setHistory(`${t('对方')}：${row.incoming}${row.outgoing ? `\n${t('我方')}：${row.outgoing}` : ''}`)
-                    setRaw('')
-                    toast(t('已带入上一轮，粘对方的新消息就行'))
-                  }}>{t('接着聊')}</button>
-                  <select value={row.result || '未定'} onChange={event => {
-                    updateChatLog(row.rowIndex, { result: event.target.value })
-                      .then(data => {
-                        setChats(data.rows ?? [])
-                        if (data.leads) setLeads(data.leads)
-                        if (data.studentCreated) toast(t('成交，顺手建了学生档案'))
-                        else if (['加微', '约试听', '成交'].includes(event.target.value) && data.leads) toast(t('结果记下了，线索阶段也一起更新'))
-                      })
-                      .catch(err => toast(err.message, { error: true }))
-                  }}>
-                    {['未定', '加微', '约试听', '成交', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}
-                  </select>
-                  {!chatPerson ? (
-                    <button type="button" className="md-inline-link" onClick={() => setOpenChat(openChat === row.rowIndex ? -1 : row.rowIndex)}>
-                      {openChat === row.rowIndex ? t('收起') : t('看全文')}
-                    </button>
-                  ) : null}
-                  <button type="button" className="md-inline-link" onClick={() => {
-                    if (!window.confirm(t('删掉这一轮对话？线索和学生档案不受影响。'))) return
-                    removeChatLog(row.rowIndex)
-                      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length); toast(t('对话删掉了')) })
-                      .catch(err => toast(err.message, { error: true }))
-                  }}>{t('删除')}</button>
-                </header>
-                {openChat !== row.rowIndex && !chatPerson ? <p className="md-chat-preview">{`${row.incoming.slice(0, 40)} → ${row.outgoing.slice(0, 40)}`}</p> : null}
-                {openChat === row.rowIndex || chatPerson ? (
-                  <div className="md-chat-full">
-                    <p><b>{t('对方')}</b>{row.incoming}</p>
-                    <p><b>{t('我方')}</b>{row.outgoing}</p>
-                    <button type="button" className="md-inline-link" onClick={() => copy(row.outgoing)}>{t('复制我方这句')}</button>
-                    {leadOf(row.name) ? (
-                      <div className="md-chat-lead">
-                        <span>{t('线索阶段：{stage}', { stage: t(leadOf(row.name).stage || '私信') })}</span>
-                        <label>
-                          <b>{t('下一步')}</b>
-                          <input
-                            defaultValue={leadOf(row.name).next || ''}
-                            placeholder={t('周四晚 8 点试听')}
-                            onBlur={event => {
-                              const lead = leadOf(row.name)
-                              if (event.target.value === (lead.next || '')) return
-                              updateLead(lead.rowIndex, { next: event.target.value })
-                                .then(data => { if (data.leads) setLeads(data.leads); toast(t('下一步存好了')) })
-                                .catch(err => toast(err.message, { error: true }))
-                            }}
-                          />
-                        </label>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </li>
-            ))}
-            {!chatPerson && chatRows.length > chatShown ? (
-              <li className="md-chat-more">
-                <button type="button" className="md-inline-link" onClick={() => setChatShown(n => n + 30)}>
-                  {t('显示更多（还有 {n} 轮）', { n: chatRows.length - chatShown })}
-                </button>
-              </li>
-            ) : null}
-          </ul>
-          )
         )}
       </section>
 
