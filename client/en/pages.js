@@ -854,5 +854,7 @@ export const PAGES = {
   补齐数据: 'Fill data',
   '已报课，并更新了学生档案': 'Enrolled — student profile updated',
   '已报课；学生档案没建成：{msg}': 'Enrolled, but the student profile was not created: {msg}',
+  '定位 · 内容 · 私信 · 学生': 'Positioning · Content · DMs · Students',
+  '先定只带哪类家长，再做内容把家长带来；在聊天台接住私信，报课后进学生档案。每个动作都留痕，越用越顺。': 'Decide which parents you serve, create content to bring them in, catch them in the chat desk, and turn enrolments into student profiles — with a record of every step.',
 
 }
