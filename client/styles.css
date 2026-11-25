@@ -2177,3 +2177,26 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-setup-jump { display: flex; align-items: center; gap: 8px; margin: 8px 0 14px; }
 .md-setup-jump label { display: inline-flex; align-items: center; gap: 6px; color: var(--ink3); font-size: 12px; }
 .md-setup-jump select { padding: 4px 9px; border: .5px solid var(--line); border-radius: var(--r-sm); background: var(--card); color: var(--ink); font: inherit; font-size: 12px; }
+
+/* 蓝色文字链接统一收口：默认不再用蓝色下划线，关键动作变成按钮 */
+.md-root .md-inline-link { color: var(--ink3); text-decoration: none; }
+.md-root .md-inline-link:hover { color: var(--ink); }
+:is(.md-page-head, .md-pipeline-tools, .md-tile-head, .md-lead-tools, .md-dm-actions, .md-content-tools) .md-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 27px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: inset 0 0 0 .5px var(--line);
+  color: var(--ink2);
+  font-size: 12px;
+  line-height: 1;
+  text-decoration: none;
+}
+:is(.md-page-head, .md-pipeline-tools, .md-tile-head, .md-lead-tools, .md-dm-actions, .md-content-tools) .md-inline-link:hover {
+  color: var(--ink);
+  background: var(--hover);
+}
+.md-root .md-inline-link:disabled { opacity: .45; }
