@@ -85,6 +85,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
 
   // 线索的「来源」如果能对上某条内容的标题，就知道哪条内容真的带来了家长
   const attributed = new Map()
+  const attributedWon = new Map()
   for (const row of leads) {
     const source = text(row.source, 80)
     if (!source) continue
@@ -93,9 +94,13 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     if (hit) {
       const title = text(hit['标题'], 60)
       attributed.set(title, (attributed.get(title) ?? 0) + 1)
+      if (row.result === '加微成功' || ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)) {
+        attributedWon.set(title, (attributedWon.get(title) ?? 0) + 1)
+      }
     }
   }
   const topLeadContent = [...attributed.entries()].sort((a, b) => b[1] - a[1])[0] ?? null
+  const topWonContent = [...attributedWon.entries()].sort((a, b) => b[1] - a[1])[0] ?? null
 
   const notes = []
   if (!recentContent.length) notes.push({ key: 'review_no_content', params: {} })
@@ -107,6 +112,9 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   }
   if (topContent) notes.push({ key: 'review_top_content', params: { title: text(topContent['标题'], 24), dms: num(topContent['私信']) } })
   if (topLeadContent) notes.push({ key: 'review_top_lead_content', params: { title: text(topLeadContent[0], 24), n: topLeadContent[1] } })
+  if (topWonContent && (!topLeadContent || topWonContent[0] !== topLeadContent[0])) {
+    notes.push({ key: 'review_top_won_content', params: { title: text(topWonContent[0], 24), n: topWonContent[1] } })
+  }
   if (topSource) notes.push({ key: 'review_top_source', params: { source: topSource[0], n: topSource[1] } })
   if (local && recentContent.length >= 5 && cityMentions === 0) {
     notes.push({ key: 'review_local_missing', params: { city } })
@@ -136,6 +144,7 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     topSource,
     topContent: topContent ? { title: text(topContent['标题'], 60), dms: num(topContent['私信']) } : null,
     topLeadContent: topLeadContent ? { title: text(topLeadContent[0], 60), n: topLeadContent[1] } : null,
+    topWonContent: topWonContent ? { title: text(topWonContent[0], 60), n: topWonContent[1] } : null,
     notes: notes.slice(0, 6),
   }
 }

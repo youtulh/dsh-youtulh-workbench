@@ -78,3 +78,19 @@ test('线索来源能对上内容标题时，复盘指出哪条内容带来了�
   assert.equal(out.topLeadContent.n, 2)
   assert.ok(out.notes.some(row => row.key === 'review_top_lead_content'))
 })
+
+
+test('加微/报课最多的内容可以单独归因', () => {
+  const content = [
+    { '标题': '高二物理期中卷丢分在哪', '选题': '高二物理' },
+    { '标题': '动量守恒怎么判断', '选题': '动量守恒' },
+  ]
+  const leads = [
+    { grade: '高二', source: '高二物理期中卷丢分在哪', stage: '私信', result: '待定' },
+    { grade: '高二', source: '动量守恒怎么判断', stage: '已报课', result: '加微成功' },
+  ]
+  const out = reviewPositioning({ positioning, content, leads })
+  assert.equal(out.topLeadContent.title, '高二物理期中卷丢分在哪')
+  assert.equal(out.topWonContent.title, '动量守恒怎么判断')
+  assert.ok(out.notes.some(row => row.key === 'review_top_won_content'))
+})

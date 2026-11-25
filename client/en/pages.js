@@ -811,4 +811,5 @@ export const PAGES = {
   '按最近 30 条内容和全部线索算，只做参考': 'Based on the last 30 pieces and all leads; for reference only.',
   'review_top_lead_content': '《{title}》 brought {n} parents — make more content like this.',
   '看这条内容：{title}': 'Open this piece: {title}',
+  'review_top_won_content': '《{title}》 converted best ({n} WeChat adds / enrolments).',
 }
