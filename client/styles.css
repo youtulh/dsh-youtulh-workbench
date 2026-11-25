@@ -2329,3 +2329,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-diag-item > .md-diag-row { padding: 11px 12px; }
   .md-diag-detail { padding: 2px 12px 14px; }
 }
+
+.md-dialog-head { position: sticky; top: 0; z-index: 3; padding-top: 2px; background: var(--card); }
+.md-dialog-head .md-icon-btn { position: relative; z-index: 4; pointer-events: auto; }

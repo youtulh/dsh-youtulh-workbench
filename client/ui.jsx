@@ -98,7 +98,17 @@ export function Dialog({ title, onClose, children, width = 440 }) {
       <div className="md-dialog" role="dialog" aria-modal="true" aria-label={title} style={{ width }} ref={ref}>
         <div className="md-dialog-head">
           <h2>{title}</h2>
-          <IconButton icon="close" label={t('关闭')} onClick={onClose} />
+          <IconButton
+            icon="close"
+            label={t('关闭')}
+            onClick={onClose}
+            onPointerDown={event => {
+              // 长表单滚动时，关闭按钮偶尔会被滚动容器吞掉 click；按下就关，别让人卡住
+              event.preventDefault()
+              event.stopPropagation()
+              onClose()
+            }}
+          />
         </div>
         {children}
       </div>
