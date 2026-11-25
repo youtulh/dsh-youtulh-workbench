@@ -141,6 +141,7 @@ export function SetupView() {
     if (data) markSaved()
   }
 
+  const reviewAngle = row => (positioning.city && row.includes(positioning.city) ? '本地' : /家长|孩子/.test(row) ? '家庭' : /考|期中|期末|分/.test(row) ? '考情' : '知识点')
   const personaSentence = positioningSentence(positioning)
   const proofIdeas = ['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完']
   const personaText = [
@@ -505,8 +506,9 @@ export function SetupView() {
               <ul>
                 {review.nextTopics.map(row => (
                   <li key={row}>
-                    <button type="button" className="md-inline-link" onClick={() => startFromTopic(row, (positioning.city && row.includes(positioning.city) ? '本地' : /家长|孩子/.test(row) ? '家庭' : /考|期中|期末|分/.test(row) ? '考情' : '知识点'))}>
+                    <button type="button" className="md-inline-link" onClick={() => startFromTopic(row, reviewAngle(row))}>
                       <Icon name="pen" size={12} />{row}
+                      <em className="md-topic-angle">{t(reviewAngle(row))}</em>
                     </button>
                   </li>
                 ))}
