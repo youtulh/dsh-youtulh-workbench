@@ -75,7 +75,7 @@ class PanelBoundary extends React.Component {
     if (!this.state.error) return this.props.children
     return (
       <div className="md-page md-crash">
-        <h1>{t('工作台这一页出错了')}</h1>
+        <h1>{this.props.page ? t('{page}这一页出错了', { page: t(this.props.page) }) : t('工作台这一页出错了')}</h1>
         <p className="md-muted">{t('你的数据都在工作区的文件里，没有丢。先点重新加载；还不行就把下面这行发给我。')}</p>
         <pre className="md-crash-detail">{String(this.state.error?.message || this.state.error)}</pre>
         <div className="md-create-actions">
@@ -176,7 +176,7 @@ function Desk() {
         <main className="md-content" key={view}>
           {error ? (
             <div className="md-page"><p className="md-muted">{t('工作台加载失败：{error}', { error })}</p><button type="button" className="md-btn" onClick={loadDesk}>{t('重试')}</button></div>
-          ) : ready ? <PanelBoundary key={view}><Active /></PanelBoundary> : <div className="md-loading"><span className="md-shimmer">{t('正在打开工作台…')}</span></div>}
+          ) : ready ? <PanelBoundary key={view} page={NAV.find(entry => entry.id === view)?.label ?? ''}><Active /></PanelBoundary> : <div className="md-loading"><span className="md-shimmer">{t('正在打开工作台…')}</span></div>}
         </main>
       </div>
       <FormDialog />
