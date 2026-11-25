@@ -734,4 +734,5 @@ export const PAGES = {
   '私信/万播：{rate}': 'DMs per 10k: {rate}',
   '加微/万播：{rate}': 'Adds per 10k: {rate}',
   '播放不足 500，暂不计算比率': 'Under 500 views — ratio not calculated',
+  每万播加微最高: 'Best adds per 10k views',
 }
