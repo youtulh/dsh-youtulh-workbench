@@ -333,6 +333,21 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       return json(res, 200, { rows: readLessons(root, url.searchParams.get('class') ?? '') })
     }
+    if (path === 'topics/history') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const rows = readTable(root, '选题库.csv').rows
+      const map = new Map()
+      for (const row of rows) {
+        const batch = String(row['批次'] ?? '').trim() || String(row['日期'] ?? '').trim()
+        const topic = String(row['选题'] ?? '').trim()
+        if (!batch || !topic) continue
+        const item = map.get(batch) ?? { batch, date: row['日期'] ?? '', topics: [], picked: 0 }
+        item.topics.push({ topic, picked: String(row['勾选'] ?? '').trim() === '是' })
+        map.set(batch, item)
+      }
+      const batches = [...map.values()].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 20)
+      return json(res, 200, { batches })
+    }
     if (path === 'workspace/stats') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const legacy = legacyTables(root)

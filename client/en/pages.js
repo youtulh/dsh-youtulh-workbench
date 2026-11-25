@@ -718,4 +718,8 @@ export const PAGES = {
   刷新好了: 'Refreshed',
   '刷新中…': 'Refreshing…',
   '刷新失败：{msg}，下面是上次的数据': 'Refresh failed: {msg}. Showing the previous data.',
+  往期选题: 'Past topics',
+  还没有往期选题: 'No past topics yet',
+  填进提示: 'Use as brief',
+  '已填进提示，点生成就行': 'Filled into the brief — hit generate',
 }

@@ -1,7 +1,7 @@
 // 做内容：出 10 个选题 → 勾选 → 每个选题出 3 个口播版本 → 挑一条。
 // 中间结果放在全局 store（并写一份 sessionStorage）：切页、刷新都不会丢。
 import React from 'react'
-import { fetchSuggestions, patchCreate, pickTopics, profileSummary, resetCreate, restoreCreateDraft, setDesk, toast, useDesk } from './desk.js'
+import { fetchSuggestions, fetchTopicsHistory, patchCreate, pickTopics, profileSummary, resetCreate, restoreCreateDraft, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
@@ -76,6 +76,28 @@ export function CreateView() {
       toast(t('按你的提示写了 3 版，挑一条'))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
+  }
+
+  const openHistory = async () => {
+    try {
+      const data = await fetchTopicsHistory()
+      const options = (data.batches ?? []).flatMap(batch => (batch.topics ?? []).map(item => ({
+        value: item.topic,
+        label: `${batch.date || batch.batch} · ${item.topic}`,
+      })))
+      if (!options.length) return toast(t('还没有往期选题'))
+      setDesk({
+        dialog: {
+          title: t('往期选题'),
+          submitLabel: t('填进提示'),
+          fields: [{ name: 'topic', label: t('选一个'), type: 'select', required: true, options }],
+          onSubmit: values => {
+            patchCreate({ brief: values.topic, topics: [], picked: {}, groups: [], adopted: {}, dirs: {} })
+            toast(t('已填进提示，点生成就行'))
+          },
+        },
+      })
+    } catch (err) { toast(err.message, { error: true }) }
   }
 
   const generate = () => (briefText ? makeDrafts() : makeTopics())
@@ -246,6 +268,7 @@ export function CreateView() {
         <div className="md-create-brief-foot">
           <span className="md-muted">{t('写一句就直接出草稿；留空就先出 10 个选题，勾完再写。')}</span>
           <span className="md-grow" />
+          <button type="button" className="md-inline-link" onClick={openHistory}>{t('往期选题')}</button>
           {briefText ? <button type="button" className="md-inline-link" onClick={() => patchCreate({ brief: '' })}>{t('清空提示')}</button> : null}
           <span className="md-muted">{brief.length}/{BRIEF_MAX}</span>
         </div>

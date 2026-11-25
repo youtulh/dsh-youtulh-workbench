@@ -168,6 +168,10 @@ export async function upgradeWorkspace() {
 }
 
 /** 做内容页的案例提示词：按人设想几条家长会问的问题。 */
+export async function fetchTopicsHistory() {
+  return request('topics/history')
+}
+
 export async function fetchSuggestions() {
   const data = await request('suggest')
   return { prompts: data.prompts ?? [], source: data.source }
