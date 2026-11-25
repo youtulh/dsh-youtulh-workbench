@@ -31,6 +31,7 @@ export function DataView() {
   const [filter, setFilter] = React.useState(DATA_UI.filter)
   const dataFilter = useDesk(s => s.dataFilter)
   const dataQuery = useDesk(s => s.dataQuery)
+  const dataAngle = useDesk(s => s.dataAngle)
   const [tab, setTab] = React.useState('content')
   const [leads, setLeads] = React.useState([])
   const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
@@ -70,6 +71,12 @@ export function DataView() {
     setQuery(dataQuery)
     setDesk({ dataQuery: '' })
   }, [dataQuery])
+  React.useEffect(() => {
+    if (!dataAngle) return
+    setTab('content')
+    setAngleFilter(dataAngle)
+    setDesk({ dataAngle: '' })
+  }, [dataAngle])
 
   const copyText = (text) => {
     if (!navigator.clipboard?.writeText) return toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })

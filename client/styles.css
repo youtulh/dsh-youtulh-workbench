@@ -2102,3 +2102,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-pipeline-tools { flex-wrap: wrap; }
   .md-pipeline-tools .md-lead-search { flex: 1 1 100%; }
 }
+
+.md-review-mix { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-top: 7px; color: var(--ink2); font-size: 11.5px; }
+.md-review-mix .md-inline-link { font-size: 11.5px; }

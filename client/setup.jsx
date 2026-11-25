@@ -490,11 +490,19 @@ export function SetupView() {
             {review.notes.map(row => <li key={row.key}>{t(row.key, row.params)}</li>)}
           </ul>
           {review.angled ? (
-            <p className="md-review-mix">
-              {t('内容配比')}：{['知识点', '家庭', '考情', '本地'].map(name => `${t(name)} ${review.angleCounts[name]}`).join(' · ')}
-            </p>
+            <div className="md-review-mix">
+              <span>{t('内容配比')}：</span>
+              {['知识点', '家庭', '考情', '本地'].map(name => (
+                <button type="button" key={name} className="md-inline-link" onClick={() => setDesk({ view: 'data', focusId: null, dataAngle: name })}>{t(name)} {review.angleCounts[name]}</button>
+              ))}
+            </div>
           ) : null}
           <p className="md-review-note">{t('按最近 30 条内容和全部线索算，只做参考')}</p>
+          {review.unattributed ? (
+            <button type="button" className="md-inline-link md-review-jump" onClick={() => setDesk({ view: 'dm', focusId: null })}>
+              {t('去线索表补来源（{n} 条归因不到）', { n: review.unattributed })}
+            </button>
+          ) : null}
           {reviewJump ? (
             <button type="button" className="md-inline-link md-review-jump" onClick={() => setDesk({ view: 'data', focusId: null, dataQuery: reviewJump.title })}>
               {t('看这条内容：{title}', { title: reviewJump.title })}
