@@ -74,7 +74,8 @@ export function DmView() {
   const [chats, setChats] = React.useState([])
   const [cases, setCases] = React.useState([])
   const [casesOpen, setCasesOpen] = React.useState(false)
-  const [contentTitles, setContentTitles] = React.useState([])
+  const [contentRows, setContentRows] = React.useState([])
+  const contentTitles = React.useMemo(() => contentRows.map(row => row['标题']).filter(Boolean).slice(0, 60), [contentRows])
   const [caseQuery, setCaseQuery] = React.useState(DM_DRAFT.caseQuery)
   const [caseFilter, setCaseFilter] = React.useState(DM_DRAFT.caseFilter)
   const [chatTotal, setChatTotal] = React.useState(0)
@@ -107,7 +108,7 @@ export function DmView() {
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => {
     fetchContent()
-      .then(data => setContentTitles((data.rows ?? []).map(row => row['标题']).filter(Boolean).slice(0, 60)))
+      .then(data => setContentRows(data.rows ?? []))
       .catch(() => {})
   }, [])
 
@@ -615,6 +616,17 @@ export function DmView() {
                       <span className="md-lead-source">{t('来源：{source}', { source: lead.source })}</span>
                     )
                   ) : null}
+                  {(() => {
+                    const origin = contentRows.find(row => row['标题'] === lead.source || row['选题'] === lead.source)
+                    if (!origin?.['私信引导']) return null
+                    return (
+                      <p className="md-lead-promise">
+                        <span>{t('这条内容的私信第一句')}</span>
+                        <b>{origin['私信引导']}</b>
+                        <button type="button" className="md-inline-link" onClick={() => copy(origin['私信引导'])}>{t('复制')}</button>
+                      </p>
+                    )
+                  })()}
                   {lead.nextAt || lead.followUps ? (
                     <span className={`md-lead-follow ${lead.nextAt && lead.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(lead.stage) ? 'is-overdue' : ''}`}>
                       {lead.nextAt ? t('下次跟进 {date}', { date: lead.nextAt }) : t('还没定下次跟进')}
