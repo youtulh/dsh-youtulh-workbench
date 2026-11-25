@@ -19,6 +19,7 @@ export function StudentsView() {
   const [classes, setClasses] = React.useState([])
   const [lessons, setLessons] = React.useState([])
   const [loadError, setLoadError] = React.useState('')
+  const [refreshing, setRefreshing] = React.useState(false)
   const studentFocus = useDesk(s => s.studentFocus)
 
   const load = () => {
@@ -52,7 +53,11 @@ export function StudentsView() {
           <h1>{t('学生')}</h1>
           <p className="md-page-sub">{t('私信 → 微信 → 试听 → 报课 → 班课，一条线看下来；开的班、每次课、谁卡在哪，都落在工作区的表格里。')}</p>
         </div>
-        <button type="button" className="md-inline-link" onClick={() => load().then(() => toast(t('刷新好了')))}>{t('刷新')}</button>
+        <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
+          setRefreshing(true)
+          try { await load(); toast(t('刷新好了')) }
+          finally { setRefreshing(false) }
+        }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>
           <Icon name="chat" size={14} />{t('去回私信')}
         </button>

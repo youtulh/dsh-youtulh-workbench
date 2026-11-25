@@ -14,6 +14,7 @@ export function FunnelPanel({ students = [], onChanged }) {
   const [chatCounts, setChatCounts] = React.useState({})
   const [contentTitles, setContentTitles] = React.useState([])
   const [loadError, setLoadError] = React.useState('')
+  const [refreshing, setRefreshing] = React.useState(false)
   const [busy, setBusy] = React.useState('')
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
@@ -119,7 +120,11 @@ export function FunnelPanel({ students = [], onChanged }) {
     <div className="md-pipeline-wrap">
       <div className="md-pipeline-tools">
         <span className="md-muted">{t('拖动卡片换阶段；也可以点开卡片用下拉改。')}</span>
-        <button type="button" className="md-inline-link" onClick={() => load().then(() => toast(t('刷新好了')))}>{t('刷新')}</button>
+        <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
+          setRefreshing(true)
+          try { await load(); toast(t('刷新好了')) }
+          finally { setRefreshing(false) }
+        }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         <span className="md-grow" />
         <span className="md-muted">{t('共 {n} 条', { n: leads.length })}</span>
         <button type="button" className="md-pill is-small" onClick={importLeadsDialog}>{t('导入线索')}</button>

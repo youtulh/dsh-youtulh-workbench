@@ -80,6 +80,7 @@ export function DmView() {
   const [chatTotal, setChatTotal] = React.useState(0)
   const [chatsReady, setChatsReady] = React.useState(false)
   const [chatsError, setChatsError] = React.useState('')
+  const [refreshing, setRefreshing] = React.useState(false)
   const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
   const [reviseNote, setReviseNote] = React.useState('')
   const [reviseBusy, setReviseBusy] = React.useState(false)
@@ -112,7 +113,7 @@ export function DmView() {
 
   const reload = React.useCallback(() => {
     setLeadsError('')
-    fetchLeadsWithLessons()
+    return fetchLeadsWithLessons()
       .then(({ leads: rows, lessons: hints }) => { setLeads(rows); setLessons(hints) })
       .catch(err => setLeadsError(err.message))
       .finally(() => setLeadsReady(true))
@@ -121,7 +122,7 @@ export function DmView() {
 
   const reloadChats = React.useCallback(() => {
     setChatsError('')
-    fetchChatRecords()
+    return fetchChatRecords()
       .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length); setCases(data.cases ?? []) })
       .catch(err => setChatsError(err.message))
       .finally(() => setChatsReady(true))
@@ -535,7 +536,11 @@ export function DmView() {
           <span className="md-tile-meta">{t('{n} 条 · 工作区里的 线索表.csv', { n: leads.length })}</span>
           <span className="md-grow" />
           <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'students', focusId: null })}>{t('看漏斗 →')}</button>
-          <button type="button" className="md-inline-link" onClick={() => { reload(); reloadChats(); toast(t('刷新好了')) }}>{t('刷新')}</button>
+          <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
+            setRefreshing(true)
+            try { await Promise.all([reload(), reloadChats()]); toast(t('刷新好了')) }
+            finally { setRefreshing(false) }
+          }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
           <button type="button" className="md-pill is-small" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
             <Icon name="folder" size={13} />{t('打开工作区')}
           </button>
