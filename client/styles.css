@@ -2114,3 +2114,15 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-dm { min-width: 0; max-width: 100%; }
 .md-dm > * { min-width: 0; }
 .md-chat-log { max-width: 100%; }
+
+/* 聊天台头部控件多，不能再按 44px 单行裁切 */
+.md-chat-log .md-tile-head {
+  height: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 14px;
+}
+.md-chat-log .md-tile-head h2 { margin-right: 2px; }
+.md-chat-log .md-lead-tabs { flex-wrap: wrap; }
+.md-chat-log .md-tile-meta { margin-left: 0; }
