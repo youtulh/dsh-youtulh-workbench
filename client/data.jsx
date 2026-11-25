@@ -60,6 +60,14 @@ export function DataView() {
     if (!navigator.clipboard?.writeText) return toast(t('这个环境不能直接复制，去表格里复制吧'), { error: true })
     navigator.clipboard.writeText(text).then(() => toast(t('已复制'))).catch(() => toast(t('复制失败'), { error: true }))
   }
+  const copyPack = (row) => {
+    copyText([
+      `标题：${row['标题'] ?? ''}`,
+      `标签：${row['标签'] ?? ''}`,
+      row['评论区'] ? `评论区置顶：${row['评论区']}` : '',
+      row['私信引导'] ? `私信第一句：${row['私信引导']}` : '',
+    ].filter(Boolean).join('\n\n'))
+  }
 
   const patch = async (row, key, value) => {
     try {
@@ -356,6 +364,7 @@ export function DataView() {
                 </select>
                 <span className="md-grow" />
                 {row['目录'] ? <button type="button" className="md-inline-link" onClick={() => revealDir(row['目录']).catch(err => toast(err.message, { error: true }))}>{t('打开文件夹')}</button> : null}
+                <button type="button" className="md-inline-link" onClick={() => copyPack(row)}>{t('复制发布包')}</button>
                 <button type="button" className="md-inline-link" onClick={() => remove(row)}>{t('删除')}</button>
               </footer>
             </li>

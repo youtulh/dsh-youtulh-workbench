@@ -53,3 +53,12 @@ test('复盘选题避开内容库已经拍过的同题', () => {
   assert.ok(!out.nextTopics.includes('高二物理：动量守恒，先补哪一步'))
   assert.equal(out.nextTopics.length, 3)
 })
+
+
+test('同城定位：连着 5 条都没提城市会提醒', () => {
+  const content = Array.from({ length: 5 }, (_, i) => ({ '标题': `高二物理第${i}讲`, '选题': '物理', '私信': '0' }))
+  const out = reviewPositioning({ positioning: { ...positioning, city: '北京' }, content, leads: [] })
+  assert.equal(out.local, true)
+  assert.equal(out.cityMentions, 0)
+  assert.ok(out.notes.some(row => row.key === 'review_local_missing'))
+})

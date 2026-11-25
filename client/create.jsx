@@ -197,6 +197,15 @@ export function CreateView() {
     const lead = [variant.comment ? `\n\n【评论区第一条】\n${variant.comment}` : '', variant.dm ? `\n\n【私信第一句】\n${variant.dm}` : ''].join('')
     copyText(`【标题】${variant.title}\n\n【口播文案】\n${variant.script}\n\n【标签】${(variant.tags ?? []).map(tag => `#${tag}`).join(' ')}${lead}`)
   }
+  const copyPack = (variant) => {
+    copyText([
+      `标题：${variant.title}`,
+      `标签：${(variant.tags ?? []).map(tag => `#${tag}`).join(' ')}`,
+      `口播：\n${variant.script}`,
+      variant.comment ? `评论区置顶：${variant.comment}` : '',
+      variant.dm ? `私信第一句：${variant.dm}` : '',
+    ].filter(Boolean).join('\n\n'))
+  }
 
   const startEdit = (group, variant) => {
     setEditKey(variantKey(group.topic, variant.title))
@@ -421,6 +430,7 @@ export function CreateView() {
                       </button>
                       {editKey === key ? null : <button type="button" className="md-inline-link" onClick={() => startEdit(group, variant)}>{t('改一下')}</button>}
                       <button type="button" className="md-inline-link" onClick={() => copy(variant)}>{t('复制全文')}</button>
+                      <button type="button" className="md-inline-link" onClick={() => copyPack(variant)}>{t('复制发布包')}</button>
                       <button type="button" className="md-inline-link" onClick={() => copyText(variant.title)}>{t('复制标题')}</button>
                     </div>
                   </li>

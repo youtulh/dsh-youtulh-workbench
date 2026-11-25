@@ -784,4 +784,6 @@ export const PAGES = {
   '不用写「认真负责」，写一条能被验证的经历；哪条是真的点哪条。': 'Skip “responsible and caring” — pick a verifiable experience that is true for you.',
   补上凭什么信你: 'Add your credibility',
   '人设补好了：{proof}': 'Persona updated: {proof}',
+  复制发布包: 'Copy publishing pack',
+  'review_local_missing': 'The last 5 pieces never mention {city} — if you teach locally, try putting the city in the opening.',
 }

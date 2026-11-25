@@ -60,6 +60,10 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     return keywords.some(word => body.includes(word))
   })
 
+  const city = text(positioning.city, 20)
+  const local = Boolean(city) && !/线上|全国|网课/.test(city)
+  const cityMentions = recentContent.filter(row => contentText(row).includes(city)).length
+
   const graded = leads.filter(row => text(row.grade, 20))
   const gradeMatched = graded.filter(row => {
     if (!grade) return false
@@ -88,6 +92,9 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   }
   if (topContent) notes.push({ key: 'review_top_content', params: { title: text(topContent['标题'], 24), dms: num(topContent['私信']) } })
   if (topSource) notes.push({ key: 'review_top_source', params: { source: topSource[0], n: topSource[1] } })
+  if (local && recentContent.length >= 5 && cityMentions === 0) {
+    notes.push({ key: 'review_local_missing', params: { city } })
+  }
   if (!won.length) notes.push({ key: 'review_no_won', params: {} })
 
   const nextTopics = suggestReviewTopics({
@@ -108,8 +115,10 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
     gradedLeads: graded.length,
     gradeMatched: gradeMatched.length,
     wonCount: won.length,
+    local,
+    cityMentions,
     topSource,
     topContent: topContent ? { title: text(topContent['标题'], 60), dms: num(topContent['私信']) } : null,
-    notes: notes.slice(0, 4),
+    notes: notes.slice(0, 5),
   }
 }
