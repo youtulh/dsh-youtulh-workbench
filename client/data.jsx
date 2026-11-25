@@ -36,6 +36,7 @@ export function DataView() {
   const [sort, setSort] = React.useState(DATA_UI.sort)
   const [loadError, setLoadError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
+  const [shown, setShown] = React.useState(30)
 
   const load = React.useCallback(() => {
     setLoadError('')
@@ -53,6 +54,7 @@ export function DataView() {
   React.useEffect(() => { loadLeads() }, [loadLeads])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort }) }, [filter, query, bizRange, sort])
+  React.useEffect(() => { setShown(30) }, [filter, query, sort])
 
   const patch = async (row, key, value) => {
     try {
@@ -284,7 +286,7 @@ export function DataView() {
 
       {list.length ? (
         <ul className="md-content-list">
-          {list.map(row => (
+          {list.slice(0, shown).map(row => (
             <li className="md-content-card" key={rowKey(row)}>
               <header className="md-card-head">
                 <h3>{row['标题']}</h3>
@@ -344,6 +346,10 @@ export function DataView() {
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {rows?.length && list.length > shown ? (
+        <button type="button" className="md-inline-link md-load-more" onClick={() => setShown(value => value + 30)}>{t('显示更多（还有 {n} 条）', { n: list.length - shown })}</button>
       ) : null}
 
       <p className="md-works-path">{t('文件位置：{root}/内容库.csv（Excel 也能改）', { root: root || '~/Documents/Youtulh 工作台' })}</p>
