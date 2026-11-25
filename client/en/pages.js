@@ -858,5 +858,12 @@ export const PAGES = {
   '先定只带哪类家长，再做内容把家长带来；在聊天台接住私信，报课后进学生档案。每个动作都留痕，越用越顺。': 'Decide which parents you serve, create content to bring them in, catch them in the chat desk, and turn enrolments into student profiles — with a record of every step.',
   '把对的人，带进课堂': 'Bring the right parents into your classroom',
   用示例填一遍: 'Fill with example',
+  诊断卷预览: 'Diagnostic preview',
+  课后检测预览: 'Post-test preview',
+  '可以直接在这里试填；发给家长时再打开独立页面。': 'You can try it right here; open the standalone page only when sending it.',
+  在新窗口打开: 'Open in new window',
+  '正在出诊断卷，约 10–20 秒…': 'Generating the diagnostic — about 10–20 seconds…',
+  正在出卷: 'Generating…',
+  '正在生成诊断卷…': 'Generating the diagnostic…',
 
 }

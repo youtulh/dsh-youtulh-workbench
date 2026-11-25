@@ -2,7 +2,7 @@
 import React from 'react'
 import { analyzeDiagnostic, createDiagnostic, createPostDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
-import { Icon } from './ui.jsx'
+import { Dialog, Icon } from './ui.jsx'
 
 const GENDERS = [{ value: '', label: '不说' }, { value: '男生', label: '男生' }, { value: '女生', label: '女生' }]
 const LEVELS = [{ value: '基础薄弱', label: '基础薄弱' }, { value: '中等', label: '中等' }, { value: '偏上', label: '偏上' }]
@@ -25,6 +25,7 @@ export function DiagnosticsView() {
   const [busy, setBusy] = React.useState('')
   const [analysis, setAnalysis] = React.useState(null)
   const [analysisSource, setAnalysisSource] = React.useState('')
+  const [preview, setPreview] = React.useState(null)
   const prefill = useDesk(s => s.diagPrefill)
 
   const load = React.useCallback(() => {
@@ -58,9 +59,9 @@ export function DiagnosticsView() {
     else toast(t('这个环境不能直接复制'), { error: true })
   }
 
-  const preview = (kind = 'pre') => {
+  const openPreview = (kind = 'pre') => {
     if (!current) return
-    window.open(`media-desk/diagnostics/preview?id=${encodeURIComponent(current.id)}&kind=${kind}`, '_blank', 'noopener')
+    setPreview({ kind, url: `media-desk/diagnostics/preview?id=${encodeURIComponent(current.id)}&kind=${kind}` })
   }
 
   const openCreate = (prefill = {}) => setDesk({
@@ -96,6 +97,7 @@ export function DiagnosticsView() {
       },
       onSubmit: async values => {
         setBusy('create')
+        toast(t('正在出诊断卷，约 10–20 秒…'))
         try {
           const res = await createDiagnostic({
             brand: { name: values.brandName || brand.name, teacher: values.brandTeacher || brand.teacher, logo: brand.logo ?? '', mark: brand.mark ?? '' },
@@ -110,6 +112,7 @@ export function DiagnosticsView() {
           toast(res.source === 'template' ? t('模型没通，先用化学模板卷；其他科目建议重试') : t('诊断卷出好了'))
           await load()
           setSelected(res.row.id)
+          setPreview({ kind: 'pre', url: `media-desk/diagnostics/preview?id=${encodeURIComponent(res.row.id)}&kind=pre` })
         } catch (err) { toast(err.message, { error: true }) }
         setBusy('')
       },
@@ -177,9 +180,11 @@ export function DiagnosticsView() {
         </div>
         <span className="md-grow" />
         <button type="button" className="md-inline-link" onClick={() => openCreate(DEMO)}>{t('用示例填一遍')}</button>
-        <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{t('出一份诊断卷')}</button>
+        <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{busy === 'create' ? t('正在出卷…') : t('出一份诊断卷')}</button>
         {current ? <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入结果')}</button> : null}
       </header>
+
+      {busy === 'create' ? <div className="md-diag-loading"><span className="md-shimmer">{t('正在生成诊断卷…')}</span></div> : null}
 
       {!data ? <p className="md-muted">{t('读取中…')}</p> : rows.length === 0 ? (
         <div className="md-works-empty">
@@ -209,7 +214,7 @@ export function DiagnosticsView() {
                     <p className="md-muted">{current.at || t('时间待定')} · {current.student || t('未填学生')} · {current.grade || ''}</p>
                   </div>
                   <span className="md-grow" />
-                  <button type="button" className="md-pill is-small" onClick={() => preview('pre')}>{t('打开诊断卷')}</button>
+                  <button type="button" className="md-pill is-small" onClick={() => openPreview('pre')}>{t('打开诊断卷')}</button>
                 </div>
 
                 <div className="md-diag-stats">
@@ -232,7 +237,7 @@ export function DiagnosticsView() {
                     <Icon name="spark" size={13} />{busy === 'analyze-pre' ? t('正在写话术…') : t('生成课前话术')}
                   </button>
                   <button type="button" className="md-pill is-small" onClick={openPost} disabled={busy === 'post'}>{busy === 'post' ? t('正在出卷…') : t('生成课后检测')}</button>
-                  <button type="button" className="md-pill is-small" onClick={() => preview('post')} disabled={!current.postScore && current.status !== '待课后'}>{t('打开课后检测')}</button>
+                  <button type="button" className="md-pill is-small" onClick={() => openPreview('post')} disabled={!current.postScore && current.status !== '待课后'}>{t('打开课后检测')}</button>
                   {current.postScore ? <button type="button" className="md-pill is-small" onClick={() => analyze('post')} disabled={busy === 'analyze-post'}>{busy === 'analyze-post' ? t('正在写话术…') : t('生成课后话术')}</button> : null}
                 </div>
 
@@ -261,6 +266,20 @@ export function DiagnosticsView() {
           </main>
         </div>
       )}
+
+      {preview ? (
+        <Dialog title={preview.kind === 'post' ? t('课后检测预览') : t('诊断卷预览')} onClose={() => setPreview(null)} width={920}>
+          <div className="md-diag-preview">
+            <iframe title={t('诊断卷预览')} src={preview.url} />
+          </div>
+          <div className="md-diag-preview-foot">
+            <span className="md-muted">{t('可以直接在这里试填；发给家长时再打开独立页面。')}</span>
+            <span className="md-grow" />
+            <button type="button" className="md-inline-link" onClick={() => window.open(preview.url, '_blank', 'noopener')}>{t('在新窗口打开')}</button>
+            <button type="button" className="md-pill is-small" onClick={() => setPreview(null)}>{t('关闭')}</button>
+          </div>
+        </Dialog>
+      ) : null}
     </div>
   )
 }
