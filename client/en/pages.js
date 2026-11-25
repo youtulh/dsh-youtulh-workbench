@@ -716,4 +716,5 @@ export const PAGES = {
   '删掉这一轮对话？线索和学生档案不受影响。': 'Delete this chat turn? Leads and students stay.',
   对话删掉了: 'Chat turn deleted',
   刷新好了: 'Refreshed',
+  '刷新中…': 'Refreshing…',
 }

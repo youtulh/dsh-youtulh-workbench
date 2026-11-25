@@ -35,10 +35,11 @@ export function DataView() {
   const [query, setQuery] = React.useState(DATA_UI.query)
   const [sort, setSort] = React.useState(DATA_UI.sort)
   const [loadError, setLoadError] = React.useState('')
+  const [refreshing, setRefreshing] = React.useState(false)
 
   const load = React.useCallback(() => {
     setLoadError('')
-    fetchContent()
+    return fetchContent()
       .then(data => {
         setRows(data.rows ?? [])
         setStats(data.stats ?? {})
@@ -48,7 +49,8 @@ export function DataView() {
       .catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
   }, [])
   React.useEffect(() => { load() }, [load])
-  React.useEffect(() => { fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}) }, [])
+  const loadLeads = React.useCallback(() => fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}), [])
+  React.useEffect(() => { loadLeads() }, [loadLeads])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort }) }, [filter, query, bizRange, sort])
 
@@ -136,6 +138,13 @@ export function DataView() {
             : t('每条内容回填播放、涨粉、私信：以前发过的视频也能补录。填完自动打分，最好的那几条标成爆款，下次生成会参考它们。')}</p>
         </div>
         <span style={{ flex: 1 }} />
+        <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
+          setRefreshing(true)
+          try {
+            await Promise.all([load(), loadLeads()])
+            toast(t('刷新好了'))
+          } finally { setRefreshing(false) }
+        }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         <button type="button" className="md-pill" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
           <Icon name="folder" size={14} />{t('打开工作区')}
         </button>
