@@ -738,4 +738,5 @@ export const PAGES = {
   个学生: 'students',
   在读: 'Active',
   '（已结课）': ' (finished)',
+  '还有 {n} 次课没记，仍然结课吗？': '{n} lessons are still unrecorded. Finish the class anyway?',
 }

@@ -261,6 +261,11 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
 
   const toggleStatus = () => {
     const next = klass.status === '结课' ? '在读' : '结课'
+    if (next === '结课') {
+      const used = new Set((lessons ?? []).map(row => row.no))
+      const missing = Math.max(0, klass.total - used.size)
+      if (missing > 0 && !window.confirm(t('还有 {n} 次课没记，仍然结课吗？', { n: missing }))) return
+    }
     saveClassRow({ name: klass.name, time: klass.time, total: klass.total, layers: klass.layers, note: klass.note, status: next }, klass.name)
       .then(data => {
         onChanged?.(data)
