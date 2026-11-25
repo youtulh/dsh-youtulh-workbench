@@ -15,6 +15,7 @@ export function settingBlock(state) {
     ['先抓哪类家长', p.target],
     ['从哪切进去', p.entry],
     ['她最怕什么', p.fear],
+    ['凭什么信他', p.proof],
     ['只做', p.only],
     ['不做', p.notDo],
     ['说话的样子', p.voice],

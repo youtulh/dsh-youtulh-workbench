@@ -37,6 +37,7 @@ export function buildProfile(answers = {}) {
       target: text(answers.target),
       entry: text(answers.entry),
       fear: text(answers.fear),
+      proof: text(answers.proof),
       only,
       notDo,
       voice: '先接住家长的焦虑，再用一个具体数字说清楚，不喊口号',

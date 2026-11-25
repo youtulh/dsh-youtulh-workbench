@@ -54,6 +54,7 @@ const FIELD_LABEL = [
   ['target', '目标客户'],
   ['entry', '我从哪切进去'],
   ['fear', '这类家长最怕什么'],
+  ['proof', '凭什么信你'],
   ['only', '只做'],
   ['notDo', '不做'],
   ['voice', '我平时怎么说话'],

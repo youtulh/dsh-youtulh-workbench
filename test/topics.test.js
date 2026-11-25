@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { improvePrompt, localScript, localTopics, normalizeBrief, normalizeImprove, normalizeScript, normalizeTopics, topicsPrompt, variantsPrompt } from '../src/topics.js'
+import { improvePrompt, localScript, localTopics, normalizeBrief, normalizeImprove, normalizeScript, normalizeTopics, scriptPrompt, topicsPrompt, variantsPrompt } from '../src/topics.js'
 
 const state = { positioning: { subject: '化学', grade: '高一', city: '北京' }, painPoints: ['期中 58 分还能补吗', '物质的量听不懂', '上课听懂了做题就废'] }
 
@@ -239,4 +239,11 @@ test('不给提示时还是照选题写，system 不多那句话', () => {
   const prompt = variantsPrompt(state, '期中 58 分，先补哪一块')
   assert.equal(prompt.user, '选题：期中 58 分，先补哪一块')
   assert.doesNotMatch(prompt.system, /主题由老师直接给定/)
+})
+
+
+test('内容 prompt 把引流做成硬要求：选题能带动作，口播结尾留轻动作', () => {
+  assert.match(topicsPrompt(state, 10).system, /轻动作/)
+  assert.match(topicsPrompt(state, 10).system, /不要直接写「加微信」/)
+  assert.match(scriptPrompt(state, '期中 58 分先补哪').system, /引流动作/)
 })

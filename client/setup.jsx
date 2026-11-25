@@ -24,6 +24,7 @@ const SECTIONS = [
 ]
 
 const BOUNDARY = [
+  ['proof', '凭什么信你（一条能验证的）', '带过 3 届高三、本地重点校在职、只做这一科 8 年'],
   ['only', '只做', '北京、高一、化学、开学后掉队'],
   ['notDo', '不做', '高二高三、外地、竞赛、只求押题'],
   ['redline', '红线', '不承诺提分、不说包过、不报价格'],
@@ -125,6 +126,28 @@ export function SetupView() {
     if (next === (positioning[key] ?? '')) return
     const data = await dispatchOps([{ op: 'update_positioning', [key]: next }], { label: t('保存设定'), silent: true })
     if (data) markSaved()
+  }
+
+  const personaSentence = positioningSentence(positioning)
+  const proofIdeas = ['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完']
+  const personaText = [
+    `我是谁：${[positioning.city, positioning.grade, positioning.subject].filter(Boolean).join('') || '（还没填）'}老师`,
+    `我帮谁：${positioning.target || '（还没填）'}`,
+    `她最怕：${positioning.fear || '（还没填）'}`,
+    `凭什么信我：${positioning.proof || '（还没填）'}`,
+    `只做：${positioning.only || '（还没填）'}`,
+    `不做：${positioning.notDo || '（还没填）'}`,
+  ].join('\n')
+  const copyPersona = async () => {
+    try {
+      await navigator.clipboard.writeText(personaText)
+      toast(t('人设卡复制好了'))
+    } catch { toast(t('复制失败，手动选中吧'), { error: true }) }
+  }
+  const makeIntro = () => {
+    const who = [positioning.grade, positioning.subject].filter(Boolean).join('') || '这门课'
+    startFromTopic(`我是${who}老师，为什么我只带「${advice.targetShort || positioning.target || '这一类'}」`)
+    toast(t('已放进选题，去生成口播'))
   }
 
   const addPain = (event) => {
@@ -407,6 +430,34 @@ export function SetupView() {
       <section className="md-setup-card md-advice" id="setup-advice">
         <h2>{t('定位体检')}</h2>
         <p className="md-advice-headline">{advice.headline}</p>
+
+        <div className="md-persona-card">
+          <div className="md-persona-head">
+            <b>{t('人设卡')}</b>
+            <span className="md-muted">{t('不用懂定位理论，把这几句话填真就行')}</span>
+          </div>
+          <p className="md-persona-sentence">{personaSentence || t('先把科目、年级、目标家长填上，这句话就出来了。')}</p>
+          <dl>
+            <div><dt>{t('我帮谁')}</dt><dd>{positioning.target || t('还没填')}</dd></div>
+            <div><dt>{t('她最怕')}</dt><dd>{positioning.fear || t('还没填')}</dd></div>
+            <div><dt>{t('凭什么信我')}</dt><dd>{positioning.proof || t('还没填')}</dd></div>
+            <div><dt>{t('只做')}</dt><dd>{positioning.only || t('还没填')}</dd></div>
+            <div><dt>{t('不做')}</dt><dd>{positioning.notDo || t('还没填')}</dd></div>
+          </dl>
+          {!positioning.proof ? (
+            <div className="md-persona-proof">
+              <span className="md-muted">{t('哪条是真的，点一下就填上：')}</span>
+              {proofIdeas.map(row => (
+                <button type="button" key={row} className="md-chip" onClick={() => save('proof', row)}>{row}</button>
+              ))}
+            </div>
+          ) : null}
+          <div className="md-persona-actions">
+            <button type="button" className="md-inline-link" onClick={copyPersona}>{t('复制人设卡')}</button>
+            <button type="button" className="md-pill is-small is-primary" onClick={makeIntro}>{t('拍一条自我介绍')}</button>
+          </div>
+        </div>
+
         {advice.gaps.length ? (
           <ul className="md-advice-gaps">
             {advice.gaps.map(row => <li key={row.key}><b>{t(row.label)}</b><span>{t(row.fix)}</span></li>)}

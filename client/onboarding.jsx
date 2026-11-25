@@ -35,6 +35,7 @@ function mergeAnswers(answers) {
     target: String(answers.target ?? ''),
     entry: String(answers.entry ?? ''),
     fear: String(answers.fear ?? ''),
+    proof: String(answers.proof ?? ''),
   }
 }
 
@@ -98,6 +99,7 @@ export function OnboardingWizard({ onDone, onSwitch }) {
       [t('目标客户'), positioning.target],
       [t('切入点'), positioning.entry],
       [t('她最怕'), positioning.fear],
+      [t('凭什么信你'), positioning.proof],
       [t('只做'), positioning.only],
       [t('不做'), positioning.notDo],
       [t('说法'), positioning.voice],
@@ -185,6 +187,15 @@ export function OnboardingWizard({ onDone, onSwitch }) {
             <span>{t('她最怕什么（一句话，钩子就从这里来）')}</span>
             <input value={merged.fear ?? ''} onChange={event => setField('fear', event.target.value)} placeholder={t('比如：怕补了一学期还是原地踏步')} />
           </label>
+          <label className="md-field">
+            <span>{t('凭什么信你（一条能验证的经历，比「认真负责」有用）')}</span>
+            <input value={merged.proof ?? ''} onChange={event => setField('proof', event.target.value)} placeholder={t('比如：带过 3 届高三，自己整理过北京期中卷')} />
+          </label>
+          <div className="md-target-chips">
+            {['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完'].map(row => (
+              <button type="button" key={row} className={`md-chip ${merged.proof === row ? 'is-on' : ''}`} onClick={() => setField('proof', row)}>{row}</button>
+            ))}
+          </div>
         </div>
 
         <div className="md-onb-actions">

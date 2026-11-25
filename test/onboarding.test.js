@@ -51,9 +51,11 @@ test('目标客户、切入点、最怕什么会写进设定', () => {
     target: '北京高二物理 40–60 分、家长急但没方向',
     entry: '期中卷丢分最多的一块',
     fear: '怕补了没起色',
+    proof: '带过 3 届高三',
   })
   assert.equal(positioning.target, '北京高二物理 40–60 分、家长急但没方向')
   assert.equal(positioning.entry, '期中卷丢分最多的一块')
   assert.equal(positioning.fear, '怕补了没起色')
+  assert.equal(positioning.proof, '带过 3 届高三')
   assert.equal(buildProfile({}).positioning.target, '')
 })
