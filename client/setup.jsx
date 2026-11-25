@@ -33,6 +33,7 @@ const BOUNDARY = [
 export function SetupView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
+  const setupSection = useDesk(s => s.setupSection)
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const [draft, setDraft] = React.useState('')
   const [savedAt, setSavedAt] = React.useState('')
@@ -59,6 +60,13 @@ export function SetupView() {
       else sessionStorage.removeItem(UPGRADE_KEY)
     } catch { /* 隐私模式就算了 */ }
   }
+
+  React.useEffect(() => {
+    if (!setupSection) return
+    const el = document.getElementById(setupSection)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setDesk({ setupSection: '' })
+  }, [setupSection])
 
   React.useEffect(() => {
     fetchVoice().then(data => setVoiceText((data.samples ?? []).join('\n'))).catch(() => {})

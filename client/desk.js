@@ -11,7 +11,7 @@ const CREATE_DRAFT_KEY = 'youtulh:create:v1'
 
 let snapshot = {
   state: null, model: null, modelOk: null, modelError: null, canUndo: false, error: null,
-  view: 'home', mode: 'scatter', focusId: null, dmPerson: '', dmFilter: '', studentFocus: '', studentClassFocus: '', dmCases: false, classFocus: null, sheetOrigin: null, dockOpen: true, studioDock: false, chatQuote: null, query: '', kindFilter: 'all', related: null,
+  view: 'home', mode: 'scatter', focusId: null, dmPerson: '', dmFilter: '', studentFocus: '', studentClassFocus: '', setupSection: '', dmCases: false, classFocus: null, sheetOrigin: null, dockOpen: true, studioDock: false, chatQuote: null, query: '', kindFilter: 'all', related: null,
   live: {}, settings: null, settingsOpen: false, modelPickOpen: false, thinking: false, toast: null, capture: null, dialog: null,
   create: { ...EMPTY_CREATE },
 }

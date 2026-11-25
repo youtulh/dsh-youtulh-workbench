@@ -1,6 +1,6 @@
 // 首页 = 一条工作流：先把一类家长定下来（问卷），保存后给第一批可拍的视频，再进入日常的回私信 / 看数据。
 import React from 'react'
-import { dispatchOps, fetchLeads, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
+import { dispatchOps, fetchContent, fetchLeads, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { diagnosePositioning, positioningSentence, suggestTargets } from '../src/targets.js'
 import { dayKey } from './util.js'
@@ -26,6 +26,7 @@ export function WelcomeView() {
   const pains = useDesk(s => s.state?.painPoints) ?? []
   const [saved, setSaved] = React.useState(false)
   const [leads, setLeads] = React.useState([])
+  const [contentCount, setContentCount] = React.useState(0)
   const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
   const go = view => setDesk({ view, focusId: null })
   const summary = profileSummary({ positioning, painPoints: pains })
@@ -34,6 +35,7 @@ export function WelcomeView() {
   React.useEffect(() => {
     if (!configured) return
     fetchLeads().then(setLeads).catch(() => {})
+    fetchContent().then(data => setContentCount((data.rows ?? data.content ?? []).length)).catch(() => {})
   }, [configured])
 
   const proofIdeas = ['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完']
@@ -102,6 +104,13 @@ export function WelcomeView() {
   const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
   const trials = leads.filter(row => row.stage === '约试听').length
   const due = leads.filter(row => row.nextAt && row.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(row.stage)).length
+  const focus = due
+    ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('去跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
+    : todo
+      ? { title: t('回 {n} 条还没结果的私信', { n: todo }), hint: t('先判断是谁、在问什么，再回'), action: t('去回私信'), run: () => go('dm') }
+      : contentCount === 0
+        ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('去做内容'), run: () => go('content') }
+        : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('去看数据'), run: () => go('data') }
 
   return (
     <div className="md-page md-welcome md-workflow">
@@ -147,6 +156,24 @@ export function WelcomeView() {
         </section>
       ) : null}
 
+      {positioning.target ? (
+        <section className="md-focus">
+          <div className="md-focus-copy">
+            <p className="md-eyebrow">{t('今天先做这件事')}</p>
+            <b>{focus.title}</b>
+            <small>{focus.hint}</small>
+          </div>
+          <button type="button" className="md-pill is-primary" onClick={focus.run}>{focus.action}</button>
+        </section>
+      ) : null}
+
+      <div className="md-quick-links">
+        <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('回私信')}</button>
+        <button type="button" className="md-inline-link" onClick={() => go('data')}>{t('看数据')}</button>
+        <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'setup', focusId: null, setupSection: 'setup-advice' })}>{t('定位复盘')}</button>
+      </div>
+
+
       <div className="md-steps">
         <Step
           index={1}
@@ -159,19 +186,6 @@ export function WelcomeView() {
         <Step index={2} title={t('做第一条口播')} hint={t('选题 → 每个 3 版 → 改一版 → 采用这条')} action={t('开始')} onAction={() => go('content')} primary />
         <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
         <Step index={4} title={t('报课之后')} hint={t('转成学生、建班，每次课记出勤和掌握')} action={t('去学生')} onAction={() => go('students')} />
-      </div>
-
-      <div className="md-welcome-actions">
-        <button type="button" className="md-big" onClick={() => go('dm')}>
-          <span className="md-big-icon"><Icon name="chat" size={19} /></span>
-          <b>{t('回私信')}</b>
-          <small>{t('粘一条家长消息，按你的人设判断和回话，顺手记台账')}</small>
-        </button>
-        <button type="button" className="md-big" onClick={() => go('data')}>
-          <span className="md-big-icon"><Icon name="list" size={19} /></span>
-          <b>{t('看数据')}</b>
-          <small>{t('填一条播放和私信，它自己知道哪条该照着写')}</small>
-        </button>
       </div>
 
       <div className="md-funnel">

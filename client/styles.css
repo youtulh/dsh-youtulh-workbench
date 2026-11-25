@@ -2058,3 +2058,10 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 .md-proof-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 2px 12px; }
 .md-proof-chips .md-chip { cursor: pointer; }
+
+/* 首页：今天先做这件事 */
+.md-focus { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 18px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); border-left: 3px solid var(--primary); }
+.md-focus-copy { display: grid; gap: 3px; }
+.md-focus-copy b { font-size: 17px; font-weight: 500; }
+.md-focus-copy small { color: var(--ink3); font-size: 12px; line-height: 18px; }
+.md-quick-links { display: flex; flex-wrap: wrap; gap: 16px; margin: 2px 2px 12px; }
