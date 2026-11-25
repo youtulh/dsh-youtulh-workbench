@@ -47,6 +47,7 @@ export function StudentsView() {
   // 某个班改完课次，只替换这个班的行，别把别的班冲掉
   const onLessons = (className, rows) => setLessons(prev => [...prev.filter(row => row.className !== className), ...rows])
   const unassigned = (students ?? []).filter(row => !row.className).length
+  const active = (students ?? []).filter(row => (row.status || '在读') === '在读').length
 
   return (
     <div className="md-page md-students">
@@ -76,6 +77,7 @@ export function StudentsView() {
         <section className="md-student-summary">
           <div><b>{classes.length}</b><span>{t('个班')}</span></div>
           <div><b>{students.length}</b><span>{t('个学生')}</span></div>
+          <div><b>{active}</b><span>{t('在读')}</span></div>
           <div><b>{unassigned}</b><span>{t('还没排班')}</span></div>
           <div><b>{lessons.length}</b><span>{t('条课次记录')}</span></div>
         </section>
@@ -213,8 +215,10 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           {classes.filter(row => row.status !== '结课').map(row => <option key={row.name} value={row.name}>{row.name}</option>)}
         </select>
         <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
-          <option value="all">{t('全部状态')}</option>
-          {['在读', '结课', '流失'].map(value => <option key={value} value={value}>{t(value)}</option>)}
+          <option value="all">{t('全部状态')}（{students.length}）</option>
+          {['在读', '结课', '流失'].map(value => (
+            <option key={value} value={value}>{t(value)}（{students.filter(row => (row.status || '在读') === value).length}）</option>
+          ))}
         </select>
         <span className="md-grow" />
         <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入名单')}</button>

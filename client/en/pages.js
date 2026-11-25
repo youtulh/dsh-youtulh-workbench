@@ -735,4 +735,6 @@ export const PAGES = {
   '加微/万播：{rate}': 'Adds per 10k: {rate}',
   '播放不足 500，暂不计算比率': 'Under 500 views — ratio not calculated',
   每万播加微最高: 'Best adds per 10k views',
+  个学生: 'students',
+  在读: 'Active',
 }

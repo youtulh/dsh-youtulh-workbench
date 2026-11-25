@@ -1628,7 +1628,7 @@ body[data-ds-dark-theme] .md-root {
 .md-crash-detail { padding: 12px 14px; border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 .5px var(--line); color: var(--ink2); font-family: var(--dsh-font-monospace, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 12px; line-height: 18px; white-space: pre-wrap; word-break: break-word; }
 
 /* 学生页顶部概览 */
-.md-student-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.md-student-summary { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
 .md-student-summary div { display: flex; align-items: baseline; gap: 6px; padding: 12px 14px; border-radius: var(--r-lg); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
 .md-student-summary b { font-size: 22px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .md-student-summary span { color: var(--ink3); font-size: 12px; }
