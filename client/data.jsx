@@ -1,7 +1,7 @@
 // 看数据 = 内容库：每一条口播的真实结果（播放/涨粉/私信），自动打分、自动标爆款。
 // 插件里做的稿子、以前发过的视频（手动补录 / 从后台导入），都记在 内容库.csv 这一张表里。
 import React from 'react'
-import { createContent, fetchContent, fetchLeads, fetchWorkspace, importData, removeContent, revealDir, setDesk, toast, updateContentRow, useDesk } from './desk.js'
+import { createContent, fetchContent, fetchWorkspace, importData, removeContent, revealDir, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { ADOPT_OPTIONS, dayKey } from './util.js'
@@ -13,7 +13,7 @@ const rowKey = row => row['目录'] || row['创建时间'] || row['标题']
 const EMPTY_FORM = { title: '', topic: '', platform: '', publishedAt: '', views: '', follows: '', dms: '', added: '' }
 
 // 看数据页的筛选/搜索：切到别的页面再回来不重置
-const DATA_UI = { filter: 'all', query: '', bizRange: 'all', sort: 'recent', angleFilter: 'all' }
+const DATA_UI = { filter: 'all', query: '', sort: 'recent', angleFilter: 'all' }
 
 export function DataView() {
   useLang()
@@ -31,8 +31,6 @@ export function DataView() {
   const dataFilter = useDesk(s => s.dataFilter)
   const dataQuery = useDesk(s => s.dataQuery)
   const dataAngle = useDesk(s => s.dataAngle)
-  const [leads, setLeads] = React.useState([])
-  const [bizRange, setBizRange] = React.useState(DATA_UI.bizRange)
   const [query, setQuery] = React.useState(DATA_UI.query)
   const [sort, setSort] = React.useState(DATA_UI.sort)
   const [angleFilter, setAngleFilter] = React.useState(DATA_UI.angleFilter)
@@ -53,10 +51,8 @@ export function DataView() {
       .catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
   }, [])
   React.useEffect(() => { load() }, [load])
-  const loadLeads = React.useCallback(() => fetchLeads().then(data => setLeads(data.leads ?? [])).catch(() => {}), [])
-  React.useEffect(() => { loadLeads() }, [loadLeads])
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
-  React.useEffect(() => { Object.assign(DATA_UI, { filter, query, bizRange, sort, angleFilter }) }, [filter, query, bizRange, sort, angleFilter])
+  React.useEffect(() => { Object.assign(DATA_UI, { filter, query, sort, angleFilter }) }, [filter, query, sort, angleFilter])
   React.useEffect(() => { setPage(1) }, [filter, query, sort, angleFilter, pageSize])
   React.useEffect(() => {
     if (!dataFilter) return
@@ -148,30 +144,7 @@ export function DataView() {
     { id: 'noAngle', label: t('没角度'), test: row => !String(row['角度'] ?? '').trim() },
     { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
   ]
-  const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
-  const monthStart = dayKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1))
-  const cutoff = bizRange === 'week' ? weekStart : bizRange === 'month' ? monthStart : ''
-  const scopedLeads = leads.filter(row => !cutoff || (row.date && row.date >= cutoff))
-  const q = query.trim()
-  const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row)
-    && (angleFilter === 'all' || row['角度'] === angleFilter)
-    && (!q || [row['标题'], row['选题'], row['角度'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
-    .sort((a, b) => {
-      if (sort === 'views') return num(b['播放']) - num(a['播放'])
-      if (sort === 'dms') return num(b['私信']) - num(a['私信'])
-      if (sort === 'added') return num(b['加微']) - num(a['加微'])
-      if (sort === 'rate' || sort === 'addRate') {
-        // 播放太少时比率会虚高，低于 500 播放的排在最后
-        const key = sort === 'rate' ? '私信' : '加微'
-        const rate = row => (num(row['播放']) >= 500 ? num(row[key]) / num(row['播放']) * 10000 : -1)
-        return rate(b) - rate(a)
-      }
-      return String(b['发布日'] || b['创建时间']).localeCompare(String(a['发布日'] || a['创建时间']))
-    })
-  const pages = Math.max(1, Math.ceil(list.length / pageSize))
-  const pageSafe = Math.min(page, pages)
-  const pageRows = list.slice((pageSafe - 1) * pageSize, pageSafe * pageSize)
-  const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
+
 
   return (
     <div className="md-page md-data">
@@ -184,28 +157,12 @@ export function DataView() {
         <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
           setRefreshing(true)
           try {
-            await Promise.all([load(), loadLeads()])
+            await load()
             toast(t('刷新好了'))
           } finally { setRefreshing(false) }
         }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
       </header>
 
-      <div className="md-biz-head">
-        <span>{t('私信漏斗（线索表）')}</span>
-        <div className="md-biz-range">
-          {[['all', t('全部')], ['week', t('近 7 天')], ['month', t('本月')]].map(([id, label]) => (
-            <button type="button" key={id} className={bizRange === id ? 'is-on' : ''} onClick={() => setBizRange(id)}>{label}</button>
-          ))}
-        </div>
-      </div>
-      <section className="md-biz-strip">
-        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{scopedLeads.length || '—'}</b><span>{t('私信线索')}</span></button>
-        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{scopedLeads.filter(row => ['已加微信', '已进群'].includes(row.stage)).length || '—'}</b><span>{t('已加微')}</span></button>
-        <button type="button" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{scopedLeads.filter(row => row.stage === '约试听').length || '—'}</b><span>{t('约试听')}</span></button>
-        <button type="button" onClick={() => setDesk({ view: 'students', focusId: null })}><b>{scopedLeads.filter(row => row.stage === '已报课').length || '—'}</b><span>{t('报课')}</span></button>
-      </section>
-
-      <>
       <div className="md-biz-head"><span>{t('内容结果（内容库）')}</span></div>
       <section className="md-data-summary">
         <div><b>{stats.count ?? 0}</b><span>{t('条内容')}</span></div>
@@ -409,7 +366,6 @@ export function DataView() {
       ) : null}
 
       {!positioning.subject ? <p className="md-muted">{t('还没填设定，先去「我的设定」把科目和年级填上。')}</p> : null}
-        </>
     </div>
   )
 }
