@@ -8,6 +8,15 @@ const GENDERS = [{ value: '', label: '不说' }, { value: '男生', label: '男�
 const LEVELS = [{ value: '基础薄弱', label: '基础薄弱' }, { value: '中等', label: '中等' }, { value: '偏上', label: '偏上' }]
 const COUNTS = [{ value: '15', label: '15 题' }, { value: '10', label: '10 题' }]
 
+const DEMO = {
+  name: '小雪', grade: '高一', gender: '女生', level: '基础薄弱', score: '58',
+  pain: '期中 58 分，氧化还原一听就乱；配平不知道先标价还是先凑系数',
+  resistances: '概念、计算、审题', goal: '先补化合价，再练最小公倍数',
+  lessonTitle: '氧化还原配平', subject: '化学', at: '2026-11-30 周日 19:00',
+  code: 'TRIAL-HX-1130', topic: '从标化合价一路配平到氧化还原',
+  brandName: '姜老师化学', brandTeacher: '姜老师',
+}
+
 export function DiagnosticsView() {
   useLang()
   const [data, setData] = React.useState(null)
@@ -78,9 +87,12 @@ export function DiagnosticsView() {
         { name: 'count', label: t('题量'), type: 'select', options: COUNTS },
       ],
       initial: {
-        gender: '', level: '基础薄弱', count: '15', subject: '', grade: prefill.grade ?? '',
-        studentName: prefill.name ?? '', studentGrade: prefill.grade ?? '', pain: prefill.pain ?? '',
-        brandName: brand.name ?? '', brandTeacher: brand.teacher ?? '',
+        gender: prefill.gender ?? '', level: prefill.level ?? '基础薄弱', count: '15',
+        subject: prefill.subject ?? '', grade: prefill.grade ?? '',
+        studentName: prefill.name ?? '', studentGrade: prefill.grade ?? '',
+        score: prefill.score ?? '', pain: prefill.pain ?? '', resistances: prefill.resistances ?? '', goal: prefill.goal ?? '',
+        lessonTitle: prefill.lessonTitle ?? '', at: prefill.at ?? '', code: prefill.code ?? '', topic: prefill.topic ?? '',
+        brandName: prefill.brandName ?? brand.name ?? '', brandTeacher: prefill.brandTeacher ?? brand.teacher ?? '',
       },
       onSubmit: async values => {
         setBusy('create')
@@ -164,7 +176,8 @@ export function DiagnosticsView() {
           <p className="md-page-sub">{t('先诊断、再试听、课后复测。每份卷子都带着品牌、上课时间和课次编码。')}</p>
         </div>
         <span className="md-grow" />
-        <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={openCreate}>{t('出一份诊断卷')}</button>
+        <button type="button" className="md-inline-link" onClick={() => openCreate(DEMO)}>{t('用示例填一遍')}</button>
+        <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{t('出一份诊断卷')}</button>
         {current ? <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入结果')}</button> : null}
       </header>
 
