@@ -104,7 +104,9 @@ export function WelcomeView() {
   const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
   const trials = leads.filter(row => row.stage === '约试听').length
   const due = leads.filter(row => row.nextAt && row.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(row.stage)).length
-  const published = content.filter(row => row['状态'] === '已发布' && row['发布日'])
+  const publishedAll = content.filter(row => row['状态'] === '已发布')
+  const published = publishedAll.filter(row => row['发布日'])
+  const missingMetrics = publishedAll.filter(row => !String(row['播放'] ?? '').trim())
   const latestPublish = published.map(row => String(row['发布日'])).sort().at(-1) ?? ''
   const daysSincePublish = latestPublish ? Math.floor((Date.now() - new Date(`${latestPublish}T00:00:00`).getTime()) / 86400000) : null
   const stale = daysSincePublish !== null && daysSincePublish >= 7
@@ -116,7 +118,9 @@ export function WelcomeView() {
         ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('去做内容'), run: () => go('content') }
         : !published.length
           ? { title: t('把做好的口播发出去'), hint: t('内容库还没有已发布；发一条，才有数据可看'), action: t('去做内容'), run: () => go('content') }
-          : stale
+          : missingMetrics.length
+            ? { title: t('补 {n} 条已发布内容的数据', { n: missingMetrics.length }), hint: t('播放、私信、加微填上，定位复盘才有依据'), action: t('去补数据'), run: () => go('data') }
+            : stale
             ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('去做内容'), run: () => go('content') }
             : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('去看数据'), run: () => go('data') }
 

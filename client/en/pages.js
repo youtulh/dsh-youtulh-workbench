@@ -803,4 +803,7 @@ export const PAGES = {
   '内容库还没有已发布；发一条，才有数据可看': 'Nothing is marked published yet — post one and the data starts.',
   '已经 {n} 天没发了': 'It has been {n} days since the last post',
   '稳定更新比偶尔爆一条更有用；拍下一条': 'Consistency beats one lucky hit — shoot the next one.',
+  '补 {n} 条已发布内容的数据': 'Fill in data for {n} published pieces',
+  '播放、私信、加微填上，定位复盘才有依据': 'Views, DMs and WeChat adds make the positioning review reliable.',
+  去补数据: 'Fill data',
 }
