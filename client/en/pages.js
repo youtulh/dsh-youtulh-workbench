@@ -865,5 +865,6 @@ export const PAGES = {
   '正在出诊断卷，约 10–20 秒…': 'Generating the diagnostic — about 10–20 seconds…',
   正在出卷: 'Generating…',
   '正在生成诊断卷…': 'Generating the diagnostic…',
+  '课程名和上课时间是必填；不想填可以点上面的「用示例填一遍」。': 'Course name and class time are required — or use “Fill with example”.',
 
 }
