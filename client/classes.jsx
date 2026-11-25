@@ -118,6 +118,7 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
     <ClassDetail
       klass={klass}
       students={students}
+      allLessons={lessons}
       onChanged={onChanged}
       onLessons={onLessons}
       onBack={() => setSelected('')}
@@ -126,7 +127,7 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
   )
 }
 
-function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed }) {
+function ClassDetail({ klass, students, allLessons = [], onChanged, onLessons, onBack, onRenamed }) {
   useLang()
   const roster = classRoster(students, klass.name)
   const rosterKey = roster.map(row => row.name).join('|')
@@ -155,13 +156,16 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
 
   // 每个学生「上一次」的掌握/作业，记新课时给个参照
   const previous = React.useMemo(() => {
+    // 本班已记的课优先；从别的班转来的学生，用旧班的最近一条当参照
+    const pool = [...(lessons ?? []), ...(allLessons ?? []).filter(row => row.className !== klass.name)]
     const map = {}
-    for (const row of lessons ?? []) {
-      if (row.no >= no) continue
-      if (!map[row.name] || row.no > map[row.name].no) map[row.name] = row
+    for (const row of pool) {
+      if (row.className === klass.name && row.no >= no) continue
+      const old = map[row.name]
+      if (!old || String(row.date).localeCompare(String(old.date)) > 0 || (row.date === old.date && row.no > old.no)) map[row.name] = row
     }
     return map
-  }, [lessons, no])
+  }, [lessons, allLessons, no, klass.name])
 
   // 切换课次时把已保存的记录回填，没记过的默认「到 / 会 / 交」
   React.useEffect(() => {
@@ -456,7 +460,7 @@ function ClassDetail({ klass, students, onChanged, onLessons, onBack, onRenamed 
                   <b>{student.name}</b>
                   {previous[student.name] ? (
                     <span className="md-lesson-prev">
-                      {t('上次：{summary}', { summary: [previous[student.name].date, previous[student.name].mastery, previous[student.name].homework].filter(Boolean).join(' · ') || t('没记') })}
+                      {t('上次：{summary}', { summary: [previous[student.name].className !== klass.name ? previous[student.name].className : '', previous[student.name].date, previous[student.name].mastery, previous[student.name].homework].filter(Boolean).join(' · ') || t('没记') })}
                       {(() => {
                         const rank = { 不会: 0, 半会: 1, 会: 2 }
                         const before = rank[previous[student.name].mastery]
