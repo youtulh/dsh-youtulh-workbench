@@ -120,7 +120,7 @@ export function WelcomeView() {
   const focus = due
     ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('去跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
     : todo
-      ? { title: t('回 {n} 条还没结果的私信', { n: todo }), hint: t('先判断是谁、在问什么，再回'), action: t('去回私信'), run: () => go('dm') }
+      ? { title: t('回 {n} 条还没结果的私信', { n: todo }), hint: t('先判断是谁、在问什么，再回'), action: t('去聊天台'), run: () => go('dm') }
       : content.length === 0
         ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('去做内容'), run: () => go('content') }
         : !published.length
@@ -187,7 +187,7 @@ export function WelcomeView() {
       ) : null}
 
       <div className="md-quick-links">
-        <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('回私信')}</button>
+        <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('聊天台')}</button>
         <button type="button" className="md-inline-link" onClick={() => go('data')}>{t('看数据')}</button>
         <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'setup', focusId: null, setupSection: 'setup-advice' })}>{t('定位复盘')}</button>
       </div>
@@ -203,7 +203,7 @@ export function WelcomeView() {
           onAction={() => go('setup')}
         />
         <Step index={2} title={t('做第一条口播')} hint={t('选题 → 每个 3 版 → 改一版 → 采用这条')} action={t('开始')} onAction={() => go('content')} primary />
-        <Step index={3} title={t('回私信、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
+        <Step index={3} title={t('聊天台、看数据')} hint={t('有人来问了就回私信；发出去了就回来填结果')} action={t('去看数据')} onAction={() => go('data')} />
         <Step index={4} title={t('报课之后')} hint={t('转成学生、建班，每次课记出勤和掌握')} action={t('去学生')} onAction={() => go('students')} />
       </div>
 

@@ -64,7 +64,7 @@ export function StudentsView() {
           finally { setRefreshing(false) }
         }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>
-          <Icon name="chat" size={14} />{t('去回私信')}
+          <Icon name="chat" size={14} />{t('去聊天台')}
         </button>
       </header>
 

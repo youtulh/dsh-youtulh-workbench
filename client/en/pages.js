@@ -823,5 +823,6 @@ export const PAGES = {
   最该跟进: 'Most overdue',
   跟过最多: 'Most follow-ups',
   按阶段: 'By stage',
+  '聊天台、看数据': 'Chat desk & data',
 
 }

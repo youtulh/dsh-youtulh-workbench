@@ -343,7 +343,7 @@ export function SetupView() {
 
       <section className="md-setup-card" id="setup-cases">
         <h2><span>7</span>{t('案例库')}</h2>
-        <p className="md-setup-hint">{t('你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去回私信页管理。')}</p>
+        <p className="md-setup-hint">{t('你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去聊天台管理。')}</p>
         <div className="md-setup-samples-foot">
           <span className="md-muted">
             {caseInfo === null ? t('读取中…') : t('现在有 {n} 条案例', { n: caseInfo.count })}

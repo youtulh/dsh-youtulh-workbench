@@ -162,9 +162,9 @@ export function FunnelPanel({ students = [], onChanged }) {
 
       {leads.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('还没有线索。回私信页判断完一条私信，或者点上面「记一条线索」。')}</p>
+          <p>{t('还没有线索。聊天台判断完一条私信，或者点上面「记一条线索」。')}</p>
           <button type="button" className="md-pill" onClick={importLeadsDialog}>{t('导入线索')}</button>
-          <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>{t('去回私信')}</button>
+          <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>{t('去聊天台')}</button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="md-dm-empty">
