@@ -97,16 +97,16 @@ export function StudentsView() {
 }
 
 // 学生页的搜索/筛选：切到别的页面再回来不重置
-const ROSTER_UI = { query: '', filter: '' }
+const ROSTER_UI = { query: '', filter: '', statusFilter: 'all' }
 
 function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '' }) {
   useLang()
   const [query, setQuery] = React.useState(ROSTER_UI.query)
   const [filter, setFilter] = React.useState(ROSTER_UI.filter)
-  const [statusFilter, setStatusFilter] = React.useState('all')
+  const [statusFilter, setStatusFilter] = React.useState(ROSTER_UI.statusFilter)
   const [openStudent, setOpenStudent] = React.useState('')
   const [feedback, setFeedback] = React.useState(null)
-  React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter }) }, [query, filter])
+  React.useEffect(() => { Object.assign(ROSTER_UI, { query, filter, statusFilter }) }, [query, filter, statusFilter])
   React.useEffect(() => {
     if (!focusName) return
     setQuery(focusName)

@@ -369,6 +369,7 @@ function ClassDetail({ klass, students, allLessons = [], onChanged, onLessons, o
               return (
                 <li key={student.name}>
                   <b>{student.name}</b>
+                  {student.status && student.status !== '在读' ? <em className={`md-student-status ${student.status === '流失' ? 'is-lost' : ''}`}>{t(student.status)}</em> : null}
                   <select value={student.layer || ''} onChange={event => changeLayer(student, event.target.value)}>
                     <option value="">{t('还没标')}</option>
                     {klass.layers.map(layer => <option key={layer} value={layer}>{t(layer)}</option>)}
@@ -458,6 +459,7 @@ function ClassDetail({ klass, students, allLessons = [], onChanged, onLessons, o
               return (
                 <div key={student.name} className={`md-lesson-row ${row.attend || row.mastery || row.homework ? '' : 'is-empty'}`}>
                   <b>{student.name}</b>
+                  {student.status && student.status !== '在读' ? <em className={`md-student-status ${student.status === '流失' ? 'is-lost' : ''}`}>{t(student.status)}</em> : null}
                   {previous[student.name] ? (
                     <span className="md-lesson-prev">
                       {t('上次：{summary}', { summary: [previous[student.name].className !== klass.name ? previous[student.name].className : '', previous[student.name].date, previous[student.name].mastery, previous[student.name].homework].filter(Boolean).join(' · ') || t('没记') })}
