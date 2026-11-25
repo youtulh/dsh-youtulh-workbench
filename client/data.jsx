@@ -376,6 +376,12 @@ export function DataView() {
                 <p className="md-card-hint">{t('还没发布。发出去以后把状态改成「已发布」，再回来填播放、涨粉、私信。')}</p>
               )}
               <footer className="md-card-foot">
+                {!row['角度'] ? (
+                  <select className="md-angle-fill" value="" onChange={event => { if (event.target.value) patch(row, '角度', event.target.value) }}>
+                    <option value="">{t('补角度')}</option>
+                    {['知识点', '家庭', '考情', '本地'].map(value => <option key={value} value={value}>{t(value)}</option>)}
+                  </select>
+                ) : null}
                 <select value={row['状态'] || '未发布'} onChange={event => patch(row, '状态', event.target.value)}>
                   <option value="未发布">{t('未发布')}</option>
                   <option value="已发布">{t('已发布')}</option>
