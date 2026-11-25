@@ -1,9 +1,10 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchPlatformWords, fetchVoice, fetchWorkspace, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchContent, fetchLeads, fetchPlatformWords, fetchVoice, fetchWorkspace, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
+import { reviewPositioning } from '../src/review.js'
 
 const WHO = [
   ['subject', '教什么科目', '比如：高中化学'],
@@ -49,6 +50,7 @@ export function SetupView() {
   const [backups, setBackups] = React.useState([])
   const [root, setRoot] = React.useState('')
   const [stats, setStats] = React.useState(null)
+  const [reviewData, setReviewData] = React.useState({ content: [], leads: [] })
   const UPGRADE_KEY = 'youtulh:upgrade-result'
   const [upgradeResult, setUpgradeResultState] = React.useState(() => {
     try { return JSON.parse(sessionStorage.getItem(UPGRADE_KEY) || 'null') } catch { return null }
@@ -73,6 +75,8 @@ export function SetupView() {
     fetchBackups().then(data => setBackups(data.backups ?? [])).catch(() => {})
     fetchWorkspace().then(data => setRoot(data.root ?? '')).catch(() => {})
     fetchWorkspaceStats().then(setStats).catch(() => {})
+    fetchContent().then(data => setReviewData(prev => ({ ...prev, content: data.rows ?? data.content ?? [] }))).catch(() => {})
+    fetchLeads().then(data => setReviewData(prev => ({ ...prev, leads: data.leads ?? [] }))).catch(() => {})
     fetchChatRecords().then(data => {
       const cases = data.cases ?? []
       const latest = cases[cases.length - 1]
@@ -171,6 +175,7 @@ export function SetupView() {
   }
   const removePain = point => dispatchOps([{ op: 'set_pain_points', points: pains.filter(row => row !== point) }], { label: t('删掉一条痛点') }).then(data => { if (data) markSaved() })
 
+  const review = reviewPositioning({ positioning, painPoints: pains, content: reviewData.content, leads: reviewData.leads })
   const advice = diagnosePositioning({ ...positioning, pains })
   const cards = suggestTargets({ ...positioning, pains })
   const entries = entrySuggestions({ ...positioning, pains })
@@ -379,6 +384,8 @@ export function SetupView() {
               upgradeWorkspace()
                 .then(data => {
                   fetchWorkspaceStats().then(setStats).catch(() => {})
+    fetchContent().then(data => setReviewData(prev => ({ ...prev, content: data.rows ?? data.content ?? [] }))).catch(() => {})
+    fetchLeads().then(data => setReviewData(prev => ({ ...prev, leads: data.leads ?? [] }))).catch(() => {})
                   fetchBackups().then(next => setBackups(next.backups ?? [])).catch(() => {})
                   if (!data.sameCounts) {
                     toast(t('升级后条数对不上，已自动还原到升级前的备份；请刷新后检查'), { error: true })
@@ -464,6 +471,36 @@ export function SetupView() {
             <button type="button" className="md-inline-link" onClick={copyPersona}>{t('复制人设卡')}</button>
             <button type="button" className="md-pill is-small is-primary" onClick={makeIntro}>{t('拍一条自我介绍')}</button>
           </div>
+        </div>
+
+        <div className="md-review">
+          <div className="md-review-head">
+            <b>{t('定位复盘')}</b>
+            <span className="md-muted">{t('用最近的内容和线索，看看有没有跑偏')}</span>
+          </div>
+          <div className="md-review-stats">
+            <div><b>{review.contentMatched}/{review.contentTotal}</b><span>{t('内容贴定位')}</span></div>
+            <div><b>{review.gradeMatched}/{review.gradedLeads}</b><span>{t('线索年级对得上')}</span></div>
+            <div><b>{review.wonCount}</b><span>{t('加微/报课')}</span></div>
+          </div>
+          <ul className="md-review-notes">
+            {review.notes.map(row => <li key={row.key}>{t(row.key, row.params)}</li>)}
+          </ul>
+          <p className="md-review-note">{t('按最近 30 条内容和全部线索算，只做参考')}</p>
+          {review.nextTopics.length ? (
+            <div className="md-review-next">
+              <b>{t('下一步可以拍')}</b>
+              <ul>
+                {review.nextTopics.map(row => (
+                  <li key={row}>
+                    <button type="button" className="md-inline-link" onClick={() => startFromTopic(row)}>
+                      <Icon name="pen" size={12} />{row}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
 
         {advice.gaps.length ? (

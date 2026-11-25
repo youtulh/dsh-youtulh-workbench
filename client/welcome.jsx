@@ -107,9 +107,13 @@ export function WelcomeView() {
   const publishedAll = content.filter(row => row['状态'] === '已发布')
   const published = publishedAll.filter(row => row['发布日'])
   const missingMetrics = publishedAll.filter(row => !String(row['播放'] ?? '').trim() || !String(row['发布日'] ?? '').trim())
-  const latestPublish = published.map(row => String(row['发布日'])).sort().at(-1) ?? ''
+  const publishDates = [...new Set(published.map(row => String(row['发布日'])).filter(Boolean))].sort()
+  const latestPublish = publishDates.at(-1) ?? ''
   const daysSincePublish = latestPublish ? Math.floor((Date.now() - new Date(`${latestPublish}T00:00:00`).getTime()) / 86400000) : null
-  const stale = daysSincePublish !== null && daysSincePublish >= 7
+  const gaps = publishDates.slice(1).map((date, index) => Math.round((new Date(`${date}T00:00:00`) - new Date(`${publishDates[index]}T00:00:00`)) / 86400000)).filter(gap => gap > 0)
+  const medianGap = gaps.length >= 3 ? [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : null
+  const staleAfter = medianGap ? Math.max(3, Math.min(14, Math.round(medianGap * 1.5))) : 7
+  const stale = daysSincePublish !== null && daysSincePublish >= staleAfter
   const focus = due
     ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('去跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
     : todo
@@ -121,7 +125,7 @@ export function WelcomeView() {
           : missingMetrics.length
             ? { title: t('补 {n} 条已发布内容的数据', { n: missingMetrics.length }), hint: t('播放、私信、加微填上，定位复盘才有依据'), action: t('去补数据'), run: () => setDesk({ view: 'data', focusId: null, dataFilter: 'missing' }) }
             : stale
-            ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('去做内容'), run: () => go('content') }
+            ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: medianGap ? t('你通常每 {n} 天发一条；稳定更新比偶尔爆一条更有用', { n: medianGap }) : t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('去做内容'), run: () => go('content') }
             : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('去看数据'), run: () => go('data') }
 
   return (

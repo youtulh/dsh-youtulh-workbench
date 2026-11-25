@@ -2065,3 +2065,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-focus-copy b { font-size: 17px; font-weight: 500; }
 .md-focus-copy small { color: var(--ink3); font-size: 12px; line-height: 18px; }
 .md-quick-links { display: flex; flex-wrap: wrap; gap: 16px; margin: 2px 2px 12px; }
+
+.md-review-note { margin-top: 6px; color: var(--ink3); font-size: 10.5px; }
+.md-setup-card { scroll-margin-top: 76px; }

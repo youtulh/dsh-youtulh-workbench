@@ -807,4 +807,6 @@ export const PAGES = {
   '播放、私信、加微填上，定位复盘才有依据': 'Views, DMs and WeChat adds make the positioning review reliable.',
   去补数据: 'Fill data',
   缺数据: 'Missing data',
+  '你通常每 {n} 天发一条；稳定更新比偶尔爆一条更有用': 'You usually post every {n} days — consistency beats one lucky hit.',
+  '按最近 30 条内容和全部线索算，只做参考': 'Based on the last 30 pieces and all leads; for reference only.',
 }
