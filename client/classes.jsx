@@ -226,6 +226,8 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
   const saveLesson = async () => {
     const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft()) }))
     const recorded = rows.filter(row => row.attend || row.mastery || row.homework).length
+    const noteOnly = rows.filter(row => String(row.note ?? '').trim() && !row.attend && !row.mastery && !row.homework).length
+    if (noteOnly && !window.confirm(t('有 {n} 个学生只写了备注、没点出勤/掌握/作业，这些备注不会保存。还要继续吗？', { n: noteOnly }))) return
     const wasRecorded = savedCount > 0
     if (!recorded && savedCount > 0 && !window.confirm(t('这一节还没记人，保存会把原来的记录清掉，继续吗？'))) return
     setBusy('lesson')
