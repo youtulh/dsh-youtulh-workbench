@@ -398,6 +398,15 @@ async function waitDone(producer, id) {
   for (let i = 0; i < 200 && producer.isRunning(id); i += 1) await new Promise(r => setTimeout(r, 5))
 }
 
+// 单张补画是异步的：不要用固定 sleep 等，慢机器上会偶发 running
+async function waitFor(check, label = '状态') {
+  for (let i = 0; i < 400; i += 1) {
+    if (await check()) return
+    await new Promise(r => setTimeout(r, 5))
+  }
+  throw new Error(`${label} 没在 2 秒内完成`)
+}
+
 const isPlan = system => system.includes('策划案')
 const PLAN = JSON.stringify({ title: '最终标题', cover: 'cover', characters: 'a man', images: [{ anchor: '第一节', caption: '图注', prompt: 'fig' }], shots: [{ shot: '特写', visual: '手', voice: '说', seconds: 4, prompt: 's1' }, { shot: '全景', visual: '街', voice: '说', seconds: 6, prompt: 's2' }] })
 
@@ -465,7 +474,7 @@ test('Producer 关闭生图时只写文字，资产全部 skipped，之后可以
 
     // 之后想补画某一张，仍然可以单独发起
     await producer.regenerate('seed_2', 'cover')
-    await new Promise(r => setTimeout(r, 40))
+    await waitFor(async () => (await store.read()).items.find(i => i.id === 'seed_2').production.cover.status === 'done', '封面补画')
     p = (await store.read()).items.find(i => i.id === 'seed_2').production
     assert.equal(p.cover.status, 'done')
     assert.equal(generated, 1)
@@ -573,7 +582,7 @@ test('Producer 一张图失败不影响其他，可以单独重画', async () =>
     assert.equal(p.shots[1].status, 'done')
     fail = false
     await producer.regenerate('seed_2', 'shot:0')
-    await new Promise(r => setTimeout(r, 40))
+    await waitFor(async () => (await store.read()).items.find(i => i.id === 'seed_2').production.shots[0].status === 'done', '分镜补画')
     p = (await store.read()).items.find(i => i.id === 'seed_2').production
     assert.equal(p.shots[0].status, 'done')
     await assert.rejects(producer.regenerate('seed_2', '../x'), /目标无效/)
