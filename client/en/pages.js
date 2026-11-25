@@ -829,5 +829,6 @@ export const PAGES = {
   上一页: 'Previous',
   下一页: 'Next',
   跳到: 'Jump to',
+  '高级：旧版本数据（一般不用管）': 'Advanced: old data (usually not needed)',
 
 }

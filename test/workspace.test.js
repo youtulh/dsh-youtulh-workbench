@@ -313,3 +313,16 @@ test('从备份还原：被改坏的文件能回到备份时的样子', async ()
     await rm(parent, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('成功经验不收录空话术的线索，避免聊天台出现空引号', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
+  try {
+    appendLead(root, { name: '空话术', raw: '家长问了一句', stage: '已加微信', result: '加微成功' })
+    assert.equal(leadLessons(root).length, 0)
+    appendLead(root, { name: '有话术', raw: '期中 58 分还能补吗', draft: '先发卷子我看看', stage: '已加微信', result: '加微成功' })
+    assert.equal(leadLessons(root).length, 1)
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})

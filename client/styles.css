@@ -2200,3 +2200,7 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   background: var(--hover);
 }
 .md-root .md-inline-link:disabled { opacity: .45; }
+
+.md-setup-advanced { margin: 8px 0 12px; color: var(--ink3); font-size: 11.5px; }
+.md-setup-advanced summary { cursor: pointer; }
+.md-setup-advanced .md-legacy-row { margin-top: 8px; }

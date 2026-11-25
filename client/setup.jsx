@@ -377,6 +377,8 @@ export function SetupView() {
           </div>
         ) : null}
         {stats?.legacy?.length ? (
+          <details className="md-setup-advanced">
+            <summary>{t('高级：旧版本数据（一般不用管）')}</summary>
           <div className="md-legacy-row">
             <span className="md-legacy-note">{t('旧版表头：{tables}。读取已经兼容，下次保存会自动升级成新列。', { tables: stats.legacy.join('、') })}</span>
             <button type="button" className="md-inline-link" onClick={() => {
@@ -402,6 +404,7 @@ export function SetupView() {
                 .catch(err => toast(err.message, { error: true }))
             }}>{t('现在升级')}</button>
           </div>
+          </details>
         ) : null}
         <div className="md-setup-samples-foot">
           <span className={`md-muted ${backups[0] && Date.now() - backups[0].mtime > 7 * 86400000 ? 'md-legacy-note' : ''}`}>
