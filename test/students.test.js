@@ -318,3 +318,19 @@ test('学生状态：默认在读，可标结课/流失，再改回来', async (
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+
+test('课次备注：只写备注、三态不点也会保存；备注进反馈依据', async () => {
+  const root = await temp()
+  try {
+    saveClass(root, { name: 'A 班', total: 8 })
+    saveStudent(root, { name: '王', grade: '高一', className: 'A 班' })
+    saveLessonRows(root, { className: 'A 班', no: 1, date: '2026-11-25', rows: [{ name: '王', note: '请假，下节课补' }] })
+    const rows = readLessons(root, 'A 班')
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].note, '请假，下节课补')
+    assert.equal(rows[0].attend, '')
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})

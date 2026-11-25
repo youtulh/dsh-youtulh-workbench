@@ -225,9 +225,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
 
   const saveLesson = async () => {
     const rows = roster.map(student => ({ name: student.name, ...(draft[student.name] ?? emptyDraft()) }))
-    const recorded = rows.filter(row => row.attend || row.mastery || row.homework).length
-    const noteOnly = rows.filter(row => String(row.note ?? '').trim() && !row.attend && !row.mastery && !row.homework).length
-    if (noteOnly && !window.confirm(t('有 {n} 个学生只写了备注、没点出勤/掌握/作业，这些备注不会保存。还要继续吗？', { n: noteOnly }))) return
+    const recorded = rows.filter(row => row.attend || row.mastery || row.homework || String(row.note ?? '').trim()).length
     const wasRecorded = savedCount > 0
     if (!recorded && savedCount > 0 && !window.confirm(t('这一节还没记人，保存会把原来的记录清掉，继续吗？'))) return
     setBusy('lesson')
@@ -343,7 +341,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
   const savedCount = (lessons ?? []).filter(row => row.no === no).length
   const draftRecorded = roster.filter(student => {
     const row = draft[student.name]
-    return Boolean(row && (row.attend || row.mastery || row.homework))
+    return Boolean(row && (row.attend || row.mastery || row.homework || String(row.note ?? '').trim()))
   }).length
   const recent = [...new Set((lessons ?? []).map(row => row.no))].sort((a, b) => b - a).slice(0, 3).map((value) => {
     const rows = (lessons ?? []).filter(row => row.no === value)
@@ -498,7 +496,7 @@ function ClassDetail({ klass, students, allLessons = [], focusNo = null, returnS
             {roster.map(student => {
               const row = draft[student.name] ?? emptyDraft(student.name)
               return (
-                <div key={student.name} className={`md-lesson-row ${row.attend || row.mastery || row.homework ? '' : 'is-empty'}`}>
+                <div key={student.name} className={`md-lesson-row ${row.attend || row.mastery || row.homework || String(row.note ?? '').trim() ? '' : 'is-empty'}`}>
                   <b>{student.name}</b>
                   {student.status && student.status !== '在读' ? <em className={`md-student-status ${student.status === '流失' ? 'is-lost' : ''}`}>{t(student.status)}</em> : null}
                   {previous[student.name] ? (

@@ -229,12 +229,13 @@ export function saveLessonRows(root, { className, no, date, rows = [] } = {}) {
     const mastery = pick(row.mastery, MASTERY_OPTIONS)
     const homework = pick(row.homework, HOMEWORK_OPTIONS)
     const found = all.findIndex(item => item.className === target && item.no === at && item.name === name)
-    // 三个都没点 = 还没记：已存在的记录清掉，不落一条假数据
-    if (!attend && !mastery && !homework) {
+    const note = text(row.note, 100)
+    // 三态和备注都没写 = 还没记：已存在的记录清掉，不落一条假数据
+    if (!attend && !mastery && !homework && !note) {
       if (found >= 0) all.splice(found, 1)
       continue
     }
-    const next = { className: target, no: at, date: day, name, attend, mastery, homework, note: text(row.note, 100), updatedAt: stamp }
+    const next = { className: target, no: at, date: day, name, attend, mastery, homework, note, updatedAt: stamp }
     if (found >= 0) all[found] = next
     else all.push(next)
   }
