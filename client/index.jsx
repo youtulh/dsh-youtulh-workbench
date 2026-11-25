@@ -58,7 +58,7 @@ function SampleBadge() {
 class PanelBoundary extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { error: null }
+    this.state = { error: null, copied: false }
   }
 
   static getDerivedStateFromError(error) {
@@ -80,6 +80,13 @@ class PanelBoundary extends React.Component {
         <pre className="md-crash-detail">{String(this.state.error?.message || this.state.error)}</pre>
         <div className="md-create-actions">
           <button type="button" className="md-pill" onClick={() => this.setState({ error: null })}>{t('重试')}</button>
+          <button type="button" className="md-pill" onClick={async () => {
+            const text = window.__youtulhLastError || String(this.state.error?.message || this.state.error)
+            try {
+              await navigator.clipboard.writeText(text)
+              this.setState({ copied: true })
+            } catch { /* 剪贴板不可用就算了 */ }
+          }}>{this.state.copied ? t('已复制') : t('复制错误信息')}</button>
           <button type="button" className="md-pill is-primary" onClick={() => window.location.reload()}>{t('重新加载')}</button>
         </div>
       </div>
