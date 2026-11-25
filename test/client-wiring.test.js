@@ -35,3 +35,11 @@ for (const [file, checks] of Object.entries(WIRING)) {
     })
   }
 }
+
+// 看数据要用的筛选/分页变量：清理旁支区块时误删过，钉一下
+for (const needle of ['const q =', 'const list =', 'const pageRows =']) {
+  test(`data.jsx：${needle} 已定义`, () => {
+    const source = readFileSync(new URL('data.jsx', DIR), 'utf8')
+    assert.ok(source.includes(needle), `data.jsx 缺少 ${needle}`)
+  })
+}

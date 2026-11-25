@@ -145,6 +145,26 @@ export function DataView() {
     { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
   ]
 
+  const q = query.trim()
+  const list = (rows ?? []).filter(row => (FILTERS.find(item => item.id === filter) ?? FILTERS[0]).test(row)
+    && (angleFilter === 'all' || row['角度'] === angleFilter)
+    && (!q || [row['标题'], row['选题'], row['角度'], row['平台'], row['备注']].some(value => String(value ?? '').includes(q))))
+    .sort((a, b) => {
+      if (sort === 'views') return num(b['播放']) - num(a['播放'])
+      if (sort === 'dms') return num(b['私信']) - num(a['私信'])
+      if (sort === 'added') return num(b['加微']) - num(a['加微'])
+      if (sort === 'rate' || sort === 'addRate') {
+        const key = sort === 'rate' ? '私信' : '加微'
+        const rate = row => (num(row['播放']) >= 500 ? num(row[key]) / num(row['播放']) * 10000 : -1)
+        return rate(b) - rate(a)
+      }
+      return String(b['发布日'] || b['创建时间']).localeCompare(String(a['发布日'] || a['创建时间']))
+    })
+  const pages = Math.max(1, Math.ceil(list.length / pageSize))
+  const pageSafe = Math.min(page, pages)
+  const pageRows = list.slice((pageSafe - 1) * pageSize, pageSafe * pageSize)
+  const countOf = id => (rows ?? []).filter(row => (FILTERS.find(item => item.id === id) ?? FILTERS[0]).test(row)).length
+
 
   return (
     <div className="md-page md-data">
