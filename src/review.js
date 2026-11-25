@@ -8,6 +8,36 @@ function contentText(row) {
   return `${row['标题'] ?? ''} ${row['选题'] ?? ''}`
 }
 
+/** 复盘后直接给 3 个能拍的选题，不让用户自己再想。 */
+export function suggestReviewTopics({ positioning = {}, painPoints = [], contentCount = 0, contentDrift = false, gradeDrift = false, topContent = null } = {}) {
+  const p = positioning
+  const subject = text(p.subject, 20)
+  const grade = text(p.grade, 20)
+  const who = `${grade}${subject}`.trim() || subject || '这门课'
+  const entry = text(p.entry, 30)
+  const pain = text(painPoints[0], 24)
+  const list = []
+  if (!contentCount || contentDrift) {
+    if (entry) list.push(`${who}：${entry}，先补哪一步`)
+    if (pain) list.push(`家长说「${pain}」，先怎么回`)
+    list.push(`${who}：为什么先抓${grade || '这一类'}，不接所有人`)
+    if (!entry && !pain) list.push(`${who}：孩子卡在及格线，先别急着刷题`)
+  } else if (gradeDrift) {
+    list.push(`${who}：为什么只带${grade || '这个年级'}，不接别的年级`)
+    list.push(`${who}家长最常问的三件事`)
+    if (entry) list.push(`${who}：${entry}，先补哪一步`)
+  } else if (topContent?.title) {
+    list.push(`再讲一条：${shorten(topContent.title, 18)}`)
+    if (entry) list.push(`${who}：${entry}，家长最容易忽略哪一步`)
+    list.push(`${who}：为什么我只带这一类家长`)
+  } else {
+    if (entry) list.push(`${who}：${entry}，先补哪一步`)
+    if (pain) list.push(`家长说「${pain}」，先怎么回`)
+    list.push(`${who}：为什么我只带这一类家长`)
+  }
+  return [...new Set(list)].filter(Boolean).slice(0, 3)
+}
+
 /**
  * @param {{positioning?:object,painPoints?:string[],content?:object[],leads?:object[]}} input
  */
@@ -54,7 +84,17 @@ export function reviewPositioning({ positioning = {}, painPoints = [], content =
   if (topSource) notes.push({ key: 'review_top_source', params: { source: topSource[0], n: topSource[1] } })
   if (!won.length) notes.push({ key: 'review_no_won', params: {} })
 
+  const nextTopics = suggestReviewTopics({
+    positioning,
+    painPoints,
+    contentCount: recentContent.length,
+    contentDrift: recentContent.length >= 3 && matchedContent.length / recentContent.length < 0.6,
+    gradeDrift: graded.length >= 3 && Boolean(grade) && gradeMatched.length / graded.length < 0.6,
+    topContent: topContent ? { title: text(topContent['标题'], 40) } : null,
+  })
+
   return {
+    nextTopics,
     contentTotal: recentContent.length,
     contentMatched: matchedContent.length,
     leadTotal: leads.length,

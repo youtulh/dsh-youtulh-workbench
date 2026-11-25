@@ -34,3 +34,11 @@ test('定位复盘：没内容时给出先拍 5 条的建议', () => {
   assert.equal(out.contentTotal, 0)
   assert.ok(out.notes.some(row => row.key === 'review_no_content'))
 })
+
+
+test('定位复盘会给出 3 个回到定位的选题', () => {
+  const out = reviewPositioning({ positioning, painPoints: ['期中 58 分还能补吗'], content: [], leads: [] })
+  assert.equal(out.nextTopics.length, 3)
+  assert.ok(out.nextTopics.some(row => row.includes('物理') || row.includes('高二')))
+  assert.ok(out.nextTopics.some(row => row.includes('动量守恒') || row.includes('期中 58')))
+})

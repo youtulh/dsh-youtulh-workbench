@@ -778,4 +778,5 @@ export const PAGES = {
   'review_top_content': '《{title}》 brought the most DMs ({dms}) — make more like this one.',
   'review_top_source': 'Most WeChat adds / enrolments came from “{source}” ({n}).',
   review_no_won: 'No WeChat add or enrolment yet — get one piece\'s DM handoff working first.',
+  下一步可以拍: 'Shoot next',
 }
