@@ -1983,3 +1983,7 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 /* 学生卡快捷结课 */
 .md-student-status { cursor: default; }
+
+/* 学生课次历史：点一条跳到那个班的记录 */
+.md-student-records .md-lesson-jump { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; width: 100%; padding: 3px 0; border-radius: var(--r-xs); text-align: left; font-size: 12px; }
+.md-student-records .md-lesson-jump:hover { background: var(--hover); }

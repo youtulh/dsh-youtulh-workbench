@@ -25,6 +25,14 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
   useLang()
   const [selected, setSelected] = React.useState('')
   const [showEnded, setShowEnded] = React.useState(false)
+  const classFocus = useDesk(s => s.classFocus)
+  const [focusNo, setFocusNo] = React.useState(null)
+  React.useEffect(() => {
+    if (!classFocus) return
+    setSelected(classFocus.name)
+    setFocusNo(classFocus.no)
+    setDesk({ classFocus: null })
+  }, [classFocus])
   const duplicateClasses = (() => {
     const groups = new Map()
     for (const row of classes) {
@@ -119,15 +127,16 @@ export function ClassesPanel({ classes, students, lessons = [], onChanged, onLes
       klass={klass}
       students={students}
       allLessons={lessons}
+      focusNo={focusNo}
       onChanged={onChanged}
       onLessons={onLessons}
-      onBack={() => setSelected('')}
+      onBack={() => { setSelected(''); setFocusNo(null) }}
       onRenamed={(name) => setSelected(name)}
     />
   )
 }
 
-function ClassDetail({ klass, students, allLessons = [], onChanged, onLessons, onBack, onRenamed }) {
+function ClassDetail({ klass, students, allLessons = [], focusNo = null, onChanged, onLessons, onBack, onRenamed }) {
   useLang()
   const roster = classRoster(students, klass.name)
   const rosterKey = roster.map(row => row.name).join('|')
@@ -148,11 +157,12 @@ function ClassDetail({ klass, students, allLessons = [], onChanged, onLessons, o
   React.useEffect(() => {
     if (!lessons || picked.current) return
     picked.current = true
+    if (focusNo) { setNo(focusNo); return }
     const used = new Set(lessons.map(row => row.no))
     let next = 1
     while (next <= klass.total && used.has(next)) next += 1
     setNo(next > klass.total ? klass.total : next)
-  }, [lessons, klass.total])
+  }, [lessons, klass.total, focusNo])
 
   // 每个学生「上一次」的掌握/作业，记新课时给个参照
   const previous = React.useMemo(() => {
@@ -166,6 +176,11 @@ function ClassDetail({ klass, students, allLessons = [], onChanged, onLessons, o
     }
     return map
   }, [lessons, allLessons, no, klass.name])
+
+  React.useEffect(() => {
+    if (!focusNo) return
+    requestAnimationFrame(() => document.getElementById('lesson-recorder')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [focusNo])
 
   // 切换课次时把已保存的记录回填，没记过的默认「到 / 会 / 交」
   React.useEffect(() => {

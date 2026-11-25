@@ -21,6 +21,7 @@ export function StudentsView() {
   const [loadError, setLoadError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
   const studentFocus = useDesk(s => s.studentFocus)
+  const classFocus = useDesk(s => s.classFocus)
 
   const load = () => {
     setLoadError('')
@@ -34,6 +35,7 @@ export function StudentsView() {
   }
   React.useEffect(() => { load() }, [])
   React.useEffect(() => { if (studentFocus) setTab('roster') }, [studentFocus])
+  React.useEffect(() => { if (classFocus) setTab('classes') }, [classFocus])
 
   const onChanged = (data) => {
     if (data?.students) setStudents(data.students)
@@ -282,12 +284,14 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                     .sort((a, b) => String(a.className).localeCompare(String(b.className)) || a.no - b.no)
                     .map(row => (
                       <li key={`${row.className}-${row.no}`}>
-                        <span className="md-muted">{row.className}</span>
-                        <b>{t('第 {n} 次', { n: row.no })}</b>
-                        <span>{row.date || t('没填日期')}</span>
-                        <span>{row.attend || '—'}</span>
-                        <span>{row.mastery || '—'}</span>
-                        <span>{row.homework || '—'}</span>
+                        <button type="button" className="md-lesson-jump" onClick={() => setDesk({ view: 'students', focusId: null, classFocus: { name: row.className, no: row.no } })}>
+                          <span className="md-muted">{row.className}</span>
+                          <b>{t('第 {n} 次', { n: row.no })}</b>
+                          <span>{row.date || t('没填日期')}</span>
+                          <span>{row.attend || '—'}</span>
+                          <span>{row.mastery || '—'}</span>
+                          <span>{row.homework || '—'}</span>
+                        </button>
                       </li>
                     ))}
                   {!lessons.some(row => row.name === student.name && (!student.className || row.className === student.className)) ? <li className="md-muted">{t('还没有课次记录')}</li> : null}
