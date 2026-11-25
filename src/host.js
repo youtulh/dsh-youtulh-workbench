@@ -500,8 +500,12 @@ async function route(ctx, store, desk, req, res) {
       const kind = String(url.searchParams.get('kind') ?? 'pre') === 'post' ? 'post' : 'pre'
       const row = listDiagnostics(root).find(item => item.id === id)
       if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
-      const html = readDiagnosticFile(root, row, kind === 'post' ? '课后检测.html' : '课前诊断.html')
-      if (!html) return json(res, 404, { error: tr('这份卷子还没生成') })
+      const spec = kind === 'post' ? readPostSpec(root, row) : readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('这份卷子还没生成') })
+      const preResult = kind === 'post' ? readDiagnosticResult(root, row, 'pre') : null
+      const preSpec = kind === 'post' ? readManifest(root, row) : null
+      const pre = preResult && preSpec ? scoreDiagnostic(preSpec, preResult.answers) : null
+      const html = renderDiagnosticHtml(spec, { kind, pre })
       const name = `${row.student || '学生'}-${row.lesson || '试听'}-${kind === 'post' ? '课后检测' : '诊断卷'}.html`
       res.statusCode = 200
       res.setHeader('content-type', 'text/html; charset=utf-8')
@@ -515,9 +519,12 @@ async function route(ctx, store, desk, req, res) {
       const kind = String(url.searchParams.get('kind') ?? 'pre') === 'post' ? 'post' : 'pre'
       const row = listDiagnostics(root).find(item => item.id === id)
       if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
-      const html = readDiagnosticFile(root, row, kind === 'post' ? '课后检测.html' : '课前诊断.html')
-      if (!html) return json(res, 404, { error: tr('这份卷子还没生成') })
-      return sendHtml(res, html)
+      const spec = kind === 'post' ? readPostSpec(root, row) : readManifest(root, row)
+      if (!spec) return json(res, 404, { error: tr('这份卷子还没生成') })
+      const preResult = kind === 'post' ? readDiagnosticResult(root, row, 'pre') : null
+      const preSpec = kind === 'post' ? readManifest(root, row) : null
+      const pre = preResult && preSpec ? scoreDiagnostic(preSpec, preResult.answers) : null
+      return sendHtml(res, renderDiagnosticHtml(spec, { kind, pre }))
     }
     if (path === 'workspace/info') {
       const settings = await desk.settings.read()
