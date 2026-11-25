@@ -655,20 +655,6 @@ async function route(ctx, store, desk, req, res) {
       execFile(command, [dir], () => {})
       return json(res, 200, { path: dir })
     }
-    case 'diagnostics/rebuild': {
-      const root = resolveRoot((await desk.settings.read()).saveRoot)
-      const id = String(body.id ?? '').trim()
-      const row = listDiagnostics(root).find(item => item.id === id)
-      if (!row) return json(res, 404, { error: tr('没找到这份诊断') })
-      const preSpec = readManifest(root, row)
-      if (!preSpec) return json(res, 404, { error: tr('诊断卷文件不见了') })
-      const pre = readDiagnosticResult(root, row, 'pre')
-      const preScore = pre ? scoreDiagnostic(preSpec, pre.answers) : null
-      writeDiagnosticHtml(root, id, '课前诊断.html', renderDiagnosticHtml(preSpec, { kind: 'pre' }))
-      const postSpec = readPostSpec(root, row)
-      if (postSpec) writeDiagnosticHtml(root, id, '课后检测.html', renderDiagnosticHtml(postSpec, { kind: 'post', pre: preScore }))
-      return json(res, 200, { ok: true })
-    }
     case 'diagnostics/post/create': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const id = String(body.id ?? '').trim()

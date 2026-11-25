@@ -648,9 +648,6 @@ export function createPostDiagnostic(id, notes = '') {
   return request('diagnostics/post/create', { id, notes })
 }
 
-export function rebuildDiagnostic(id) {
-  return request('diagnostics/rebuild', { id })
-}
 
 export function updateDiagnostic(id, patch) {
   return request('diagnostics/update', { id, patch })

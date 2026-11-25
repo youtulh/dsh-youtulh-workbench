@@ -1,6 +1,6 @@
 // 试听诊断：出卷、预览、导入回传、生成家长话术。
 import React from 'react'
-import { analyzeDiagnostic, archiveDiagnostic, createDiagnostic, createPostDiagnostic, duplicateDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, rebuildDiagnostic, revealDiagnostic, setDesk, toast, updateDiagnostic, useDesk } from './desk.js'
+import { analyzeDiagnostic, archiveDiagnostic, createDiagnostic, createPostDiagnostic, duplicateDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, revealDiagnostic, setDesk, toast, updateDiagnostic, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 
@@ -327,12 +327,6 @@ export function DiagnosticsView() {
                   <button type="button" className="md-pill is-small is-primary" onClick={() => analyze('pre')} disabled={!current.preScore || busy === 'analyze-pre'}>
                     <Icon name="spark" size={13} />{busy === 'analyze-pre' ? t('正在写话术…') : t('生成课前话术')}
                   </button>
-                  <button type="button" className="md-inline-link" onClick={async () => {
-                    setBusy('rebuild')
-                    try { await rebuildDiagnostic(current.id); toast(t('卷面更新好了，重新打开预览就能看到')); setPreview(null) }
-                    catch (err) { toast(err.message, { error: true }) }
-                    setBusy('')
-                  }} disabled={busy === 'rebuild'}>{busy === 'rebuild' ? t('更新中…') : t('更新卷面')}</button>
                   <button type="button" className="md-pill is-small" onClick={openPost} disabled={busy === 'post'}>{busy === 'post' ? t('正在出卷…') : t('生成课后检测')}</button>
                   <button type="button" className="md-pill is-small" onClick={() => openPreview('post')} disabled={!current.postScore && current.status !== '待课后'}>{t('预览课后检测')}</button>
                   <a className="md-pill is-small" href={`media-desk/diagnostics/download?id=${encodeURIComponent(current.id)}&kind=post`} download>{t('下载课后卷')}</a>
