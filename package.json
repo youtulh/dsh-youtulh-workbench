@@ -1,6 +1,6 @@
 {
   "name": "dsh-youtulh-workbench",
-  "version": "0.11.125",
+  "version": "0.11.126",
   "description": "Youtulh 工作台：给线上带小班的老师用的推流工具。回私信、做内容、看数据，产出全部写成本地文件（Word / CSV）。",
   "type": "module",
   "main": "src/host.js",

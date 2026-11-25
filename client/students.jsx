@@ -284,14 +284,27 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                     .sort((a, b) => String(a.className).localeCompare(String(b.className)) || a.no - b.no)
                     .map(row => (
                       <li key={`${row.className}-${row.no}`}>
-                        <button type="button" className="md-lesson-jump" onClick={() => setDesk({ view: 'students', focusId: null, classFocus: { name: row.className, no: row.no } })}>
-                          <span className="md-muted">{row.className}</span>
-                          <b>{t('第 {n} 次', { n: row.no })}</b>
-                          <span>{row.date || t('没填日期')}</span>
-                          <span>{row.attend || '—'}</span>
-                          <span>{row.mastery || '—'}</span>
-                          <span>{row.homework || '—'}</span>
-                        </button>
+                        {row.no >= 1 && row.className ? (
+                          <button type="button" className="md-lesson-jump" onClick={() => setDesk({ view: 'students', focusId: null, classFocus: { name: row.className, no: row.no } })}>
+                            <span className="md-muted">{row.className}</span>
+                            <b>{t('第 {n} 次', { n: row.no })}</b>
+                            <span>{row.date || t('没填日期')}</span>
+                            <span>{row.attend || '—'}</span>
+                            <span>{row.mastery || '—'}</span>
+                            <span>{row.homework || '—'}</span>
+                            {row.note ? <span className="md-muted">{row.note}</span> : null}
+                          </button>
+                        ) : (
+                          <div className="md-lesson-jump is-static">
+                            <span className="md-muted">{row.className || '—'}</span>
+                            <b>{t('第 {n} 次', { n: row.no })}</b>
+                            <span>{row.date || t('没填日期')}</span>
+                            <span>{row.attend || '—'}</span>
+                            <span>{row.mastery || '—'}</span>
+                            <span>{row.homework || '—'}</span>
+                            {row.note ? <span className="md-muted">{row.note}</span> : null}
+                          </div>
+                        )}
                       </li>
                     ))}
                   {!lessons.some(row => row.name === student.name && (!student.className || row.className === student.className)) ? <li className="md-muted">{t('还没有课次记录')}</li> : null}
