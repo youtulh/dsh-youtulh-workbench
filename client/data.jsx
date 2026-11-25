@@ -118,7 +118,8 @@ export function DataView() {
       if (sort === 'dms') return num(b['私信']) - num(a['私信'])
       if (sort === 'added') return num(b['加微']) - num(a['加微'])
       if (sort === 'rate') {
-        const rate = row => (num(row['播放']) > 0 ? num(row['私信']) / num(row['播放']) * 10000 : 0)
+        // 播放太少时比率会虚高，低于 500 播放的排在最后
+        const rate = row => (num(row['播放']) >= 500 ? num(row['私信']) / num(row['播放']) * 10000 : -1)
         return rate(b) - rate(a)
       }
       return String(b['发布日'] || b['创建时间']).localeCompare(String(a['发布日'] || a['创建时间']))
@@ -243,6 +244,7 @@ export function DataView() {
       ) : null}
 
       {rows?.length ? (
+        <>
         <div className="md-content-tools">
           <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜标题、选题、平台')} />
           <select className="md-case-result" value={sort} onChange={event => setSort(event.target.value)}>
@@ -252,6 +254,8 @@ export function DataView() {
           </select>
           <span className="md-muted">{t('{n} 条', { n: list.length })}</span>
         </div>
+        {sort === 'rate' ? <p className="md-muted">{t('按效率排序时，播放少于 500 的内容排在最后，避免比率虚高。')}</p> : null}
+        </>
       ) : null}
 
       {rows?.length ? (

@@ -712,4 +712,5 @@ export const PAGES = {
   私信最多: 'Most DMs',
   加微最多: 'Most adds',
   每万播私信最高: 'Best DMs per 10k views',
+  '按效率排序时，播放少于 500 的内容排在最后，避免比率虚高。': 'When sorting by efficiency, content under 500 views goes last to avoid inflated ratios.',
 }
