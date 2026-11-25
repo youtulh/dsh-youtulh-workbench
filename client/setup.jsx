@@ -505,7 +505,7 @@ export function SetupView() {
               <ul>
                 {review.nextTopics.map(row => (
                   <li key={row}>
-                    <button type="button" className="md-inline-link" onClick={() => startFromTopic(row)}>
+                    <button type="button" className="md-inline-link" onClick={() => startFromTopic(row, (positioning.city && row.includes(positioning.city) ? '本地' : /家长|孩子/.test(row) ? '家庭' : /考|期中|期末|分/.test(row) ? '考情' : '知识点'))}>
                       <Icon name="pen" size={12} />{row}
                     </button>
                   </li>

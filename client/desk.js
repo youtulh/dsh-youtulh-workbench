@@ -41,12 +41,12 @@ export function resetCreate() {
 }
 
 /** 把一条选题带到「做内容」：只保留这一条并勾好，直接生成 3 版口播。 */
-export function startFromTopic(topic) {
+export function startFromTopic(topic, angle = '') {
   const value = String(topic ?? '').trim()
   if (!value) return
   patchCreate(state => ({
     topics: [value],
-    angles: {},
+    angles: angle ? { [value]: angle } : {},
     picked: { [value]: true },
     groups: [],
     adopted: {},
