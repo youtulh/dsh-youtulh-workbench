@@ -216,14 +216,18 @@ export function SetupView() {
         {advice.ready ? t('定位完整：人群、切入点、顾虑都写了') : t('还差 {n} 项：{list}', { n: advice.gaps.length, list: advice.gaps.slice(0, 3).map(row => t(row.label)).join('、') })}
       </p>
 
-      <nav className="md-setup-nav" aria-label={t('本页目录')}>
-        {SECTIONS.map(([id, label]) => (
-          <button type="button" key={id} className={activeSection === id ? 'is-on' : ''} onClick={() => {
+      <div className="md-setup-jump">
+        <label>
+          <span>{t('跳到')}</span>
+          <select value={activeSection} onChange={event => {
+            const id = event.target.value
             setActiveSection(id)
             document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }}>{t(label)}</button>
-        ))}
-      </nav>
+          }}>
+            {SECTIONS.map(([id, label]) => <option key={id} value={id}>{t(label)}</option>)}
+          </select>
+        </label>
+      </div>
 
       <section className="md-setup-card" id="setup-teach">
         <h2><span>1</span>{t('我教什么')}</h2>

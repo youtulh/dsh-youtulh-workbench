@@ -2172,3 +2172,8 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-pager-size { display: inline-flex; align-items: center; gap: 4px; }
 .md-pager-size select { padding: 2px 5px; border: .5px solid var(--line); border-radius: var(--r-xs); background: var(--card); color: var(--ink); font: inherit; font-size: 11.5px; }
 @media (max-width: 640px) { .md-pager { gap: 6px; } }
+
+/* 设定页目录：用明确的下拉，不再用可能空白的粘性条 */
+.md-setup-jump { display: flex; align-items: center; gap: 8px; margin: 8px 0 14px; }
+.md-setup-jump label { display: inline-flex; align-items: center; gap: 6px; color: var(--ink3); font-size: 12px; }
+.md-setup-jump select { padding: 4px 9px; border: .5px solid var(--line); border-radius: var(--r-sm); background: var(--card); color: var(--ink); font: inherit; font-size: 12px; }

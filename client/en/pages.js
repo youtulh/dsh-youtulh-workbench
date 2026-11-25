@@ -829,5 +829,6 @@ export const PAGES = {
   条: 'items',
   上一页: 'Previous',
   下一页: 'Next',
+  跳到: 'Jump to',
 
 }
