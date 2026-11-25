@@ -136,7 +136,7 @@ export function FunnelPanel({ students = [], onChanged }) {
           setRefreshing(true)
           try { await load(); toast(t('刷新好了')) }
           finally { setRefreshing(false) }
-        }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
+        }}>{refreshing ? t('刷新中…') : t('刷新线索')}</button>
         <span className="md-grow" />
         <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜姓名、年级、卡点、来源')} />
         <select className="md-case-result" value={leadSort} onChange={event => setLeadSort(event.target.value)}>
