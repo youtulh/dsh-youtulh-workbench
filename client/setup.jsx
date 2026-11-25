@@ -64,6 +64,13 @@ export function SetupView() {
     } catch { /* 隐私模式就算了 */ }
   }
 
+  const loadReview = React.useCallback(() => {
+    Promise.all([fetchContent(), fetchLeads()])
+      .then(([content, leads]) => setReviewData({ content: content.rows ?? content.content ?? [], leads: leads.leads ?? [] }))
+      .catch(() => {})
+  }, [])
+
+
   React.useEffect(() => {
     if (!setupSection) return
     const el = document.getElementById(setupSection)
@@ -76,8 +83,7 @@ export function SetupView() {
     fetchBackups().then(data => setBackups(data.backups ?? [])).catch(() => {})
     fetchWorkspace().then(data => setRoot(data.root ?? '')).catch(() => {})
     fetchWorkspaceStats().then(setStats).catch(() => {})
-    fetchContent().then(data => setReviewData(prev => ({ ...prev, content: data.rows ?? data.content ?? [] }))).catch(() => {})
-    fetchLeads().then(data => setReviewData(prev => ({ ...prev, leads: data.leads ?? [] }))).catch(() => {})
+    loadReview()
     fetchChatRecords().then(data => {
       const cases = data.cases ?? []
       const latest = cases[cases.length - 1]
@@ -480,6 +486,8 @@ export function SetupView() {
           <div className="md-review-head">
             <b>{t('定位复盘')}</b>
             <span className="md-muted">{t('用最近的内容和线索，看看有没有跑偏')}</span>
+            <span className="md-grow" />
+            <button type="button" className="md-inline-link" onClick={loadReview}>{t('刷新复盘')}</button>
           </div>
           <div className="md-review-stats">
             <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'data', focusId: null })}><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></button>

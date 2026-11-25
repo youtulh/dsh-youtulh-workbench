@@ -146,6 +146,7 @@ export function DataView() {
     { id: 'draft', label: t('未发布'), test: row => row['状态'] !== '已发布' },
     { id: 'published', label: t('已发布'), test: row => row['状态'] === '已发布' },
     { id: 'missing', label: t('缺数据'), test: row => row['状态'] === '已发布' && (!String(row['播放'] ?? '').trim() || !String(row['发布日'] ?? '').trim()) },
+    { id: 'noAngle', label: t('没角度'), test: row => !String(row['角度'] ?? '').trim() },
     { id: 'hit', label: t('爆款'), test: row => row['爆款'] === '是' },
   ]
   const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
