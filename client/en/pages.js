@@ -731,4 +731,5 @@ export const PAGES = {
   标成结课了: 'Marked as finished',
   改回在读了: 'Back to active',
   '← 返回 {name} 的档案': '← Back to {name}',
+  '私信/万播：{rate}': 'DMs per 10k: {rate}',
 }

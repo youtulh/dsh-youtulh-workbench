@@ -307,6 +307,9 @@ export function DataView() {
                       </label>
                     ))}
                   </div>
+                  {num(row['播放']) >= 500 ? (
+                    <p className="md-card-rate">{t('私信/万播：{rate}', { rate: (num(row['私信']) / num(row['播放']) * 10000).toFixed(1) })}</p>
+                  ) : null}
                   <div className="md-card-metrics">
                     <label><span>{t('平台')}</span>
                       <input defaultValue={row['平台'] ?? ''} placeholder={t('抖音 / 视频号')} onBlur={event => { if (event.target.value !== (row['平台'] ?? '')) patch(row, '平台', event.target.value) }} />

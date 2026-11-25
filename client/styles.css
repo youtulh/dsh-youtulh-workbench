@@ -1989,3 +1989,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-student-records .md-lesson-jump:hover { background: var(--hover); }
 
 .md-student-records .md-lesson-jump.is-static { cursor: default; }
+
+.md-card-rate { margin: 6px 0 0; color: var(--ink3); font-size: 11.5px; }
