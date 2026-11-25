@@ -81,19 +81,33 @@ export function CreateView() {
   const openHistory = async () => {
     try {
       const data = await fetchTopicsHistory()
-      const options = (data.batches ?? []).flatMap(batch => (batch.topics ?? []).map(item => ({
-        value: item.topic,
-        label: `${batch.date || batch.batch} · ${item.topic}`,
-      })))
-      if (!options.length) return toast(t('还没有往期选题'))
+      const batches = (data.batches ?? []).filter(batch => (batch.topics ?? []).length)
+      if (!batches.length) return toast(t('还没有往期选题'))
       setDesk({
         dialog: {
           title: t('往期选题'),
-          submitLabel: t('填进提示'),
-          fields: [{ name: 'topic', label: t('选一个'), type: 'select', required: true, options }],
+          submitLabel: t('下一步'),
+          fields: [{
+            name: 'batch', label: t('先选一批'), type: 'select', required: true,
+            options: batches.map(batch => ({ value: batch.batch, label: `${batch.date || batch.batch} · ${batch.topics.length} 个选题` })),
+          }],
           onSubmit: values => {
-            patchCreate({ brief: values.topic, topics: [], picked: {}, groups: [], adopted: {}, dirs: {} })
-            toast(t('已填进提示，点生成就行'))
+            const chosen = batches.find(batch => batch.batch === values.batch)
+            if (!chosen) return
+            setDesk({
+              dialog: {
+                title: t('往期选题'),
+                submitLabel: t('填进提示'),
+                fields: [{
+                  name: 'topic', label: t('这批的选题'), type: 'select', required: true,
+                  options: chosen.topics.map(item => ({ value: item.topic, label: `${item.picked ? '✓ ' : ''}${item.topic}` })),
+                }],
+                onSubmit: next => {
+                  patchCreate({ brief: next.topic, topics: [], picked: {}, groups: [], adopted: {}, dirs: {} })
+                  toast(t('已填进提示，点生成就行'))
+                },
+              },
+            })
           },
         },
       })

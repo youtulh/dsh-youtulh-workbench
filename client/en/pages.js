@@ -722,4 +722,7 @@ export const PAGES = {
   还没有往期选题: 'No past topics yet',
   填进提示: 'Use as brief',
   '已填进提示，点生成就行': 'Filled into the brief — hit generate',
+  先选一批: 'Pick a batch',
+  这批的选题: 'Topics in this batch',
+  下一步: 'Next',
 }
