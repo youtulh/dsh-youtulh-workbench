@@ -15,6 +15,8 @@ export function FunnelPanel({ students = [], onChanged }) {
   const [contentTitles, setContentTitles] = React.useState([])
   const [loadError, setLoadError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
+  const [query, setQuery] = React.useState('')
+  const [sourceFilter, setSourceFilter] = React.useState('all')
   const [busy, setBusy] = React.useState('')
   const [over, setOver] = React.useState('')
   const [open, setOpen] = React.useState(-1)
@@ -114,7 +116,11 @@ export function FunnelPanel({ students = [], onChanged }) {
 
   if (leads === null) return <p className="md-muted md-dm-empty">{t('读取中…')}</p>
 
-  const groups = LEAD_STAGES.map(stage => ({ stage, rows: leads.filter(lead => lead.stage === stage) }))
+  const sources = [...new Set(leads.map(lead => String(lead.source ?? '').trim()).filter(Boolean))].slice(0, 80)
+  const q = query.trim()
+  const filtered = leads.filter(lead => (sourceFilter === 'all' || lead.source === sourceFilter)
+    && (!q || [lead.name, lead.grade, lead.painPoint, lead.raw, lead.next, lead.source].some(value => String(value ?? '').includes(q))))
+  const groups = LEAD_STAGES.map(stage => ({ stage, rows: filtered.filter(lead => lead.stage === stage) }))
 
   return (
     <div className="md-pipeline-wrap">
@@ -126,7 +132,12 @@ export function FunnelPanel({ students = [], onChanged }) {
           finally { setRefreshing(false) }
         }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         <span className="md-grow" />
-        <span className="md-muted">{t('共 {n} 条', { n: leads.length })}</span>
+        <input className="md-lead-search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('搜姓名、年级、卡点、来源')} />
+        <select className="md-case-result" value={sourceFilter} onChange={event => setSourceFilter(event.target.value)}>
+          <option value="all">{t('全部来源')}</option>
+          {sources.map(source => <option key={source} value={source}>{source}</option>)}
+        </select>
+        <span className="md-muted">{t('{n} / {total} 条', { n: filtered.length, total: leads.length })}</span>
         <button type="button" className="md-pill is-small" onClick={importLeadsDialog}>{t('导入线索')}</button>
         <button type="button" className="md-pill is-small is-primary" onClick={addLead}><Icon name="plus" size={13} />{t('记一条线索')}</button>
       </div>
@@ -144,6 +155,8 @@ export function FunnelPanel({ students = [], onChanged }) {
           <button type="button" className="md-pill" onClick={importLeadsDialog}>{t('导入线索')}</button>
           <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>{t('去回私信')}</button>
         </div>
+      ) : filtered.length === 0 ? (
+        <p className="md-muted md-dm-empty">{t('这个筛选下没有线索。')}</p>
       ) : (
         <div className="md-pipeline">
           {groups.map(({ stage, rows }) => (
