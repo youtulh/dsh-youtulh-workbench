@@ -535,6 +535,7 @@ export function DmView() {
           <span className="md-tile-meta">{t('{n} 条 · 工作区里的 线索表.csv', { n: leads.length })}</span>
           <span className="md-grow" />
           <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'students', focusId: null })}>{t('看漏斗 →')}</button>
+          <button type="button" className="md-inline-link" onClick={() => { reload(); reloadChats(); toast(t('刷新好了')) }}>{t('刷新')}</button>
           <button type="button" className="md-pill is-small" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>
             <Icon name="folder" size={13} />{t('打开工作区')}
           </button>

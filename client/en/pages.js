@@ -715,4 +715,5 @@ export const PAGES = {
   '按效率排序时，播放少于 500 的内容排在最后，避免比率虚高。': 'When sorting by efficiency, content under 500 views goes last to avoid inflated ratios.',
   '删掉这一轮对话？线索和学生档案不受影响。': 'Delete this chat turn? Leads and students stay.',
   对话删掉了: 'Chat turn deleted',
+  刷新好了: 'Refreshed',
 }

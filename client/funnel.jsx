@@ -119,6 +119,7 @@ export function FunnelPanel({ students = [], onChanged }) {
     <div className="md-pipeline-wrap">
       <div className="md-pipeline-tools">
         <span className="md-muted">{t('拖动卡片换阶段；也可以点开卡片用下拉改。')}</span>
+        <button type="button" className="md-inline-link" onClick={() => load().then(() => toast(t('刷新好了')))}>{t('刷新')}</button>
         <span className="md-grow" />
         <span className="md-muted">{t('共 {n} 条', { n: leads.length })}</span>
         <button type="button" className="md-pill is-small" onClick={importLeadsDialog}>{t('导入线索')}</button>
