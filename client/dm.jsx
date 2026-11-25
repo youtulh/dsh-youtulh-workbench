@@ -564,7 +564,13 @@ export function DmView() {
           ) : null}
         </div>
 
-        {leadsError ? (
+        {leadsError && leads.length ? (
+          <div className="md-load-error">
+            <p>{t('刷新失败：{msg}，下面是上次的数据', { msg: leadsError })}</p>
+            <button type="button" className="md-pill is-small" onClick={reload}>{t('重试')}</button>
+          </div>
+        ) : null}
+        {leadsError && !leads.length ? (
           <div className="md-load-error">
             <p>{t('读取失败：{msg}', { msg: leadsError })}</p>
             <button type="button" className="md-pill is-small" onClick={reload}>{t('重试')}</button>
@@ -743,7 +749,13 @@ export function DmView() {
           ) : null}
           <button type="button" className="md-inline-link" onClick={() => revealDir().catch(err => toast(err.message, { error: true }))}>{t('看表格')}</button>
         </header>
-        {chatsError ? (
+        {chatsError && chats.length ? (
+          <div className="md-load-error">
+            <p>{t('刷新失败：{msg}，下面是上次的数据', { msg: chatsError })}</p>
+            <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>
+          </div>
+        ) : null}
+        {chatsError && !chats.length ? (
           <div className="md-load-error">
             <p>{t('读取失败：{msg}', { msg: chatsError })}</p>
             <button type="button" className="md-pill is-small" onClick={reloadChats}>{t('重试')}</button>

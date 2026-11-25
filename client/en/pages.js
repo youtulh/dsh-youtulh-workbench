@@ -717,4 +717,5 @@ export const PAGES = {
   对话删掉了: 'Chat turn deleted',
   刷新好了: 'Refreshed',
   '刷新中…': 'Refreshing…',
+  '刷新失败：{msg}，下面是上次的数据': 'Refresh failed: {msg}. Showing the previous data.',
 }

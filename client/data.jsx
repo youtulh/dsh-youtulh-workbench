@@ -238,7 +238,7 @@ export function DataView() {
       </section>
 
       {rows === null && !loadError ? <p className="md-muted">{t('读取中…')}</p> : null}
-      {rows === null && loadError ? (
+      {loadError ? (
         <div className="md-load-error">
           <p>{t('读取失败：{msg}', { msg: loadError })}</p>
           <button type="button" className="md-pill is-small" onClick={load}>{t('重试')}</button>
