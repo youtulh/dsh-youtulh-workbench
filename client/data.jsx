@@ -322,7 +322,7 @@ export function DataView() {
                 <span className="md-grow" />
                 <span className="md-card-score" title={t('分数')}>{row['分数'] || '—'}</span>
               </header>
-              {row['选题'] ? <p className="md-card-topic">{row['选题']}</p> : null}
+              {row['选题'] ? <p className="md-card-topic">{row['角度'] ? <em className="md-content-angle">{row['角度']}</em> : null}{row['选题']}</p> : null}
               {row['状态'] === '已发布' ? (
                 <>
                   <div className="md-card-metrics">

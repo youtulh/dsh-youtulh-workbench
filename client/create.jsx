@@ -182,7 +182,7 @@ export function CreateView() {
     const key = variantKey(group.topic, variant.title)
     setBusy(key)
     try {
-      const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], comment: variant.comment ?? '', dm: variant.dm ?? '', batch })
+      const data = await post('content/adopt', { topic: group.topic, title: variant.title, script: variant.script, tags: variant.tags ?? [], comment: variant.comment ?? '', dm: variant.dm ?? '', angle: angles?.[group.topic] ?? '', batch })
       patchCreate(state => ({ adopted: { ...state.adopted, [key]: true }, dirs: { ...state.dirs, [key]: data.dir } }))
       toast(t('已保存到 {dir}，并记进内容库', { dir: data.dir }))
     } catch (err) { toast(err.message, { error: true }) }
@@ -230,7 +230,7 @@ export function CreateView() {
     }
     setBusy(`save-${key}`)
     try {
-      await post('content/revise', { dir, title: variant.title, topic: group.topic, script: text, tags: variant.tags ?? [], comment: variant.comment ?? '', dm: variant.dm ?? '' })
+      await post('content/revise', { dir, title: variant.title, topic: group.topic, script: text, tags: variant.tags ?? [], comment: variant.comment ?? '', dm: variant.dm ?? '', angle: angles?.[group.topic] ?? '' })
       toast(t('改好了，本地文件也更新了'))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')

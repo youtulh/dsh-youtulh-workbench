@@ -2091,3 +2091,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-lead-promise b { overflow-wrap: anywhere; }
 
 .md-review { scroll-margin-top: 76px; }
+
+.md-content-angle { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: var(--hover); color: var(--ink3); font-style: normal; font-size: 10px; line-height: 16px; vertical-align: 1px; }
