@@ -51,5 +51,5 @@ test('dm.jsx：AI 回私信候选已移除，只留人工台账', () => {
     assert.ok(!source.includes(needle), `dm.jsx 不应再出现 ${needle}`)
   }
   assert.ok(source.includes('记一条新线索'), 'dm.jsx 缺少人工台账入口')
-  assert.ok(source.includes('标准开头'), 'dm.jsx 缺少标准开头')
+  assert.ok(!source.includes('标准开头'), 'dm.jsx 不应再出现回复用的标准开头')
 })
