@@ -20,11 +20,11 @@ const PANEL_ID = 'media-desk'
 // navKey：同一个中文在别处意思不同（单数的“灵感”“风格”），英文导航另查一条
 const NAV = [
   { id: 'home', label: '首页', icon: 'wall' },
-  { id: 'dm', label: '聊天台', icon: 'chat' },
-  { id: 'diagnose', label: '试听诊断', icon: 'spark' },
-  { id: 'students', label: '学生', icon: 'target' },
   { id: 'content', label: '做内容', icon: 'pen' },
+  { id: 'diagnose', label: '试听诊断', icon: 'spark' },
   { id: 'data', label: '看数据', icon: 'list' },
+  { id: 'dm', label: '线索表', icon: 'chat' },
+  { id: 'students', label: '学生管理', icon: 'target' },
   { id: 'setup', label: '我的设定', icon: 'user' },
 ]
 

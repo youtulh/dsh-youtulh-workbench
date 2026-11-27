@@ -874,5 +874,5 @@ export const PAGES = {
   更新卷面: 'Update paper',
   '更新中…': 'Updating…',
   '卷面更新好了，重新打开预览就能看到': 'Paper updated — reopen the preview.',
-
+  线索表: 'Lead sheet',
 }
