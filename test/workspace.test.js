@@ -315,7 +315,7 @@ test('从备份还原：被改坏的文件能回到备份时的样子', async ()
 })
 
 
-test('成功经验不收录空话术的线索，避免聊天台出现空引号', async () => {
+test('成功经验不收录空话术的线索，避免线索表出现空引号', async () => {
   const root = await mkdtemp(join(tmpdir(), 'workbench-ws-'))
   try {
     appendLead(root, { name: '空话术', raw: '家长问了一句', stage: '已加微信', result: '加微成功' })

@@ -63,9 +63,6 @@ export function StudentsView() {
           try { await load(); toast(t('刷新好了')) }
           finally { setRefreshing(false) }
         }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
-        <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>
-          <Icon name="chat" size={14} />{t('去聊天台')}
-        </button>
       </header>
 
       {loadError ? (
@@ -236,7 +233,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
 
       {students.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('还没有学生。聊天台标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。')}</p>
+          <p>{t('还没有学生。线索表里标「成交」会自动建档案；线索漏斗里报课的也能转过来，或者直接加一个。')}</p>
           <button type="button" className="md-pill is-primary" onClick={() => open(null)}>{t('加第一个学生')}</button>
           <button type="button" className="md-pill" onClick={openImport}>{t('导入名单')}</button>
         </div>

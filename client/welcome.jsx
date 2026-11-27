@@ -121,7 +121,7 @@ export function WelcomeView() {
   const focus = due
     ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('处理跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
     : todo
-      ? { title: t('回 {n} 条还没结果的私信', { n: todo }), hint: t('先判断是谁、在问什么，再回'), action: t('去聊天台'), run: () => go('dm') }
+      ? { title: t('还有 {n} 条线索没标结果', { n: todo }), hint: t('标一下阶段或结果，后面才知道该跟谁'), action: t('去看线索表'), run: () => go('dm') }
       : content.length === 0
         ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('开始创作'), run: () => go('content') }
         : !published.length
@@ -137,7 +137,7 @@ export function WelcomeView() {
       <header className="md-hero">
         <p className="md-eyebrow">{t('Youtulh 工作台')}</p>
         <h1 className="md-display">{t('把对的人，带进课堂')}</h1>
-        <p className="md-lede">{t('先定只带哪类家长，再做内容把家长带来；在聊天台接住私信，报课后进学生档案。每个动作都留痕，越用越顺。')}</p>
+        <p className="md-lede">{t('先定只带哪类家长，再做内容把家长带来；在线索表里记下私信，报课后进学生档案。每个动作都留痕，越用越顺。')}</p>
         {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         {positioning.target ? <p className="md-note">{t('你现在抓的是：{target}', { target: positioning.target })}</p> : null}
       </header>
@@ -195,8 +195,8 @@ export function WelcomeView() {
           <button type="button" className="md-pill is-small is-primary" onClick={() => go('content')}>{content.length ? t('继续创作') : t('开始创作')}</button>
           <button type="button" className="md-pill is-small" onClick={() => go('data')}>{t('内容数据')}</button>
         </Feature>
-        <Feature icon="chat" title={t('聊天台')} hint={t('平台私信、微信沟通、跟进记录和成交')}>
-          <button type="button" className="md-pill is-small" onClick={() => go('dm')}>{t('进入聊天台')}</button>
+        <Feature icon="chat" title={t('线索表')} hint={t('聊天记录、卡点、跟进和成交状态')}>
+          <button type="button" className="md-pill is-small" onClick={() => go('dm')}>{t('打开线索表')}</button>
         </Feature>
         <Feature icon="target" title={t('学生管理')} hint={t('学生档案、班课、课次与家长反馈')}>
           <button type="button" className="md-pill is-small" onClick={() => go('students')}>{t('进入学生管理')}</button>

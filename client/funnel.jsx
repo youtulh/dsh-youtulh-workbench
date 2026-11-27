@@ -1,7 +1,7 @@
 // 线索漏斗：一条线索从私信走到报课，拖一下就换个阶段。
 // 数据就是工作区里的 线索表.csv，页面只是换个看法。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, importLeads, removeLead, setDesk, setLeadStage, toast, updateLead } from './desk.js'
+import { appendLeadRow, convertLead, fetchContent, fetchLeadsWithLessons, importLeads, removeLead, setDesk, setLeadStage, toast, updateLead } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { LEAD_CATEGORIES, LEAD_STAGES, dayKey } from './util.js'
 import { Icon } from './ui.jsx'
@@ -11,7 +11,6 @@ const stageIndex = stage => (LEAD_STAGES.includes(stage) ? LEAD_STAGES.indexOf(s
 export function FunnelPanel({ students = [], onChanged }) {
   useLang()
   const [leads, setLeads] = React.useState(null)
-  const [chatCounts, setChatCounts] = React.useState({})
   const [contentTitles, setContentTitles] = React.useState([])
   const [loadError, setLoadError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
@@ -24,15 +23,10 @@ export function FunnelPanel({ students = [], onChanged }) {
 
   const load = () => {
     setLoadError('')
-    return Promise.all([fetchLeadsWithLessons(), fetchChatRecords().catch(() => ({ rows: [] })), fetchContent().catch(() => ({ rows: [] }))])
-    .then(([{ leads: rows }, chatData, content]) => {
+    return Promise.all([fetchLeadsWithLessons(), fetchContent().catch(() => ({ rows: [] }))])
+    .then(([{ leads: rows }, content]) => {
       setLeads(rows)
       setContentTitles((content.rows ?? []).map(row => row['标题']).filter(Boolean).slice(0, 60))
-      const counts = {}
-      for (const chat of chatData.rows ?? []) {
-        if (chat.name) counts[chat.name] = (counts[chat.name] ?? 0) + 1
-      }
-      setChatCounts(counts)
     })
     .catch(err => { setLoadError(err.message); toast(err.message, { error: true }) })
   }
@@ -175,9 +169,8 @@ export function FunnelPanel({ students = [], onChanged }) {
 
       {leads.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('还没有线索。聊天台判断完一条私信，或者点上面「记一条线索」。')}</p>
+          <p>{t('还没有线索。点上面「记一条线索」，或粘贴聊天记录。')}</p>
           <button type="button" className="md-pill" onClick={importLeadsDialog}>{t('导入线索')}</button>
-          <button type="button" className="md-pill" onClick={() => setDesk({ view: 'dm', focusId: null })}>{t('去聊天台')}</button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="md-dm-empty">
@@ -217,12 +210,6 @@ export function FunnelPanel({ students = [], onChanged }) {
                     {lead.painPoint ? <p>{lead.painPoint}</p> : null}
                     <footer>
                       {lead.source ? <span className="md-pipeline-source">{lead.source}</span> : null}
-                      {lead.name && chatCounts[lead.name] ? (
-                        <button type="button" className="md-pipeline-chat" onClick={event => {
-                          event.stopPropagation()
-                          setDesk({ view: 'dm', focusId: null, dmPerson: lead.name })
-                        }}>{t('聊过 {n} 轮', { n: chatCounts[lead.name] })}</button>
-                      ) : null}
                       <span className="md-grow" />
                       <time>{lead.updatedAt || lead.date}</time>
                     </footer>
@@ -253,18 +240,6 @@ export function FunnelPanel({ students = [], onChanged }) {
                             {LEAD_STAGES.map(value => <option key={value} value={value}>{t(value)}</option>)}
                           </select>
                         </label>
-                        {lead.name ? (
-                          <button type="button" className="md-inline-link" onClick={event => {
-                            event.stopPropagation()
-                            setDesk({ view: 'dm', focusId: null, dmPerson: lead.name })
-                          }}>{t('去聊天台')}</button>
-                        ) : null}
-                        {stage === '约试听' ? (
-                          <button type="button" className="md-pill is-small" onClick={event => {
-                            event.stopPropagation()
-                            setDesk({ view: 'diagnose', focusId: null, diagPrefill: { name: lead.name, grade: lead.grade, pain: lead.painPoint, source: lead.source } })
-                          }}>{t('出诊断卷')}</button>
-                        ) : null}
                         {stage === '已报课' ? (
                           converted(lead)
                             ? <span className="md-muted">{t('已经转成学生了')}</span>

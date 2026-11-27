@@ -228,7 +228,7 @@ export async function fetchLeadsWithLessons() {
   return { leads: data.leads ?? [], lessons: data.lessons ?? [] }
 }
 
-/** 页内聊天台：按渠道（平台私信 / 微信）给判断 + 两条下一句 + 台账字段。 */
+/** 旧版页内聊天台：按渠道给判断和下一句；界面已改为只记录，不再调用。 */
 export async function draftDm(raw, channel = '平台私信', history = '') {
   return request('dm/draft', { raw, channel, history })
 }
@@ -255,7 +255,7 @@ export async function updateChatCase(index, patch) {
   return request('chat/cases/update', { index, patch })
 }
 
-/** 聊天台的「再给一版」：按一句要求改上一版的两句话。 */
+/** 旧版聊天台的「再给一版」；界面已不再调用。 */
 export async function reviseDm(payload) {
   return request('dm/revise', payload)
 }

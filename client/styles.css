@@ -1661,13 +1661,13 @@ body[data-ds-dark-theme] .md-root {
 .md-student-card, .md-class-card { transition: transform .2s, box-shadow .2s; }
 .md-student-card:hover { transform: translateY(-1px); box-shadow: var(--dsw-elevation-prominent); }
 
-/* 聊天台：平台私信 / 微信 两个阶段 */
+/* 线索表：平台私信 / 微信 两个阶段 */
 .md-channel-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
 .md-channel-tabs > button:not(.md-inline-link) { padding: 4px 12px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-size: 12.5px; line-height: 20px; transition: color .15s, background .15s; }
 .md-channel-tabs > button.is-on:not(.md-inline-link) { background: var(--primary); color: var(--on-primary); }
 .md-dm-judge { flex-basis: 100%; margin-top: 2px; color: var(--ink2); font-size: 12px; line-height: 18px; }
 
-/* 聊天台：最近对话 */
+/* 线索表：最近对话 */
 .md-chat-list { display: flex; flex-direction: column; gap: 6px; max-height: 460px; overflow-y: auto; }
 .md-chat-row { padding: 8px 10px; border-radius: var(--r-md); transition: background .15s; }
 .md-chat-row:hover { background: var(--hover); }
@@ -1715,7 +1715,7 @@ body[data-ds-dark-theme] .md-root {
   .md-chat-lead input { width: 100%; }
 }
 
-/* 聊天台：按一句要求再给一版 */
+/* 线索表：按一句要求再给一版 */
 .md-dm-revise { display: flex; gap: 8px; margin-top: 10px; }
 .md-dm-revise input { flex: 1; min-width: 0; padding: 7px 10px; border: .5px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 12.5px; }
 .md-dm-revise input:focus { border-color: var(--accent); }
@@ -1757,12 +1757,12 @@ body[data-ds-dark-theme] .md-root {
   .md-chat-person-row { gap: 6px; }
 }
 
-/* 聊天台：长消息换行；没写名字的行不可点 */
+/* 线索表：长消息换行；没写名字的行不可点 */
 .md-dm-drafts p, .md-chat-full p { overflow-wrap: anywhere; }
 .md-chat-person-row:disabled { cursor: default; opacity: .7; }
 .md-chat-person-row:disabled:hover { background: none; }
 
-/* 按人列表：最后一句摘要 + 手机端聊天台 */
+/* 按人列表：最后一句摘要 + 手机端线索表 */
 .md-chat-person-preview { flex-basis: 100%; overflow: hidden; color: var(--ink3); font-size: 11.5px; line-height: 17px; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 640px) {
   .md-dm .md-tile-head { gap: 6px; }
@@ -1817,12 +1817,12 @@ body[data-ds-dark-theme] .md-root {
 .md-funnel-stat.is-due dd { color: var(--accent); }
 .md-funnel-stat:hover:not(:disabled) dt { color: var(--ink); }
 
-/* 聊天台：示例场景 */
+/* 线索表：示例场景 */
 .md-dm-scenarios { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; color: var(--ink3); font-size: 12px; }
 .md-dm-scenarios .md-chip { cursor: pointer; }
 .md-dm-scenarios .md-chip:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
-/* 聊天台：改建议 */
+/* 线索表：改建议 */
 .md-dm-draft-edit { display: grid; gap: 6px; margin-top: 4px; }
 .md-dm-draft-edit textarea { width: 100%; padding: 8px 10px; border: .5px solid var(--line); border-radius: var(--r-md); background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--ink); font: inherit; font-size: 13px; line-height: 21px; resize: vertical; }
 .md-dm-draft-edit textarea:focus { border-color: var(--accent); }
@@ -2108,14 +2108,14 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 
 .md-funnel dl small { display: block; color: var(--ink3); font-size: 9.5px; margin-top: 1px; }
 
-/* 回私信改成聊天台：对话先出现，页面稳定滚动，不被宽内容撑破 */
+/* 回私信改成线索表：对话先出现，页面稳定滚动，不被宽内容撑破 */
 .md-main { min-height: 0; }
 .md-page { height: 100%; overscroll-behavior: contain; overflow-x: clip; }
 .md-dm { min-width: 0; max-width: 100%; }
 .md-dm > * { min-width: 0; }
 .md-chat-log { max-width: 100%; }
 
-/* 聊天台头部控件多，不能再按 44px 单行裁切 */
+/* 线索表头部控件多，不能再按 44px 单行裁切 */
 .md-chat-log .md-tile-head {
   height: auto;
   flex-wrap: wrap;
@@ -2127,14 +2127,14 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-chat-log .md-lead-tabs { flex-wrap: wrap; }
 .md-chat-log .md-tile-meta { margin-left: 0; }
 
-/* 聊天台：新回复默认收起，首屏先看对话 */
+/* 线索表：新回复默认收起，首屏先看对话 */
 .md-composer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
 .md-composer-head b { font-size: 14px; font-weight: 500; }
 .md-composer-head small { display: block; color: var(--ink3); font-size: 11.5px; line-height: 17px; }
 .md-dm-input.is-collapsed { padding-bottom: 14px; }
 .md-dm-input.is-collapsed .md-composer-head { margin-bottom: 0; }
 
-/* 聊天台主体：不要用 grid 固定行高，避免线索表/案例库被压成一条 */
+/* 线索表主体：不要用 grid 固定行高，避免线索表/案例库被压成一条 */
 .md-dm {
   display: flex;
   flex-direction: column;
@@ -2158,7 +2158,7 @@ button:active:not(:disabled) { transform: translateY(.5px); }
   .md-dm-input { padding: 14px; }
 }
 
-/* 聊天台：页面始终有明确滚动条，底部留出呼吸空间 */
+/* 线索表：页面始终有明确滚动条，底部留出呼吸空间 */
 .md-page {
   overflow-y: scroll;
   scrollbar-gutter: stable;

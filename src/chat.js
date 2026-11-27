@@ -1,4 +1,4 @@
-// 聊天台：平台私信（引流）和微信（成交）两个阶段。
+// 线索表：平台私信（引流）和微信（成交）两个阶段；界面只做记录，不再生成回复。
 // 记录落在 对话记录.csv；人工案例落在 案例库.csv，聊成的案例会进提示词当参考。
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -215,7 +215,7 @@ ${cases ? `\n以前聊成的真实例子（照着这种感觉写，别照抄内�
 
 /**
  * 已经给过一版，老师想再改：保留上一版能用的句子，只按他这句要求调。
- * 这就是聊天台的「再给一版」。
+ * 这是旧版回私信用的「再给一版」，界面已不再调用。
  */
 export function chatRevisePrompt(state, { channel = '平台私信', raw = '', history = '', drafts = [], note = '', cases = '', words = DEFAULT_PLATFORM_WORDS } = {}) {
   const base = chatPrompt(state, { channel, raw, history, cases, words })

@@ -1,6 +1,6 @@
 // 我的设定：先定「我为谁、从哪切、她最怕什么」，再给体检和第一批可以拍的视频。
 import React from 'react'
-import { backupWorkspace, dispatchOps, fetchBackups, fetchChatRecords, fetchContent, fetchLeads, fetchPlatformWords, fetchVoice, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
+import { backupWorkspace, dispatchOps, fetchBackups, fetchContent, fetchLeads, fetchPlatformWords, fetchVoice, fetchWorkspaceStats, revealDir, upgradeWorkspace, savePlatformWords, saveVoice, startFromTopic, setDesk, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { diagnosePositioning, entrySuggestions, positioningSentence, suggestTargets } from '../src/targets.js'
@@ -19,7 +19,6 @@ const SECTIONS = [
   ['setup-voice', '说话方式'],
   ['setup-samples', '原话样本'],
   ['setup-words', '平台词表'],
-  ['setup-cases', '案例库'],
   ['setup-backup', '数据备份'],
   ['setup-advice', '定位体检'],
   ['setup-review', '定位复盘'],
@@ -45,7 +44,6 @@ export function SetupView() {
   const [banText, setBanText] = React.useState('')
   const [wordsBusy, setWordsBusy] = React.useState(false)
   const [activeSection, setActiveSection] = React.useState(SECTIONS[0][0])
-  const [caseInfo, setCaseInfo] = React.useState(null)
   const [backup, setBackup] = React.useState(null)
   const [backupBusy, setBackupBusy] = React.useState(false)
   const [backups, setBackups] = React.useState([])
@@ -85,11 +83,6 @@ export function SetupView() {
     fetchBackups().then(data => setBackups(data.backups ?? [])).catch(() => {})
     fetchWorkspaceStats().then(setStats).catch(() => {})
     loadReview()
-    fetchChatRecords().then(data => {
-      const cases = data.cases ?? []
-      const latest = cases[cases.length - 1]
-      setCaseInfo({ count: cases.length, latest })
-    }).catch(() => {})
     fetchPlatformWords().then(data => {
       setAllowText((data.allow ?? []).join('\n'))
       setBanText((data.ban ?? []).join('\n'))
@@ -343,21 +336,8 @@ export function SetupView() {
         </div>
       </section>
 
-      <section className="md-setup-card" id="setup-cases">
-        <h2><span>7</span>{t('案例库')}</h2>
-        <p className="md-setup-hint">{t('你导入的人工聊天案例。聊成的案例会进「下一句建议」的参考；在这里能看到有多少条、去聊天台管理。')}</p>
-        <div className="md-setup-samples-foot">
-          <span className="md-muted">
-            {caseInfo === null ? t('读取中…') : t('现在有 {n} 条案例', { n: caseInfo.count })}
-            {caseInfo?.latest ? t(' · 最近：{scene}（{result}）', { scene: caseInfo.latest.scene || t('没写场景'), result: caseInfo.latest.result || t('未定') }) : ''}
-          </span>
-          <span className="md-grow" />
-          <button type="button" className="md-pill is-small" onClick={() => setDesk({ view: 'dm', focusId: null, dmCases: true })}>{t('去管理案例')}</button>
-        </div>
-      </section>
-
       <section className="md-setup-card" id="setup-backup">
-        <h2><span>8</span>{t('数据备份')}</h2>
+        <h2><span>7</span>{t('数据备份')}</h2>
         <p className="md-setup-hint">{t('你的数据（设定、线索、学生、课次、反馈、内容）都在电脑上。点一下会复制一份到旁边的「备份」文件夹，不会改动原来的数据；只保留最近 10 份，旧的自动清掉。')}</p>
         {stats ? (
           <p className="md-muted">

@@ -380,7 +380,7 @@ export function leadLessons(root, limit = 3) {
   return readLeads(root)
     // 明确标了失败的就不算成功经验
     .filter(row => row.result !== '失败' && (row.result === '加微成功' || win.has(row.stage)))
-    // 家长原话和当时发的话术都有的才算经验；空引号只会让聊天台显得脏
+    // 家长原话和当时发的话术都有的才算经验；空引号只会让线索表显得脏
     .filter(row => String(row.raw ?? '').trim() && String(row.draft ?? '').trim())
     .slice(0, limit)
     .map(row => `${row.type || '家长'} · ${row.category || '未分类'}｜家长说「${(row.raw || '').slice(0, 24)}」｜我们回「${(row.draft || '').slice(0, 40)}」→ 加了微信`)

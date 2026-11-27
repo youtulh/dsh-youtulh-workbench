@@ -53,3 +53,12 @@ test('dm.jsx：AI 回私信候选已移除，只留人工台账', () => {
   assert.ok(source.includes('记一条新线索'), 'dm.jsx 缺少人工台账入口')
   assert.ok(!source.includes('标准开头'), 'dm.jsx 不应再出现回复用的标准开头')
 })
+
+// 聊天台已经下线：页面里不应再出现「聊天台」或跳转入口
+test('UI 里不再出现聊天台入口', () => {
+  for (const file of ['index.jsx', 'students.jsx', 'funnel.jsx', 'welcome.jsx', 'setup.jsx', 'dm.jsx']) {
+    const source = readFileSync(new URL(file, DIR), 'utf8')
+    assert.ok(!source.includes('聊天台'), `${file} 里还有聊天台`)
+    assert.ok(!source.includes('去聊天台'), `${file} 里还有去聊天台`)
+  }
+})

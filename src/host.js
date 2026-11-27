@@ -1093,7 +1093,7 @@ ${analysis.riskNote}
       return json(res, 200, { row: fresh })
     }
     case 'dm/draft': {
-      // 页内聊天台：平台私信只负责引流，微信阶段负责把人聊到诊断 / 试听
+      // 线索表：原来的私信分诊入口，现在只保留记录用的台账数据
       const raw = String(body.raw ?? '').trim().slice(0, 2000)
       if (!raw) return json(res, 400, { error: tr('先粘一条消息') })
       const channel = CHANNELS.includes(body.channel) ? body.channel : CHANNELS[0]
@@ -1162,7 +1162,7 @@ ${analysis.riskNote}
             school: sameName?.school || '',
             source: '聊天成交',
             enrolledAt: dayStamp(),
-            note: [sameName?.painPoint ? `卡点：${sameName.painPoint}` : '', '聊天台标成交时自动建档'].filter(Boolean).join('；'),
+            note: [sameName?.painPoint ? `卡点：${sameName.painPoint}` : '', '线索表标成交时自动建档'].filter(Boolean).join('；'),
           })
           studentCreated = true
         }
