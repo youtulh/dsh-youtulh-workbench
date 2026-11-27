@@ -43,3 +43,13 @@ for (const needle of ['const q =', 'const list =', 'const pageRows =']) {
     assert.ok(source.includes(needle), `data.jsx 缺少 ${needle}`)
   })
 }
+
+// 回私信收敛：不再给 AI 候选矩阵，只留人工台账和标准开头
+test('dm.jsx：AI 回私信候选已移除，只留人工台账', () => {
+  const source = readFileSync(new URL('dm.jsx', DIR), 'utf8')
+  for (const needle of ['判断一下', '用这条', '再给一版', 'draftDm(', 'reviseDm(']) {
+    assert.ok(!source.includes(needle), `dm.jsx 不应再出现 ${needle}`)
+  }
+  assert.ok(source.includes('记一条新线索'), 'dm.jsx 缺少人工台账入口')
+  assert.ok(source.includes('标准开头'), 'dm.jsx 缺少标准开头')
+})

@@ -1,8 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { addChatCase, appendLeadRow, convertLead, draftDm, fetchChatRecords, fetchContent, fetchLeadsWithLessons, fetchWorkspace, logChat, profileSummary, removeChatCase, removeChatLog, removeLead, reviseDm, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
-import { launchFailedToast, startChat } from './launch.js'
+import { addChatCase, appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, fetchWorkspace, profileSummary, removeChatCase, removeChatLog, removeLead, setDesk, toast, updateChatCase, updateChatLog, updateLead, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon, Pager } from './ui.jsx'
 import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS, dayKey } from './util.js'
@@ -23,6 +22,13 @@ const FILTERS = [
 
 const EMPTY_FIELDS = { name: '', grade: '', school: '', painPoint: '', source: '' }
 
+// 人工可复制的标准开头：带口语缓冲词，不编学期
+const STANDARD_REPLIES = [
+  '你好，孩子现在几年级、卡在哪一章？可以先把最近一次卷子发我，我可能能看出问题。',
+  '这块不一定是不会，可能是前面哪一章没接上，得看卷子才能确定。',
+  '据我了解，这个知识点一般上学期会讲到，具体以学校进度为准。',
+]
+
 // 新用户不知道粘什么的时候，点一条示例先看效果（随手能改）
 const SCENARIOS = [
   { label: '问价格', platform: p => `老师，${p.grade}${p.subject}一对一怎么收费？`, wechat: () => '老师，一节课多少钱？' },
@@ -34,8 +40,8 @@ const SCENARIOS = [
 // 粘了一半的消息和建议不要丢：切页面记得，刷新页面也记得
 const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
-  raw: '', channel: '平台私信', history: '', result: null, chosen: 0,
-  fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
+  raw: '', channel: '平台私信', fields: { ...EMPTY_FIELDS }, draftText: '', stage: '私信',
+  type: '家长', category: 'C 怎么补',
   chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '', leadSort: 'recent', caseQuery: '', caseFilter: 'all',
 }
 const DM_DRAFT = (() => {
@@ -55,13 +61,12 @@ export function DmView() {
   const [root, setRoot] = React.useState('')
   const [raw, setRaw] = React.useState(DM_DRAFT.raw)
   const [channel, setChannel] = React.useState(DM_DRAFT.channel)
-  const [history, setHistory] = React.useState(DM_DRAFT.history)
   const [busy, setBusy] = React.useState('')
-  const [result, setResult] = React.useState(DM_DRAFT.result)
-  const [chosen, setChosen] = React.useState(DM_DRAFT.chosen)
   const [fields, setFields] = React.useState(DM_DRAFT.fields)
   const [draftText, setDraftText] = React.useState(DM_DRAFT.draftText)
   const [stage, setStage] = React.useState(DM_DRAFT.stage)
+  const [type, setType] = React.useState(DM_DRAFT.type)
+  const [category, setCategory] = React.useState(DM_DRAFT.category)
   const [leads, setLeads] = React.useState([])
   const [leadsReady, setLeadsReady] = React.useState(false)
   const [leadsError, setLeadsError] = React.useState('')
@@ -88,11 +93,6 @@ export function DmView() {
   const [chatsError, setChatsError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
   const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
-  const [reviseNote, setReviseNote] = React.useState('')
-  const [reviseBusy, setReviseBusy] = React.useState(false)
-  const [editDraft, setEditDraft] = React.useState(-1)
-  const [editedDrafts, setEditedDrafts] = React.useState({})
-  const [editText, setEditText] = React.useState('')
   const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
   const [chatPerson, setChatPerson] = React.useState(DM_DRAFT.chatPerson)
   const [chatResult, setChatResult] = React.useState(DM_DRAFT.chatResult)
@@ -101,15 +101,14 @@ export function DmView() {
   const dmFilter = useDesk(s => s.dmFilter)
   const dmCases = useDesk(s => s.dmCases)
   const prefilledPerson = React.useRef('')
-  const autoHistoryFor = React.useRef('')
   const [openChat, setOpenChat] = React.useState(-1)
   const [chatPage, setChatPage] = React.useState(1)
   const [chatPageSize, setChatPageSize] = React.useState(20)
 
   React.useEffect(() => {
-    Object.assign(DM_DRAFT, { raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter })
+    Object.assign(DM_DRAFT, { raw, channel, fields, draftText, stage, type, category, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter })
     try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
-  }, [raw, channel, history, result, chosen, fields, draftText, stage, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter])
+  }, [raw, channel, fields, draftText, stage, type, category, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort, caseQuery, caseFilter])
 
   React.useEffect(() => { fetchWorkspace().then(info => setRoot(info.root)).catch(() => {}) }, [])
   React.useEffect(() => {
@@ -136,18 +135,6 @@ export function DmView() {
   }, [])
   React.useEffect(() => { reloadChats() }, [reloadChats])
 
-  // 从线索进来看某个人时，把上一轮对话带进上下文，接着聊不用重讲背景
-  React.useEffect(() => {
-    if (!chatPerson || history) return
-    if (autoHistoryFor.current === chatPerson) return
-    const mine = chats.filter(row => row.name === chatPerson)
-    const last = mine[mine.length - 1]
-    if (last) {
-      autoHistoryFor.current = chatPerson
-      setHistory(`${t('对方')}：${last.incoming}\n${t('我方')}：${last.outgoing}`)
-    }
-  }, [chatPerson, chats.length])
-
   // 从线索漏斗点「聊过 n 轮」过来：直接只看这个人，并滚到最近对话
   React.useEffect(() => {
     if (!dmCases) return
@@ -169,14 +156,8 @@ export function DmView() {
     setChatView('turns')
     // 从线索/漏斗过来时，顺手把名字填进台账；换了人就覆盖，别把记录挂到上一个人名下
     setFields(prev => ({ ...prev, name: dmPerson }))
-    setHistory('')
     if (prefilledPerson.current !== dmPerson) {
       prefilledPerson.current = dmPerson
-      // 换了人：上一批建议、选中项、改稿都不再属于这个人
-      setResult(null)
-      setEditedDrafts({})
-      setChosen(0)
-      setReviseNote('')
       setRaw('')
     }
     setDesk({ dmPerson: '' })
@@ -192,64 +173,20 @@ export function DmView() {
     })
   }
 
-  const run = async () => {
-    if (!raw.trim()) return
-    setBusy('draft')
-    try {
-      const data = await draftDm(raw.trim(), channel, history)
-      const judged = { ...data, type: data.type || LEAD_TYPES[0], category: data.category || LEAD_CATEGORIES[2] }
-      setResult(judged)
-      setEditedDrafts({})
-      setChosen(0)
-      setFields({ ...EMPTY_FIELDS, ...(data.fields ?? {}) })
-      setDraftText(data.drafts?.[0]?.text ?? '')
-      setStage('私信')
-    } catch (err) { toast(err.message, { error: true }) }
-    setBusy('')
-  }
-
-  const pick = (index) => {
-    setChosen(index)
-    setDraftText(result?.drafts?.[index]?.text ?? '')
-  }
-
   const save = async () => {
-    if (!result) return
-    if (!draftText.trim()) return toast(t('先选一条话术'), { error: true })
+    if (!raw.trim() && !draftText.trim()) return toast(t('先粘对方的话，或写一句要记的话术'), { error: true })
     setBusy('save')
     try {
-      const data = await appendLeadRow({ raw: raw.trim(), ...fields, type: result.type, category: result.category, draft: draftText, stage })
+      const data = await appendLeadRow({ raw: raw.trim(), ...fields, type, category, draft: draftText, stage })
       setLeads(data.leads ?? [])
       setLessons(data.lessons ?? [])
       toast(t('记进线索表了'))
       setRaw('')
-      setResult(null)
       setFields(EMPTY_FIELDS)
       setDraftText('')
       setStage('私信')
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
-  }
-
-  const revise = async () => {
-    if (!result || !reviseNote.trim()) return
-    setReviseBusy(true)
-    try {
-      const data = await reviseDm({
-        channel, raw: raw.trim(), history,
-        drafts: (result.drafts ?? []).map(row => row.text), note: reviseNote.trim(),
-      })
-      if (!data.drafts?.length) {
-        toast(t('模型没通，这次没改；上一版还能用'), { error: true })
-        return
-      }
-      setResult(prev => ({ ...prev, drafts: data.drafts, source: data.source ?? prev.source }))
-      setEditedDrafts({})
-      setChosen(0)
-      setReviseNote('')
-      toast(t('改好了，再看一眼'))
-    } catch (err) { toast(err.message, { error: true }) }
-    finally { setReviseBusy(false) }
   }
 
   const postpone = (lead, days) => {
@@ -456,9 +393,9 @@ export function DmView() {
                   <span className="md-grow" />
                   <button type="button" className="md-inline-link" onClick={() => {
                     setChannel(row.channel)
-                    setHistory(`${t('对方')}：${row.incoming}${row.outgoing ? `\n${t('我方')}：${row.outgoing}` : ''}`)
+                    if (row.name) setChatPerson(row.name)
                     setRaw('')
-                    toast(t('已带入上一轮，粘对方的新消息就行'))
+                    toast(t('已带入这个人，直接记新线索'))
                     openComposer()
                   }}>{t('接着聊')}</button>
                   <select value={row.result || '未定'} onChange={event => {
@@ -532,8 +469,8 @@ export function DmView() {
       <section className={`md-dm-input ${composerOpen ? 'is-open' : 'is-collapsed'}`}>
         <div className="md-composer-head">
           <div>
-            <b>{t('写一条新回复')}</b>
-            <small>{t('粘对方最后一句，判断完给你两条能直接发的话')}</small>
+            <b>{t('记一条新线索')}</b>
+            <small>{t('粘对方最后一句，选阶段和下一步；要回什么由肖月自己写')}</small>
           </div>
           <span className="md-grow" />
           <button type="button" className="md-pill is-small" onClick={() => setComposerOpen(value => !value)}>{composerOpen ? t('收起') : t('展开')}</button>
@@ -560,26 +497,18 @@ export function DmView() {
               ],
               onSubmit: values => {
                 addChatCase(values)
-                  .then(data => { setCases(data.cases ?? []); toast(t('案例存好了，以后给建议会参考')) })
+                  .then(data => { setCases(data.cases ?? []); toast(t('案例存好了')) })
                   .catch(err => toast(err.message, { error: true }))
               },
             },
           })}>{t('导入案例')}</button>
         </div>
-        {history ? (
-          <div className="md-dm-context">
-            <span>{t('接着上一轮聊：')}</span>
-            <p>{history}</p>
-            <button type="button" className="md-inline-link" onClick={() => setHistory('')}>{t('清除上下文')}</button>
-          </div>
-        ) : null}
         <label className="md-field">
-          <span>{channel === '微信' ? t('对方最后一句（可以把前面几句一起粘）') : t('对方在平台上的最后一句（或几条）')}</span>
+          <span>{channel === '微信' ? t('对方最后一句（可留空）') : t('对方在平台上的最后一句')}</span>
           <textarea
             rows={4}
             value={raw}
             onChange={event => setRaw(event.target.value)}
-            onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); run() } }}
             placeholder={channel === '微信'
               ? t('老师，一节课多少钱？孩子高二物理四十多分，还来得及吗？')
               : t('老师你好，我孩子高一，化学期中才 58 分，还能补上来吗？')}
@@ -594,138 +523,67 @@ export function DmView() {
             }}>{t(item.label)}</button>
           ))}
         </div>
-        <div className="md-dm-actions">
-          <span className="md-muted">{t('⌘ + Enter 直接给下一句；结果就在这页出，不用跳到对话。')}</span>
-          <span className="md-grow" />
-          <button type="button" className="md-pill is-primary" onClick={run} disabled={!raw.trim() || busy === 'draft'}>
-            <Icon name="chat" size={14} />{busy === 'draft' ? t('正在判断…') : t('判断一下')}
-          </button>
+
+        <div className="md-dm-standard">
+          <span className="md-muted">{t('标准开头（点了复制，回微信粘贴；可自己改）')}</span>
+          {STANDARD_REPLIES.map((text, index) => (
+            <div className="md-dm-standard-row" key={index}>
+              <p>{text}</p>
+              <button type="button" className="md-inline-link" onClick={() => copy(text)}>{t('复制')}</button>
+            </div>
+          ))}
+        </div>
+
+        <datalist id="md-content-titles">
+          {contentSources.map(title => <option key={title} value={title} />)}
+        </datalist>
+        <div className="md-dm-ledger">
+          <div className="md-dm-ledger-grid">
+            {[['name', '姓名'], ['grade', '年级'], ['school', '学校'], ['painPoint', '卡点'], ['source', '来源']].map(([key, label]) => (
+              <label className="md-field" key={key}>
+                <span>{t(label)}</span>
+                <input
+                  value={fields[key] ?? ''}
+                  placeholder={key === 'source' ? t('选一条内容，或自己写') : t('没提就空着')}
+                  list={key === 'source' ? 'md-content-titles' : undefined}
+                  onChange={event => setFields(prev => ({ ...prev, [key]: event.target.value }))}
+                />
+              </label>
+            ))}
+          </div>
+          <label className="md-field">
+            <span>{t('实际发出去的话术（肖月写，可留空）')}</span>
+            <textarea rows={3} value={draftText} onChange={event => setDraftText(event.target.value)} />
+          </label>
+          <div className="md-dm-actions">
+            <label className="md-dm-field">
+              <span>{t('阶段')}</span>
+              <select value={stage} onChange={event => setStage(event.target.value)}>
+                {LEAD_STAGES.map(option => <option key={option} value={option}>{t(option)}</option>)}
+              </select>
+            </label>
+            <label className="md-dm-field">
+              <span>{t('类型')}</span>
+              <select value={type} onChange={event => setType(event.target.value)}>
+                {LEAD_TYPES.map(option => <option key={option} value={option}>{t(option)}</option>)}
+              </select>
+            </label>
+            <label className="md-dm-field">
+              <span>{t('分类')}</span>
+              <select value={category} onChange={event => setCategory(event.target.value)}>
+                {LEAD_CATEGORIES.map(option => <option key={option} value={option}>{t(option)}</option>)}
+              </select>
+            </label>
+            <span className="md-grow" />
+            <button type="button" className="md-pill is-primary" onClick={save} disabled={busy === 'save'}>
+              {busy === 'save' ? t('保存中…') : t('记进线索表')}
+            </button>
+          </div>
         </div>
         </>
         ) : null}
       </section>
 
-      {result ? (
-        <section className="md-tile md-dm-card">
-          <header className="md-tile-head">
-            <h2>{t('判断')}</h2>
-            <span className="md-dm-chips">
-              <b>{result.type || t('没判断出来')}</b>
-              <b className="is-3">{result.category || t('未分类')}</b>
-              {result.judge ? <span className="md-dm-judge">{result.judge}</span> : null}
-            </span>
-            <span className="md-grow" />
-            {result.source === 'local'
-              ? <span className="md-source is-local">{t('本地兜底 · 模型没通')}</span>
-              : <span className="md-source">{t('模型生成')}</span>}
-            <button type="button" className="md-inline-link" onClick={() => {
-              if (!startChat('dm', { raw, root, profile: summary, lessons, drafts: (result.drafts ?? []).map(row => row.text) })) launchFailedToast(toast)
-            }}>{t('去对话里深聊')}</button>
-          </header>
-
-          <ul className="md-dm-drafts">
-            {(result.drafts ?? []).map((draft, index) => (
-              <li key={`${draft.tag}-${index}`} className={chosen === index ? 'is-used' : ''}>
-                <span className="md-dm-tag">{draft.tag || t('第 {n} 条', { n: index + 1 })}</span>
-                {editedDrafts[index] ? <em className="md-dm-edited">{t('已改')}</em> : null}
-                {editDraft === index ? (
-                  <div className="md-dm-draft-edit">
-                    <textarea rows={4} value={editText} onChange={event => setEditText(event.target.value)} />
-                    <div className="md-dm-draft-actions">
-                      <span className="md-muted">{t('改完这句，记一笔时存的就是改过的')}</span>
-                      <span className="md-grow" />
-                      <button type="button" className="md-inline-link" onClick={() => setEditDraft(-1)}>{t('取消')}</button>
-                      <button type="button" className="md-pill is-small" onClick={() => {
-                        setResult(prev => ({ ...prev, drafts: prev.drafts.map((row, at) => (at === index ? { ...row, text: editText } : row)) }))
-                        setEditedDrafts(prev => ({ ...prev, [index]: true }))
-                        setEditDraft(-1)
-                        toast(t('改好了'))
-                      }}>{t('保存这句')}</button>
-                    </div>
-                  </div>
-                ) : (
-                  <p>{draft.text}</p>
-                )}
-                <div className="md-dm-draft-actions">
-                  <button type="button" className={`md-pill is-small ${chosen === index ? 'is-primary' : ''}`} onClick={() => pick(index)}>{chosen === index ? t('用这条') : t('用这条')}</button>
-                  <button type="button" className="md-inline-link" onClick={() => copy(draft.text)}>{t('复制')}</button>
-                  {editDraft === index ? null : <button type="button" className="md-inline-link" onClick={() => { setEditDraft(index); setEditText(draft.text) }}>{t('改一下')}</button>}
-                  <button type="button" className="md-inline-link" onClick={async () => {
-                    try {
-                      await logChat({
-                        channel, name: fields.name || result.fields?.name || '', incoming: raw.trim(),
-                        outgoing: draft.text, stage: result.stage || (channel === '微信' ? '成交' : '引流'), result: '未定',
-                        note: editedDrafts[index] ? t('发出前改过') : '',
-                      })
-                      toast(t('记进对话记录了'))
-                      reloadChats()
-                    } catch (err) { toast(err.message, { error: true }) }
-                  }}>{t('我发了，记一笔')}</button>
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          <div className="md-dm-revise">
-            <input
-              value={reviseNote}
-              onChange={event => setReviseNote(event.target.value)}
-              onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent?.isComposing) { event.preventDefault(); revise() } }}
-              placeholder={t('想怎么改？比如：再短一点，别问分数，直接说私信')}
-            />
-            <button type="button" className="md-pill is-small" onClick={revise} disabled={reviseBusy || !reviseNote.trim()}>
-              {reviseBusy ? t('正在改…') : t('再给一版')}
-            </button>
-          </div>
-
-          <datalist id="md-content-titles">
-            {contentSources.map(title => <option key={title} value={title} />)}
-          </datalist>
-          <div className="md-dm-ledger">
-            <div className="md-dm-ledger-grid">
-              {[['name', '姓名'], ['grade', '年级'], ['school', '学校'], ['painPoint', '卡点'], ['source', '来源']].map(([key, label]) => (
-                <label className="md-field" key={key}>
-                  <span>{t(label)}</span>
-                  <input
-                    value={fields[key] ?? ''}
-                    placeholder={key === 'source' ? t('选一条内容，或自己写') : t('没提就空着')}
-                    list={key === 'source' ? 'md-content-titles' : undefined}
-                    onChange={event => setFields(prev => ({ ...prev, [key]: event.target.value }))}
-                  />
-                </label>
-              ))}
-            </div>
-            <label className="md-field">
-              <span>{t('实际发出去的话术（可以改）')}</span>
-              <textarea rows={3} value={draftText} onChange={event => setDraftText(event.target.value)} />
-            </label>
-            <div className="md-dm-actions">
-              <label className="md-dm-field">
-                <span>{t('阶段')}</span>
-                <select value={stage} onChange={event => setStage(event.target.value)}>
-                  {LEAD_STAGES.map(option => <option key={option} value={option}>{t(option)}</option>)}
-                </select>
-              </label>
-              <label className="md-dm-field">
-                <span>{t('类型')}</span>
-                <select value={result.type} onChange={event => setResult(prev => ({ ...prev, type: event.target.value }))}>
-                  {LEAD_TYPES.map(option => <option key={option} value={option}>{t(option)}</option>)}
-                </select>
-              </label>
-              <label className="md-dm-field">
-                <span>{t('分类')}</span>
-                <select value={result.category} onChange={event => setResult(prev => ({ ...prev, category: event.target.value }))}>
-                  {LEAD_CATEGORIES.map(option => <option key={option} value={option}>{t(option)}</option>)}
-                </select>
-              </label>
-              <span className="md-grow" />
-              <button type="button" className="md-pill is-primary" onClick={save} disabled={busy === 'save'}>
-                {busy === 'save' ? t('保存中…') : t('记进线索表')}
-              </button>
-            </div>
-          </div>
-        </section>
-      ) : null}
 
       <section className="md-tile md-dm-leads" id="dm-leads">
         <header className="md-tile-head">
