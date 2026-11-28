@@ -1,7 +1,7 @@
 // dsh-youtulh-workbench host 半片：/media-desk/* 接口、文件服务和模型调用。
 import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import { execFile } from 'node:child_process'
-import { readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve as path_resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -270,6 +270,17 @@ async function ocrChatImage(file) {
   } catch (err) {
     throw new Error(`截图识别失败：${err.message}`)
   }
+}
+
+async function extractZipChat(zipFile) {
+  const dir = await mkdtemp(join(tmpdir(), 'youtulh-zip-'))
+  try {
+    await new Promise((resolve, reject) => execFile('unzip', ['-q', '-o', zipFile, '-d', dir], { timeout: 60000 }, err => err ? reject(err) : resolve()))
+    const images = (await readdir(dir, { recursive: true })).filter(name => /\.(png|jpe?g|webp)$/i.test(name)).sort()
+    const chunks = []
+    for (const name of images) chunks.push(await ocrChatImage(join(dir, name)))
+    return chunks.filter(Boolean).join('\n--- 下一张截图 ---\n')
+  } finally { rm(dir, { recursive: true, force: true }).catch(() => {}) }
 }
 
 function engineLabel(ctx) {
@@ -568,6 +579,14 @@ async function route(ctx, store, desk, req, res) {
   if (site && site !== 'same-origin' && site !== 'none') return json(res, 403, { error: tr('拒绝跨站请求') })
 
   if (path === 'upload') return handleUpload(req, store, res)
+  if (path === 'upload/zip') {
+    if (!/^[\w.-]+\.zip$/i.test(decodeURIComponent(String(req.headers['x-filename'] ?? '')))) return json(res, 400, { error: tr('只支持 zip 压缩包') })
+    const buffer = await readBuffer(req, 200 * 1024 * 1024)
+    await store.read()
+    const name = `${newId('f')}.zip`
+    await writeFile(join(store.filesDir, name), buffer)
+    return json(res, 200, { src: `media-desk/files/${name}` })
+  }
   if (path === 'papers/upload') {
     const root = resolveRoot((await desk.settings.read()).saveRoot)
     const name = decodeURIComponent(String(req.headers['x-filename'] ?? '卷子'))
@@ -1464,6 +1483,12 @@ ${analysis.riskNote}
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       let text = String(body.text ?? '').trim()
       const srcs = (Array.isArray(body.srcs) ? body.srcs : [body.src]).map(value => String(value ?? '').trim()).filter(Boolean)
+      const zip = String(body.zip ?? '').trim()
+      if (!text && zip) {
+        const hit = /^(?:media-desk\/)?files\/([\w.-]+)$/.exec(zip)
+        if (!hit) return json(res, 400, { error: tr('压缩包地址不对') })
+        text = await extractZipChat(join(store.filesDir, hit[1]))
+      }
       if (!text && srcs.length) {
         const chunks = []
         for (const src of srcs) {

@@ -1,6 +1,6 @@
 // 线索表只做一件事：上传聊天截图或粘贴聊天记录 → AI 整理成线索 → 记进表。
 import React from 'react'
-import { analyzeChat, appendLeadRow, fetchLeadsWithLessons, setDesk, toast, updateLead, uploadFile, useDesk } from './desk.js'
+import { analyzeChat, appendLeadRow, fetchLeadsWithLessons, setDesk, toast, updateLead, uploadFile, uploadZip, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { LEAD_STAGES } from './util.js'
@@ -59,6 +59,17 @@ export function DmView() {
     setBusy('')
   }
 
+  const pickZip = async (file) => {
+    if (!file) return
+    setBusy('upload')
+    try {
+      const zip = await uploadZip(file)
+      setSrcs([zip])
+      await analyze({ zip })
+    } catch (err) { setError(err.message); toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
   const setField = (index, key, value) => setLeads(prev => prev.map((row, at) => at === index ? { ...row, [key]: value } : row))
 
   const save = async () => {
@@ -105,6 +116,14 @@ export function DmView() {
             <Icon name="plus" size={14} />
             {busy === 'upload' ? t('正在读图…') : t('上传聊天截图（可多张）')}
             <input type="file" accept="image/*" multiple hidden onChange={event => { const files = [...(event.target.files ?? [])]; event.target.value = ''; if (files.length) pickImages(files) }} />
+          </label>
+          <label className="md-inline-link">
+            {t('选文件夹')}
+            <input type="file" accept="image/*" multiple webkitdirectory="" hidden onChange={event => { const files = [...(event.target.files ?? [])].filter(file => file.type.startsWith('image/')); event.target.value = ''; if (files.length) pickImages(files) }} />
+          </label>
+          <label className="md-inline-link">
+            {t('上传压缩包')}
+            <input type="file" accept=".zip" hidden onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) pickZip(file) }} />
           </label>
           <span className="md-muted">{t('支持微信/小红书/抖音聊天截图；一次可以选多张')}</span>
         </div>

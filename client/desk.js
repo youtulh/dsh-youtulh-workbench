@@ -682,3 +682,14 @@ export function fetchTodayScripts(force = false) {
 export function adoptScript(payload) {
   return request('content/adopt', payload)
 }
+
+export async function uploadZip(file) {
+  const res = await fetch(`${BASE}upload/zip`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/zip', 'x-filename': encodeURIComponent(file.name), 'x-media-desk-lang': lang() },
+    body: file,
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || t('上传失败'))
+  return data.src
+}
