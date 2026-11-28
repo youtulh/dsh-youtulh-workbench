@@ -18,3 +18,9 @@ test('热点筛选：保留本地期中安排，丢掉无关百科', () => {
   assert.match(list[0].title, /期中/)
   assert.match(hotspotBlock(list[0]), /北京海淀/)
 })
+
+test('不填节点也能自动推断', async () => {
+  const { inferTimeNode } = await import('../src/hotspots.js')
+  assert.match(inferTimeNode(new Date('2026-11-28T00:00:00+08:00')), /期中/)
+  assert.match(inferTimeNode(new Date('2026-06-10T00:00:00+08:00')), /期末|高考/)
+})

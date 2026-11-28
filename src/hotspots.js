@@ -5,6 +5,18 @@ const clean = (value, max = 300) => String(value ?? '').replace(/<[^>]+>/g, ' ')
 const decode = value => String(value ?? '')
   .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
 
+
+/** 不给老师加设置：按当前月份推断一个默认节点。 */
+export function inferTimeNode(date = new Date()) {
+  const month = date.getMonth() + 1
+  if (month === 3 || month === 4) return '期中'
+  if (month === 5 || month === 6) return '期末 高考'
+  if (month === 9 || month === 10) return '月考 期中'
+  if (month === 11) return '期中'
+  if (month === 12 || month === 1) return '期末'
+  return '期中 期末'
+}
+
 export function hotspotQueries(settings = {}, positioning = {}) {
   const city = clean(positioning.city, 12)
   const district = clean(settings.district, 20)

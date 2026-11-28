@@ -24,7 +24,7 @@ import { leadAnalyzePrompt, localAnalyzedLead, normalizeAnalyzedLeads } from './
 import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
 import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
 import { parseBrief } from './brief.js'
-import { hotspotQueries, searchBing, summarizeHotspots } from './hotspots.js'
+import { hotspotQueries, inferTimeNode, searchBing, summarizeHotspots } from './hotspots.js'
 import { fixScript } from './redlines.js'
 import { LAYOUT, backupWorkspace, contentKey, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
@@ -292,10 +292,11 @@ async function readHotCache(root) {
 
 async function ensureHotspots(root, state, settings, force = false) {
   const p = state?.positioning ?? {}
-  const key = JSON.stringify({ city: p.city ?? '', grade: p.grade ?? '', subject: p.subject ?? '', district: settings.district ?? '', timeNode: settings.timeNode ?? '', date: dayStamp() })
+  const key = JSON.stringify({ city: p.city ?? '', grade: p.grade ?? '', subject: p.subject ?? '', district: settings.district ?? '', timeNode: settings.timeNode || inferTimeNode(), date: dayStamp() })
   const cached = await readHotCache(root)
   if (!force && cached?.key === key && Array.isArray(cached.items) && Date.now() - Date.parse(cached.fetchedAt) < 12 * 3600 * 1000) return cached
-  const queries = hotspotQueries(settings, p)
+  const effective = { ...settings, timeNode: settings.timeNode || inferTimeNode() }
+  const queries = hotspotQueries(effective, p)
   const settled = await Promise.allSettled(queries.map(query => searchBing(query)))
   const raw = settled.flatMap(row => row.status === 'fulfilled' ? row.value : [])
   const items = summarizeHotspots(raw, { city: p.city ?? '', grade: p.grade ?? '' })

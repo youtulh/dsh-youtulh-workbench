@@ -1,6 +1,6 @@
 // 前台只做一件事：今天拍这条。念稿、复制标题标签、点「我拍好了」。
 import React from 'react'
-import { adoptScript, fetchTodayScripts, hideHotspot, manualHotspot, refreshHotspots, saveSettings, setDesk, toast, updateContentRow, useDesk } from './desk.js'
+import { adoptScript, fetchTodayScripts, hideHotspot, saveSettings, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
@@ -81,35 +81,6 @@ export function WelcomeView() {
         <details className="md-today2-more">
           <summary>{t('更多')}</summary>
           <div className="md-today2-menu">
-            <button type="button" onClick={() => setDesk({
-              dialog: {
-                title: t('我的地区 / 考试节点'),
-                submitLabel: t('保存并刷新热点'),
-                fields: [
-                  { name: 'district', label: t('区/县（可不填）'), placeholder: t('海淀') },
-                  { name: 'school', label: t('学校（可不填）'), placeholder: t('人大附中') },
-                  { name: 'timeNode', label: t('当前节点'), placeholder: t('期中 / 期末 / 月考 / 高考 / 选科') },
-                  { name: 'examAt', label: t('考试时间（可不填）'), placeholder: t('11 月 12 日') },
-                ],
-                initial: { district: settings.district ?? '', school: settings.school ?? '', timeNode: settings.timeNode ?? '', examAt: settings.examAt ?? '' },
-                onSubmit: values => {
-                  saveSettings(values).then(ok => { if (ok) { toast(t('记下了，正在找今天的热点')); refreshHotspots().then(() => load(true)).catch(() => load(true)) } })
-                },
-              },
-            })}><b>{t('地区 / 考试节点')}</b><small>{t('区、学校、期中期末；自动找本地热点')}</small></button>
-            <button type="button" onClick={() => setDesk({
-              dialog: {
-                title: t('学校/家长圈在传什么'),
-                submitLabel: t('记成今天的热点'),
-                fields: [
-                  { name: 'title', label: t('一句话'), required: true, placeholder: t('比如：这周学校临时把月考提前了') },
-                  { name: 'summary', label: t('补充（可不填）'), type: 'textarea', rows: 2 },
-                ],
-                onSubmit: values => {
-                  manualHotspot(values).then(() => { toast(t('记下了，换一批试试')); load(true) }).catch(err => toast(err.message, { error: true }))
-                },
-              },
-            })}><b>{t('内部消息')}</b><small>{t('学校/家长圈的事，粘贴一句当热点')}</small></button>
             <button type="button" onClick={() => setDesk({
               dialog: {
                 title: t('今天想讲什么'),
