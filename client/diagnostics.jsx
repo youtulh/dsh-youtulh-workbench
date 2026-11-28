@@ -349,7 +349,7 @@ export function DiagnosticsView() {
               <>
                 <div className="md-diag-head">
                   <div>
-                    <p className="md-eyebrow">{current.brand || t('试听诊断')} · {current.code || current.id}</p>
+                    <p className="md-eyebrow">{current.brand || t('出题')} · {current.code || current.id}</p>
                     <h2>{current.lesson || t('未命名课程')}</h2>
                     <p className="md-muted">{current.at || t('时间待定')} · {current.student || t('未填学生')} · {current.grade || ''}</p>
                   </div>
@@ -428,7 +428,7 @@ export function DiagnosticsView() {
     <div className="md-page md-diagnostics">
       <header className="md-page-head">
         <div>
-          <h1>{t('试听诊断')}</h1>
+          <h1>{t('出题')}</h1>
           <p className="md-page-sub">{t('先诊断、再试听、课后复测。每份卷子都带着品牌、上课时间和课次编码。')}</p>
         </div>
         <span className="md-grow" />
@@ -556,7 +556,7 @@ export function DiagnosticsView() {
 
       {!data ? <p className="md-muted">{t('读取中…')}</p> : rows.length === 0 ? (
         <div className="md-works-empty">
-          <p>{t('还没有试听诊断。先出一份卷子，发给家长做完，再把结果导回来。')}</p>
+          <p>{t('还没有出题记录。先出一份卷子，发给家长做完，再把结果导回来。')}</p>
           <button type="button" className="md-pill is-primary" onClick={openCreate}>{t('出一份诊断卷')}</button>
         </div>
       ) : (

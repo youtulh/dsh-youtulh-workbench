@@ -21,7 +21,7 @@ const PANEL_ID = 'media-desk'
 const NAV = [
   { id: 'home', label: '首页', icon: 'wall' },
   { id: 'content', label: '做内容', icon: 'pen' },
-  { id: 'diagnose', label: '试听诊断', icon: 'spark' },
+  { id: 'diagnose', label: '出题', icon: 'spark' },
   { id: 'data', label: '看数据', icon: 'list' },
   { id: 'dm', label: '线索表', icon: 'chat' },
   { id: 'students', label: '学生管理', icon: 'target' },
