@@ -433,14 +433,16 @@ ${drafts}`,
 }
 
 /** 首页「今天拍什么」：从最近家长卡点出 3 条。 */
-export function todayTopicsPrompt(state, leads = [], count = 3) {
+export function todayTopicsPrompt(state, leads = [], count = 3, extra = {}) {
   const recent = (leads ?? []).slice(0, 5).map(row => ({
     pain: text(row.painPoint || row.raw, 120),
     grade: text(row.grade, 20),
   })).filter(row => row.pain)
   const pains = recent.map(row => row.pain).join('；') || (state?.painPoints ?? []).slice(0, 5).join('；')
+  const spark = [extra.inspiration && `老师今天想讲：${extra.inspiration}`, extra.timeNode && `当前节点：${extra.timeNode}`].filter(Boolean).join('\n')
   const system = `你在帮补课老师决定「今天拍什么」。只出 ${count} 条选题，必须跟最近家长问的卡点对得上。
 ${settingBlock(state)}
+${spark}
 最近家长问的：${pains || '还没记录，按设定里的目标家长出'}
 选题规则：
 - 每条一句话，12-24 字，像家长会说的话；
@@ -456,12 +458,12 @@ export function normalizeTodayTopics(json, count = 3) {
   return list.map(row => ({ topic: text(row?.topic, 40), source: text(row?.source, 120) })).filter(row => row.topic).slice(0, count)
 }
 
-export function localTodayTopics(state, leads = [], count = 3) {
+export function localTodayTopics(state, leads = [], count = 3, extra = {}) {
   const p = state?.positioning ?? {}
   const grade = text(p.grade, 10) || '孩子'
   const subject = text(p.subject, 10) || '这门课'
   const recent = (leads ?? []).slice(0, 5).map(row => text(row.painPoint || row.raw, 80)).filter(Boolean)
-  const seeds = recent.length ? recent : (state?.painPoints ?? []).slice(0, 5)
+  const seeds = [extra.inspiration, ...(recent.length ? recent : (state?.painPoints ?? []).slice(0, 5))].filter(Boolean)
   const fallback = [`${grade}${subject}卡在中间分，先补哪一章`, `孩子上课听懂了，一做题就不会`, `${grade}家长最容易忽略的一个断层`]
   const topics = []
   for (const seed of seeds) {

@@ -24,6 +24,7 @@ import { leadAnalyzePrompt, localAnalyzedLead, normalizeAnalyzedLeads } from './
 import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
 import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
 import { parseBrief } from './brief.js'
+import { fixScript } from './redlines.js'
 import { LAYOUT, backupWorkspace, contentKey, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { legacyTables, readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
@@ -997,11 +998,11 @@ ${analysis.riskNote}
       let topics = []
       let source = 'local'
       try {
-        const { text: raw } = await callModel(ctx, { ...todayTopicsPrompt(state, leads, 3), maxTokens: 900, light: true })
+        const { text: raw } = await callModel(ctx, { ...todayTopicsPrompt(state, leads, 3, extra), maxTokens: 900, light: true })
         topics = normalizeTodayTopics(extractJson(raw), 3)
         if (topics.length) source = 'model'
       } catch { /* 没模型就本地拼 */ }
-      if (!topics.length) topics = localTodayTopics(state, leads, 3)
+      if (!topics.length) topics = localTodayTopics(state, leads, 3, extra)
       return json(res, 200, { topics, source })
     }
     case 'topics': {
@@ -1043,7 +1044,9 @@ ${analysis.riskNote}
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       ensureLayout(root)
       const cacheFile = join(root, LAYOUT.data, '今日稿.json')
-      const cacheKey = JSON.stringify({ p: state.positioning ?? {}, pains: state.painPoints ?? [], date: dayStamp() })
+      const settings = await desk.settings.read()
+      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '' }
+      const cacheKey = JSON.stringify({ p: state.positioning ?? {}, pains: state.painPoints ?? [], extra, date: dayStamp() })
       try {
         const cached = JSON.parse(await readFile(cacheFile, 'utf8'))
         if (!body.force && cached?.key === cacheKey && Array.isArray(cached.scripts) && cached.scripts.length) return json(res, 200, { ...cached, cached: true })
@@ -1053,10 +1056,10 @@ ${analysis.riskNote}
       const voice = readVoiceSamples(root)
       let topics = []
       try {
-        const { text: raw } = await callModel(ctx, { ...todayTopicsPrompt(state, leads, 3), maxTokens: 900, light: true })
+        const { text: raw } = await callModel(ctx, { ...todayTopicsPrompt(state, leads, 3, extra), maxTokens: 900, light: true })
         topics = normalizeTodayTopics(extractJson(raw), 3)
       } catch { /* 本地 */ }
-      if (!topics.length) topics = localTodayTopics(state, leads, 3)
+      if (!topics.length) topics = localTodayTopics(state, leads, 3, extra)
       const scripts = await Promise.all(topics.slice(0, 3).map(async (item, index) => {
         let single = null
         try {
@@ -1065,6 +1068,7 @@ ${analysis.riskNote}
           if (parsed.title && parsed.script) single = parsed
         } catch { /* 本地 */ }
         if (!single) single = normalizeSingle(localSingle(state, item.topic))
+        single = fixScript(single)
         return { id: `today-${Date.now()}-${index}`, topic: item.topic, source: item.source || '', ...single }
       }))
       const payload = { key: cacheKey, date: dayStamp(), scripts, source: 'today' }
@@ -1086,6 +1090,7 @@ ${analysis.riskNote}
         if (parsed.title && parsed.script) { single = parsed; source = 'model' }
       } catch { /* 本地兜底 */ }
       if (!single) single = normalizeSingle(localSingle(state, topic))
+      single = fixScript(single)
       return json(res, 200, { single, source })
     }
     case 'scripts': {

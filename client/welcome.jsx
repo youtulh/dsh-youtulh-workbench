@@ -1,6 +1,6 @@
 // 前台只做一件事：今天拍这条。念稿、复制标题标签、点「我拍好了」。
 import React from 'react'
-import { adoptScript, fetchTodayScripts, setDesk, toast, updateContentRow, useDesk } from './desk.js'
+import { adoptScript, fetchTodayScripts, saveSettings, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
@@ -23,6 +23,7 @@ export function WelcomeView() {
   const [dir, setDir] = React.useState('')
   const [feel, setFeel] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
+  const settings = useDesk(s => s.settings) ?? {}
   const [error, setError] = React.useState('')
   const current = scripts[index] ?? null
   const go = view => setDesk({ view, focusId: null })
@@ -80,6 +81,17 @@ export function WelcomeView() {
         <details className="md-today2-more">
           <summary>{t('更多')}</summary>
           <div className="md-today2-menu">
+            <button type="button" onClick={() => setDesk({
+              dialog: {
+                title: t('今天想讲什么'),
+                submitLabel: t('存下来'),
+                fields: [{ name: 'inspiration', label: t('一句话，可留空'), type: 'textarea', rows: 2, placeholder: t('比如：想讲家长总问「来得及吗」') }],
+                initial: { inspiration: settings.inspiration ?? '' },
+                onSubmit: values => {
+                  saveSettings({ inspiration: values.inspiration }).then(ok => { if (ok) { toast(t('记下了，换一批试试')); load(true) } })
+                },
+              },
+            })}><b>{t('今天想讲…')}</b><small>{t('给选题一个灵感；不填就按家长卡点')}</small></button>
             {MORE.map(([view, label, hint]) => <button type="button" key={view} onClick={() => go(view)}><b>{t(label)}</b><small>{t(hint)}</small></button>)}
           </div>
         </details>
@@ -101,6 +113,7 @@ export function WelcomeView() {
             <p><b>{t('开头为什么留人')}</b>{current.hookWhy || t('具体场景，让家长觉得说的是自己家。')}</p>
             <p><b>{t('结尾引导')}</b>{current.ctaAdvice || t('留一个轻动作，不报价。')}</p>
           </div>
+          {current.warnings?.length ? <p className="md-today2-error">{t('红线已自动改：{list}', { list: current.warnings.join('、') })}</p> : null}
           <footer className="md-today2-actions">
             <button type="button" className="md-pill is-primary" onClick={finish} disabled={busy === 'save'}>{busy === 'save' ? t('保存中…') : t('我拍好了')}</button>
             <button type="button" className="md-pill" onClick={() => { setIndex((index + 1) % Math.max(1, scripts.length)); setDir(''); setFeel(false) }}>{t('换一条')}</button>
