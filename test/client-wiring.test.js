@@ -44,14 +44,14 @@ for (const needle of ['const q =', 'const list =', 'const pageRows =']) {
   })
 }
 
-// 回私信收敛：不再给 AI 候选矩阵，只留人工台账和标准开头
-test('dm.jsx：AI 回私信候选已移除，只留人工台账', () => {
+// 线索表只做聊天记录 → 线索，不再有回复候选
+test('dm.jsx：只保留截图/聊天记录整理成线索', () => {
   const source = readFileSync(new URL('dm.jsx', DIR), 'utf8')
   for (const needle of ['判断一下', '用这条', '再给一版', 'draftDm(', 'reviseDm(']) {
     assert.ok(!source.includes(needle), `dm.jsx 不应再出现 ${needle}`)
   }
-  assert.ok(source.includes('记一条新线索'), 'dm.jsx 缺少人工台账入口')
-  assert.ok(!source.includes('标准开头'), 'dm.jsx 不应再出现回复用的标准开头')
+  assert.ok(source.includes('上传聊天截图'), 'dm.jsx 缺少截图入口')
+  assert.ok(source.includes('整理成线索'), 'dm.jsx 缺少整理动作')
 })
 
 // 聊天台已经下线：页面里不应再出现「聊天台」或跳转入口

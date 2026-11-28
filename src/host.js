@@ -3,6 +3,7 @@ import { createReadStream, existsSync, readFileSync } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve as path_resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { assistantModelOverride, callModel, defaultSelection, extractJson, modelInfo, modelStatus, setAssistantModel } from './ai.js'
 import { defaultExportDir, savePiece } from './export.js'
@@ -19,6 +20,7 @@ import { formatParentSlot, validateParentReply } from './replies.js'
 import { DIAG_COLUMNS, diagnosticDir, ensureDiagnosticDir, listDiagnostics, readDiagnosticFile, readDiagnosticResult, readManifest, readPostSpec, saveDiagnosticRow, writeDiagnosticFile, writeDiagnosticHtml, writeDiagnosticResult, writeManifest, writePostSpec } from './diagnostics-store.js'
 import { renderDiagnosticHtml } from './diagnostics-render.js'
 import { PAPER_EXTS, extractPaperText, paperExtractPrompt } from './papers.js'
+import { leadAnalyzePrompt, localAnalyzedLead, normalizeAnalyzedLeads } from './lead-analyze.js'
 import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
 import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
 import { LAYOUT, backupWorkspace, contentKey, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
@@ -253,6 +255,19 @@ async function withBrandLogo(store, brand = {}) {
     out.logo = `data:${mime};base64,${buffer.toString('base64')}`
   } catch { /* 没传 logo 就用字标 */ }
   return out
+}
+
+async function ocrChatImage(file) {
+  const out = join(tmpdir(), `youtulh-ocr-${Date.now()}.jsonl`)
+  const run = command => new Promise((resolve, reject) => execFile(command[0], command.slice(1), { timeout: 60000 }, err => err ? reject(err) : resolve()))
+  try {
+    try { await run([join(ASSETS_DIR, 'ocr'), out, file]) }
+    catch { await run(['swift', join(ASSETS_DIR, 'ocr.swift'), out, file]) }
+    const raw = await readFile(out, 'utf8')
+    return raw.split(/\r?\n/).map(line => { try { return JSON.parse(line).text } catch { return '' } }).filter(Boolean).join('\n')
+  } catch (err) {
+    throw new Error(`截图识别失败：${err.message}`)
+  }
 }
 
 function engineLabel(ctx) {
@@ -1369,6 +1384,26 @@ ${analysis.riskNote}
       saveStudent(root, patch)
       if (lead.stage !== '流失' && lead.stage !== '已报课') updateLeadRow(root, index, { stage: '已报课' })
       return json(res, 200, { students: readStudents(root), classes: readClasses(root), leads: readLeads(root) })
+    }
+    case 'leads/analyze-chat': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      let text = String(body.text ?? '').trim()
+      const src = String(body.src ?? '').trim()
+      if (src) {
+        const hit = /^(?:media-desk\/)?files\/([\w.-]+)$/.exec(src)
+        if (!hit) return json(res, 400, { error: tr('截图地址不对') })
+        text = await ocrChatImage(join(store.filesDir, hit[1]))
+      }
+      if (!text) return json(res, 400, { error: tr('没有读到聊天内容') })
+      let leads = []
+      let source = 'local'
+      try {
+        const { text: raw } = await callModel(ctx, { ...leadAnalyzePrompt(await store.read(), text), maxTokens: 1600, light: true })
+        leads = normalizeAnalyzedLeads(extractJson(raw))
+        if (leads.length) source = 'model'
+      } catch { /* 本地兜底 */ }
+      if (!leads.length) leads = localAnalyzedLead(text)
+      return json(res, 200, { text, leads, source })
     }
     case 'leads/import': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

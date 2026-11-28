@@ -665,3 +665,8 @@ export function fetchTodayTopics() {
 export function singleScript(topic) {
   return request('scripts/single', { topic })
 }
+
+// 上传聊天截图/粘贴聊天记录，让 AI 整理成线索
+export function analyzeChat(payload) {
+  return request('leads/analyze-chat', payload)
+}
