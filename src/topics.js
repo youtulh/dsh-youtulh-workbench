@@ -487,15 +487,17 @@ ${hotspot ? `今天可用的真实背景（只放在开头或接情绪处，不�
 只要 1 条，不要 3 个版本。
 另外给两句给老师看的说明：
 - hookWhy：这条开头为什么能留住家长，1 句，具体说用了什么场景/分数/判断；
-- ctaAdvice：结尾现在这个引导要不要说，1 句；如果不说，说明理由。
-只输出 JSON：{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…","hookWhy":"…","ctaAdvice":"…"}`,
+- ctaAdvice：结尾现在这个引导要不要说，1 句；如果不说，说明理由；
+- hotspotUsed：这条稿子有没有真的用今天的热点背景；用了 true，没用 false；
+- hotspotReason：如果用了，指出用在哪一句。
+只输出 JSON：{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…","hookWhy":"…","ctaAdvice":"…","hotspotUsed":true,"hotspotReason":"用了哪句热点"}`,
     user: `选题：${topic}`,
   }
 }
 
 export function normalizeSingle(json) {
   const row = normalizeScript(json)
-  return { ...row, hookWhy: text(json?.hookWhy, 160), ctaAdvice: text(json?.ctaAdvice, 160) }
+  return { ...row, hookWhy: text(json?.hookWhy, 160), ctaAdvice: text(json?.ctaAdvice, 160), hotspotUsed: Boolean(json?.hotspotUsed), hotspotReason: text(json?.hotspotReason, 160) }
 }
 
 export function localSingle(state, topic) {
@@ -504,6 +506,8 @@ export function localSingle(state, topic) {
   return {
     ...base,
     ...pack,
+    hotspotUsed: false,
+    hotspotReason: '',
     hookWhy: `开头用「${topic}」这个具体场景，先把家长圈进来，再给结论。`,
     ctaAdvice: '结尾可以留「私信诊断」这个轻动作；不要报价、不要承诺提分。',
   }

@@ -24,3 +24,9 @@ test('不填节点也能自动推断', async () => {
   assert.match(inferTimeNode(new Date('2026-11-28T00:00:00+08:00')), /期中/)
   assert.match(inferTimeNode(new Date('2026-06-10T00:00:00+08:00')), /期末|高考/)
 })
+
+test('单条稿记录是否用了热点', async () => {
+  const { normalizeSingle, localSingle } = await import('../src/topics.js')
+  assert.equal(normalizeSingle({ title: 'x', script: 'y', hotspotUsed: true }).hotspotUsed, true)
+  assert.equal(localSingle({ positioning: {} }, 'x').hotspotUsed, false)
+})

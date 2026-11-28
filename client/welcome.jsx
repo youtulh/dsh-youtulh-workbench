@@ -113,7 +113,7 @@ export function WelcomeView() {
             <p><b>{t('开头为什么留人')}</b>{current.hookWhy || t('具体场景，让家长觉得说的是自己家。')}</p>
             <p><b>{t('结尾引导')}</b>{current.ctaAdvice || t('留一个轻动作，不报价。')}</p>
           </div>
-          {current.hotspot ? (
+          {current.hotspot && current.hotspotUsed ? (
             <p className="md-today2-hot">
               {t('今天借的势：{title} · {source}', { title: current.hotspot.title, source: current.hotspot.source })}
               <button type="button" className="md-inline-link" onClick={() => hideHotspot(current.hotspot.id).then(() => load(true)).catch(err => toast(err.message, { error: true }))}>{t('今天不用')}</button>

@@ -1150,6 +1150,7 @@ ${analysis.riskNote}
         } catch { /* 本地 */ }
         if (!single) single = normalizeSingle(localSingle(state, item.topic))
         single = fixScript(single)
+        if (hotspot && single.hotspotUsed === undefined) single.hotspotUsed = `${single.script} ${single.title}`.includes(hotspot.title.slice(0, 8))
         return { id: `today-${Date.now()}-${index}`, topic: item.topic, source: item.source || '', hotspot, ...single }
       }))
       const payload = { key: cacheKey, date: dayStamp(), scripts, hotspot, source: 'today' }
@@ -1174,6 +1175,7 @@ ${analysis.riskNote}
       } catch { /* 本地兜底 */ }
       if (!single) single = normalizeSingle(localSingle(state, topic))
       single = fixScript(single)
+      if (hotspot && single.hotspotUsed === undefined) single.hotspotUsed = `${single.script} ${single.title}`.includes(hotspot.title.slice(0, 8))
       return json(res, 200, { single, hotspot, source })
     }
     case 'scripts': {
