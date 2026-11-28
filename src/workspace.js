@@ -5,7 +5,7 @@
 //   <根>/私信/<日期 某人>/    判断 + 两条话术
 //   <根>/线索表.csv           台账（Excel 能开）
 //   <根>/数据/<日期>.csv      复盘数据
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 
@@ -22,7 +22,23 @@ export const defaultRoot = () => join(homedir(), 'Documents', 'Youtulh 工作台
 // 写 CSV 一律带 BOM：Excel（尤其 Windows）打开中文才不会乱码
 const CSV_BOM = '\uFEFF'
 function writeCsvFile(file, text) {
-  writeFileSync(file, String(text).startsWith(CSV_BOM) ? text : `${CSV_BOM}${text}`)
+  const next = String(text).startsWith(CSV_BOM) ? text : `${CSV_BOM}${text}`
+  const tmp = `${file}.${process.pid}.tmp`
+  writeFileSync(tmp, next)
+  renameSync(tmp, file)
+}
+
+/** 先按 UTF-8 读，失败再按 GB18030；解出替换符就拒绝写回，别把乱码固化。 */
+function readTextFile(file) {
+  const buffer = readFileSync(file)
+  let text = ''
+  if (buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF) text = buffer.subarray(3).toString('utf8')
+  else {
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buffer) }
+    catch { text = new TextDecoder('gb18030').decode(buffer) }
+  }
+  if (text.includes('\uFFFD')) throw Object.assign(new Error('这个文件编码无法识别，可能是 Excel 存成了不支持的编码；先另存为 UTF-8 CSV 再试'), { status: 400 })
+  return text
 }
 
 export function resolveRoot(value) {
@@ -86,7 +102,7 @@ export function writeSettingsMarkdown(root, positioning, pains) {
 export function readSettingsMarkdown(root) {
   const file = join(root, LAYOUT.settings)
   if (!existsSync(file)) return null
-  const text = readFileSync(file, 'utf8')
+  const text = readTextFile(file)
   const positioning = {}
   for (const [key, label] of FIELD_LABEL) {
     const hit = new RegExp(`- \\*\\*${label}\\*\\*：(.+)`).exec(text)
@@ -137,7 +153,7 @@ export function leadsCsvPath(root) {
 export function ensureLeadColumns(root) {
   const file = leadsCsvPath(root)
   if (!existsSync(file)) return false
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  const lines = readTextFile(file).split(/\r?\n/).filter(line => line.trim())
   if (!lines.length) return false
   const head = parseCsvLine(lines[0])
   const missing = LEAD_COLUMNS.filter(name => !head.includes(name))
@@ -158,7 +174,7 @@ export function appendLead(root, lead) {
   if (exists) ensureLeadColumns(root)
   let header = LEAD_COLUMNS
   if (exists) {
-    const first = parseCsvLine(readFileSync(file, 'utf8').split(/\r?\n/)[0])
+    const first = parseCsvLine(readTextFile(file).split(/\r?\n/)[0])
     if (first.length) header = first
   }
   // 显式给了阶段就用它；老调用方只给「下一步」时，按老字段折成阶段，别一律写私信
@@ -172,7 +188,7 @@ export function appendLead(root, lead) {
   }
   const row = header.map(name => csvCell(values[name] ?? '')).join(',')
   if (exists) {
-    const current = readFileSync(file, 'utf8')
+    const current = readTextFile(file)
     writeCsvFile(file, `${current.replace(/\n*$/, '\n')}${row}\n`)
   } else {
     writeCsvFile(file, `${LEAD_COLUMNS.map(csvCell).join(',')}\n${row}\n`)
@@ -206,7 +222,7 @@ export function parseCsvLine(line) {
 export function readLeads(root) {
   const file = leadsCsvPath(root)
   if (!existsSync(file)) return []
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  const lines = readTextFile(file).split(/\r?\n/).filter(line => line.trim())
   if (!lines.length) return []
   const head = parseCsvLine(lines[0])
   const index = name => head.indexOf(name)
@@ -278,7 +294,7 @@ export function writeAccounts(root, accounts = []) {
 export function readAccounts(root) {
   const file = accountsPath(root)
   if (!existsSync(file)) return null
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  const lines = readTextFile(file).split(/\r?\n/).filter(line => line.trim())
   if (lines.length <= 1) return []
   const head = parseCsvLine(lines[0])
   const at = (cells, name) => cells[head.indexOf(name)] ?? ''
@@ -319,7 +335,7 @@ export function removeLeadRow(root, index) {
   if (!existsSync(file)) return null
   const at = Number(index)
   if (!Number.isInteger(at) || at < 0) return null
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+  const lines = readTextFile(file).split(/\r?\n/)
   const row = 1 + at
   if (row >= lines.length || !lines[row]) return null
   lines.splice(row, 1)
@@ -337,7 +353,7 @@ export function updateLeadRow(root, index, patch = {}) {
   const file = leadsCsvPath(root)
   if (!existsSync(file)) return null
   ensureLeadColumns(root)
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+  const lines = readTextFile(file).split(/\r?\n/)
   const head = lines[0]
   const dataStart = 1
   const at = dataStart + index
@@ -409,7 +425,7 @@ export function parseVoiceSamples(markdown) {
 export function readVoiceSamples(root) {
   const file = join(root, LAYOUT.style)
   if (!existsSync(file)) return []
-  try { return parseVoiceSamples(readFileSync(file, 'utf8')) } catch { return [] }
+  try { return parseVoiceSamples(readTextFile(file)) } catch { return [] }
 }
 
 // ---- 内容库 / 选题库 ----
@@ -425,7 +441,7 @@ export const topicsPath = root => join(root, '选题库.csv')
 export function readTable(root, file) {
   const abs = join(root, file)
   if (!existsSync(abs)) return { header: [], rows: [] }
-  const lines = readFileSync(abs, 'utf8').split(/\r?\n/).filter(line => line.trim())
+  const lines = readTextFile(abs).split(/\r?\n/).filter(line => line.trim())
   if (!lines.length) return { header: [], rows: [] }
   const header = parseCsvLine(lines[0])
   const rows = lines.slice(1).map((line, rowIndex) => {
@@ -505,7 +521,7 @@ export function appendRows(root, file, columns, rows) {
   const exists = existsSync(abs)
   const body = rows.map(row => columns.map(name => csvCell(row[name])).join(',')).join('\n')
   if (exists) {
-    const current = readFileSync(abs, 'utf8')
+    const current = readTextFile(abs)
     if (current.trim()) writeCsvFile(abs, `${current.replace(/\n*$/, '\n')}${body}\n`)
     else writeCsvFile(abs, `${columns.map(csvCell).join(',')}\n${body}\n`)
   } else {

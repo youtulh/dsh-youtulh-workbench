@@ -21,7 +21,7 @@ import { renderDiagnosticHtml } from './diagnostics-render.js'
 import { PAPER_EXTS, extractPaperText, paperExtractPrompt } from './papers.js'
 import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
 import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
-import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
+import { LAYOUT, backupWorkspace, contentKey, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { legacyTables, readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
 import { publicSettings, Settings } from './settings.js'
@@ -428,9 +428,6 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'content') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      const removed = pruneMissingContent(root)
-      rescore(root)
-      writeLessonMarkdown(root)
       const rows = readContent(root)
         .slice()
         .sort((a, b) => String(b['创建时间'] || b['日期']).localeCompare(String(a['创建时间'] || a['日期'])))
@@ -916,6 +913,7 @@ ${analysis.riskNote}
       }, { undoable: body.undoable !== false })
       // 数据和本地文件是同一份真相：改了设定就写回 md，加了线索就追加 CSV
       const names = (Array.isArray(body.ops) ? body.ops : []).map(op => op?.op)
+      const warnings = []
       try {
         const root = resolveRoot((await desk.settings.read()).saveRoot)
         if (names.includes('update_positioning') || names.includes('set_pain_points')) {
@@ -931,8 +929,10 @@ ${analysis.riskNote}
           const lead = state.leads?.[state.leads.length - 1]
           if (lead) appendLead(root, lead)
         }
-      } catch { /* 文件写失败不影响这次操作本身 */ }
-      return json(res, 200, result)
+      } catch (err) {
+        warnings.push(`文件没写进去：${err.message}`)
+      }
+      return json(res, 200, warnings.length ? { ...result, warnings } : result)
     }
     case 'undo': {
       const label = await store.undoLast()

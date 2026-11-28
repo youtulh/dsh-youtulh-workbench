@@ -76,7 +76,7 @@ export async function savePiece({ dir, title, text, formats = ['docx', 'md'] }) 
   }
   if (formats.includes('csv')) {
     const name = `${base}.csv`
-    await writeFile(join(target, name), `${String(text ?? '').trim()}\n`)
+    await writeFile(join(target, name), `\uFEFF${String(text ?? '').trim()}\n`)
     files.push(name)
   }
   return { dir: target, files }

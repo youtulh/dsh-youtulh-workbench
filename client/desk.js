@@ -118,6 +118,7 @@ export async function dispatchOps(ops, { label = t('操作'), undoable = true, s
     const data = await request('ops', { ops, label, undoable })
     setDesk({ state: data.state, canUndo: undoable || snapshot.canUndo })
     if (data.errors?.length) toast(data.errors[0], { error: true })
+    else if (data.warnings?.length) toast(data.warnings[0], { error: true })
     else if (!silent && data.receipts?.[0]) toast(data.receipts[0].text, { undo: undoable })
     return data
   } catch (err) {
