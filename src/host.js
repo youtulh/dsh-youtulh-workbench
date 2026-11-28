@@ -18,6 +18,9 @@ import { analysisPrompt, diagnosticPrompt, localAnalysis, postDiagnosticPrompt }
 import { formatParentSlot, validateParentReply } from './replies.js'
 import { DIAG_COLUMNS, diagnosticDir, ensureDiagnosticDir, listDiagnostics, readDiagnosticFile, readDiagnosticResult, readManifest, readPostSpec, saveDiagnosticRow, writeDiagnosticFile, writeDiagnosticHtml, writeDiagnosticResult, writeManifest, writePostSpec } from './diagnostics-store.js'
 import { renderDiagnosticHtml } from './diagnostics-render.js'
+import { PAPER_EXTS, extractPaperText, paperExtractPrompt } from './papers.js'
+import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
+import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
 import { LAYOUT, backupWorkspace, contentKey, pruneMissingContent, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { legacyTables, readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
@@ -477,6 +480,14 @@ async function route(ctx, store, desk, req, res) {
       suggestCache = { key, at: Date.now(), list }
       return json(res, 200, { prompts: list, source })
     }
+    if (path === 'papers') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { papers: listPapers(root), questions: listQuestions(root) })
+    }
+    if (path === 'questions') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { questions: listQuestions(root) })
+    }
     if (path === 'diagnostics') {
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
@@ -543,8 +554,58 @@ async function route(ctx, store, desk, req, res) {
   if (site && site !== 'same-origin' && site !== 'none') return json(res, 403, { error: tr('拒绝跨站请求') })
 
   if (path === 'upload') return handleUpload(req, store, res)
+  if (path === 'papers/upload') {
+    const root = resolveRoot((await desk.settings.read()).saveRoot)
+    const name = decodeURIComponent(String(req.headers['x-filename'] ?? '卷子'))
+    const ext = extname(name).toLowerCase()
+    if (!PAPER_EXTS.includes(ext)) return json(res, 415, { error: tr('只支持 PDF、Word、txt、md 或图片') })
+    const buffer = await readBuffer(req, 30 * 1024 * 1024)
+    const file = savePaperFile(root, name, buffer)
+    const id = newId('PAPER')
+    const paper = savePaper(root, { id, name: basename(name, ext) || '未命名卷子', file, status: '待解析' })
+    return json(res, 200, { paper })
+  }
   const body = await readJson(req)
   switch (path) {
+    case 'papers/extract': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const id = String(body.id ?? '').trim()
+      const paper = listPapers(root).find(row => row.id === id)
+      if (!paper) return json(res, 404, { error: tr('没找到这份卷子') })
+      try {
+        const meta = { ...paper, ...(body.meta ?? {}) }
+        let text = String(body.text ?? '').trim()
+        if (!text) text = await extractPaperText(join(root, paper.file), extname(paper.file).toLowerCase())
+        if (!text) return json(res, 400, { error: tr('这份卷子没读到文字，可能是扫描件') })
+        savePaper(root, { ...paper, text: savePaperText(root, meta.name || paper.name, text), status: '拆题中' })
+        const { text: raw } = await callModel(ctx, { ...paperExtractPrompt(text, meta), maxTokens: 5000 })
+        const questions = normalizeExtractedQuestions(extractJson(raw), meta)
+        saveQuestions(root, questions)
+        const next = savePaper(root, { ...paper, text: join(LAYOUT.bankRaw, `${folderName(meta.name || paper.name, 80)}.txt`), count: questions.length, status: '待确认' })
+        return json(res, 200, { paper: next, questions })
+      } catch (err) {
+        savePaper(root, { ...paper, status: '解析失败' })
+        return json(res, 400, { error: tr('拆题没成功：{msg}', { msg: err.message }) })
+      }
+    }
+    case 'questions/update': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const question = updateQuestion(root, String(body.id ?? ''), body.patch ?? {})
+      if (!question) return json(res, 404, { error: tr('没找到这道题') })
+      return json(res, 200, { question })
+    }
+    case 'questions/confirm': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const ids = Array.isArray(body.ids) ? body.ids.map(String) : [String(body.id ?? '')]
+      const questions = listQuestions(root).map(row => ids.includes(row.id) ? { ...row, status: '已确认' } : row)
+      saveQuestions(root, questions)
+      return json(res, 200, { questions })
+    }
+    case 'questions/remove': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      removeQuestion(root, String(body.id ?? ''))
+      return json(res, 200, { questions: listQuestions(root) })
+    }
     case 'diagnostics/create': {
       const settings = await desk.settings.read()
       const root = resolveRoot(settings.saveRoot)
@@ -561,6 +622,36 @@ async function route(ctx, store, desk, req, res) {
         count: Number(body.count) === 10 ? 10 : 15,
         createdAt: new Date().toISOString(),
         method: String(body.method ?? '').trim(),
+      }
+      if (body.bank) {
+        const config = body.bank ?? {}
+        let selected
+        try {
+          selected = selectBankQuestions(listQuestions(root), {
+            subject: config.subject || lesson.subject,
+            grade: config.grade || lesson.grade,
+            term: config.term,
+            paperIds: config.paperIds,
+            knowledgePoints: config.knowledgePoints,
+            count: Number(config.count) === 10 ? 10 : 15,
+            exclude: config.exclude,
+          })
+        } catch (err) {
+          return json(res, 400, { error: err.message, shortage: err.shortage ?? [] })
+        }
+        const id = newId('DIAG')
+        const spec = specFromBank(selected, {
+          title: `${lesson.title} · 诊断卷`, brand, lesson, student: body.student ?? {},
+        })
+        spec.id = id
+        writeManifest(root, id, spec)
+        writeDiagnosticHtml(root, id, '课前诊断.html', renderDiagnosticHtml(spec, { kind: 'pre' }))
+        const row = saveDiagnosticRow(root, {
+          id, createdAt: spec.createdAt, status: '待作答', student: spec.student.name, grade: spec.student.grade,
+          subject: spec.lesson.subject, lesson: spec.lesson.title, at: spec.lesson.at, code: spec.lesson.code,
+          brand: spec.brand.name, dir: join(LAYOUT.diagnostics, id), note: '题库组卷',
+        })
+        return json(res, 200, { row, spec, source: 'bank', dir: join(LAYOUT.diagnostics, id) })
       }
       let spec = null
       let source = 'model'

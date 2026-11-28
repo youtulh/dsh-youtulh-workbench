@@ -1,6 +1,6 @@
 // 试听诊断：出卷、预览、导入回传、生成家长话术。
 import React from 'react'
-import { analyzeDiagnostic, archiveDiagnostic, createDiagnostic, createPostDiagnostic, duplicateDiagnostic, fetchDiagnosticSpec, fetchDiagnostics, importDiagnosticResult, revealDiagnostic, setDesk, toast, updateDiagnostic, useDesk } from './desk.js'
+import { analyzeDiagnostic, archiveDiagnostic, confirmBankQuestions, createDiagnostic, createPostDiagnostic, duplicateDiagnostic, extractPaper, fetchDiagnosticSpec, fetchDiagnostics, fetchPapers, importDiagnosticResult, removeBankQuestion, revealDiagnostic, setDesk, toast, updateBankQuestion, updateDiagnostic, uploadPaper, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 
@@ -32,6 +32,9 @@ export function DiagnosticsView() {
   const [creating, setCreating] = React.useState(false)
   const [form, setForm] = React.useState({})
   const [formError, setFormError] = React.useState('')
+  const [bankOpen, setBankOpen] = React.useState(false)
+  const [papers, setPapers] = React.useState([])
+  const [bankQuestions, setBankQuestions] = React.useState([])
   const prefill = useDesk(s => s.diagPrefill)
 
   const load = React.useCallback(() => {
@@ -44,6 +47,9 @@ export function DiagnosticsView() {
   }, [])
 
   React.useEffect(() => { load() }, [load])
+
+  const loadBank = React.useCallback(() => fetchPapers().then(next => { setPapers(next.papers ?? []); setBankQuestions(next.questions ?? []) }).catch(() => {}), [])
+  React.useEffect(() => { loadBank() }, [loadBank])
   React.useEffect(() => {
     if (!prefill) return
     setDesk({ diagPrefill: null })
@@ -75,7 +81,7 @@ export function DiagnosticsView() {
     score: prefill.score ?? '',
     pain: prefill.pain ?? '', resistances: prefill.resistances ?? '', goal: prefill.goal ?? '',
     lessonTitle: prefill.lessonTitle ?? '', at: prefill.at ?? '', talkAt: prefill.talkAt ?? '', altAt: prefill.altAt ?? '', code: prefill.code ?? '', topic: prefill.topic ?? '',
-    temperature: prefill.temperature ?? '',
+    temperature: prefill.temperature ?? '', bankPaperId: prefill.bankPaperId ?? '',
     brandName: prefill.brandName ?? brand.name ?? '', brandTeacher: prefill.brandTeacher ?? brand.teacher ?? '',
     ...prefill,
     studentName: prefill.name ?? prefill.studentName ?? '', studentGrade: prefill.grade ?? prefill.studentGrade ?? '',
@@ -96,9 +102,15 @@ export function DiagnosticsView() {
       toast(t('课程名和上课时间是必填'), { error: true })
       return
     }
+    const confirmedCount = bankQuestions.filter(row => row.status === '已确认').length
+    if (!confirmedCount) {
+      setFormError(t('题库里还没有已确认的题，先上传卷子并确认入库。'))
+      toast(t('先上传卷子并确认入库'), { error: true })
+      return
+    }
     setFormError('')
     setBusy('create')
-    toast(t('正在出诊断卷，约 10–20 秒…'))
+    toast(t('正在从题库组卷…'))
     try {
       const res = await createDiagnostic({
         brand: { name: form.brandName || brand.name, teacher: form.brandTeacher || brand.teacher, logo: brand.logo ?? '', mark: brand.mark ?? '' },
@@ -109,8 +121,9 @@ export function DiagnosticsView() {
           resistances: String(form.resistances ?? '').split(/[，,、;；\n]+/).map(row => row.trim()).filter(Boolean),
         },
         count: Number(form.count) || 15,
+        bank: { paperIds: form.bankPaperId ? [form.bankPaperId] : [], subject: form.subject, grade: form.grade || form.studentGrade, count: Number(form.count) || 15 },
       })
-      toast(res.source === 'template' ? t('模型没通，先用化学模板卷；其他科目建议重试') : t('诊断卷出好了'))
+      toast(res.source === 'bank' ? t('已从题库组卷') : t('诊断卷出好了'))
       setCreating(false)
       await load()
       setSelected('')
@@ -121,6 +134,65 @@ export function DiagnosticsView() {
     }
     setBusy('')
   }
+
+  const uploadPaperFile = async (file) => {
+    if (!file) return
+    setBusy('paper')
+    try {
+      const paper = await uploadPaper(file)
+      toast(t('卷子传上来了，正在拆题…'))
+      await extractPaper(paper.id)
+      await loadBank()
+      toast(t('拆题好了，去题库里确认'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const extractOne = async (paper) => {
+    setBusy(`paper-${paper.id}`)
+    try {
+      await extractPaper(paper.id)
+      await loadBank()
+      toast(t('拆题好了'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const confirmPaper = async (paper) => {
+    const ids = bankQuestions.filter(row => row.paperId === paper.id && row.status !== '已确认').map(row => row.id)
+    if (!ids.length) return toast(t('这份卷子的题都确认过了'))
+    try {
+      await confirmBankQuestions(ids)
+      await loadBank()
+      toast(t('已确认 {n} 道题', { n: ids.length }))
+    } catch (err) { toast(err.message, { error: true }) }
+  }
+
+  const editQuestion = (question) => setDesk({
+    dialog: {
+      title: t('改这道题'),
+      submitLabel: t('保存'),
+      fields: [
+        { name: 'stem', label: t('题干'), type: 'textarea', rows: 3 },
+        { name: 'knowledge', label: t('知识点') },
+        { name: 'difficulty', label: t('难度'), type: 'select', options: ['基础', '中档', '期中', '压轴'].map(value => ({ value, label: t(value) })) },
+        { name: 'answer', label: t('答案（A/B/C/D）') },
+        { name: 'explain', label: t('解析'), type: 'textarea', rows: 2 },
+      ],
+      initial: { stem: question.stem, knowledge: question.knowledge, difficulty: question.difficulty, answer: 'ABCD'[question.answer] ?? '', explain: question.explain },
+      onSubmit: async values => {
+        try {
+          await updateBankQuestion(question.id, {
+            stem: values.stem, knowledge: values.knowledge, difficulty: values.difficulty,
+            answer: /^[A-Da-d]$/.test(values.answer) ? 'ABCD'.indexOf(values.answer.toUpperCase()) : undefined,
+            explain: values.explain,
+          })
+          await loadBank()
+          toast(t('改好了'))
+        } catch (err) { toast(err.message, { error: true }) }
+      },
+    },
+  })
 
   const textField = (name, label, placeholder, { wide = false, type = 'text' } = {}) => (
     <label className={`md-create-field${wide ? ' is-wide' : ''}`}>
@@ -360,10 +432,63 @@ export function DiagnosticsView() {
           <p className="md-page-sub">{t('先诊断、再试听、课后复测。每份卷子都带着品牌、上课时间和课次编码。')}</p>
         </div>
         <span className="md-grow" />
+        <button type="button" className="md-inline-link" onClick={() => setBankOpen(value => !value)}>{bankOpen ? t('收起题库') : t('题库')}</button>
         <button type="button" className="md-inline-link" onClick={() => openCreate(DEMO)}>{t('用示例填一遍')}</button>
         <button type="button" className="md-inline-link" disabled={busy === 'create'} onClick={() => openCreate()}>{busy === 'create' ? t('正在出卷…') : t('出一份诊断卷')}</button>
         {current ? <button type="button" className="md-pill is-small" onClick={openImport}>{t('导入结果')}</button> : null}
       </header>
+
+      {bankOpen ? (
+        <section className="md-diag-bank">
+          <header className="md-create-head">
+            <div>
+              <h2>{t('题库')}</h2>
+              <p>{t('上传北京期中/期末卷，拆成题后确认入库；诊断卷只从这里选题。')}</p>
+            </div>
+            <span className="md-grow" />
+            <label className="md-pill is-small is-primary">
+              {busy === 'paper' ? t('正在拆题…') : t('上传卷子')}
+              <input type="file" accept=".pdf,.docx,.txt,.md,.csv" hidden onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) uploadPaperFile(file) }} />
+            </label>
+            <button type="button" className="md-inline-link" onClick={() => setBankOpen(false)}>{t('关闭')}</button>
+          </header>
+          <div className="md-bank-stats">
+            <span>{t('{n} 份卷子', { n: papers.length })}</span>
+            <span>{t('{n} 道题', { n: bankQuestions.length })}</span>
+            <span>{t('已确认 {n} 道', { n: bankQuestions.filter(row => row.status === '已确认').length })}</span>
+            {bankQuestions.some(row => row.status === '待确认') ? <em>{t('还有 {n} 道待确认', { n: bankQuestions.filter(row => row.status === '待确认').length })}</em> : null}
+          </div>
+          {papers.length === 0 ? <p className="md-muted">{t('还没有卷子。上传 PDF、Word 或文本卷；图片/扫描件先发到对话里让助手识别。')}</p> : (
+            <ul className="md-bank-papers">
+              {papers.map(paper => (
+                <li key={paper.id}>
+                  <b>{paper.name}</b>
+                  <span>{paper.count} 题 · {t(paper.status)}</span>
+                  <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => extractOne(paper)} disabled={busy === `paper-${paper.id}`}>{busy === `paper-${paper.id}` ? t('拆题中…') : t('重新拆题')}</button>
+                  <button type="button" className="md-pill is-small" onClick={() => confirmPaper(paper)}>{t('确认全部')}</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {bankQuestions.length ? (
+            <div className="md-bank-questions">
+              <b>{t('题目')}</b>
+              {bankQuestions.slice(0, 40).map(question => (
+                <div className="md-bank-q" key={question.id}>
+                  <span className={`md-bank-status ${question.status === '已确认' ? 'is-ok' : ''}`}>{t(question.status)}</span>
+                  <span className="md-bank-stem">{question.stem}</span>
+                  <em>{question.knowledge} · {t(question.difficulty)}</em>
+                  <span className="md-grow" />
+                  <button type="button" className="md-inline-link" onClick={() => editQuestion(question)}>{t('改')}</button>
+                  {question.status !== '已确认' ? <button type="button" className="md-inline-link" onClick={async () => { await confirmBankQuestions([question.id]); await loadBank(); toast(t('已确认')) }}>{t('确认')}</button> : null}
+                  <button type="button" className="md-inline-link" onClick={async () => { await removeBankQuestion(question.id); await loadBank(); toast(t('已删除')) }}>{t('删')}</button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {creating ? (
         <section className="md-diag-create" id="diag-create">
@@ -398,6 +523,7 @@ export function DiagnosticsView() {
               {textField('lessonTitle', t('课程名（必填）'), t('氧化还原配平'))}
               {textField('subject', t('科目'), t('化学'))}
               {textField('grade', t('课程年级'), t('高一'))}
+              {selectField('bankPaperId', t('题库来源卷'), [{ value: '', label: t('全部已确认题库') }, ...papers.map(paper => ({ value: paper.id, label: `${paper.name}（${paper.count} 题）` }))])}
               {textField('at', t('上课时间（必填）'), t('2026-11-30 周日 19:00'))}
               {textField('talkAt', t('跟家长怎么说时间'), t('周日晚 7 点'))}
               {textField('altAt', t('备选时间（可选）'), t('周六上午 10 点'))}

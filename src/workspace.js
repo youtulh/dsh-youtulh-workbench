@@ -14,6 +14,7 @@ export const LAYOUT = {
   students: '学生档案.csv', classes: '班课.csv', lessons: '课次记录.csv',
   chats: '对话记录.csv', cases: '案例库.csv', words: '平台词表.md', feedback: '家长反馈.csv',
   diagnostics: '试听诊断', diagnosticsTable: '试听诊断.csv',
+  bank: '题库', bankTable: '题库.csv', bankPapers: '题库卷子.csv', bankRaw: '题库/原始卷',
 }
 
 export const defaultRoot = () => join(homedir(), 'Documents', 'Youtulh 工作台')
@@ -31,7 +32,7 @@ export function resolveRoot(value) {
 }
 
 export function ensureLayout(root) {
-  for (const dir of [root, join(root, LAYOUT.content), join(root, LAYOUT.dm), join(root, LAYOUT.data), join(root, LAYOUT.diagnostics)]) {
+  for (const dir of [root, join(root, LAYOUT.content), join(root, LAYOUT.dm), join(root, LAYOUT.data), join(root, LAYOUT.diagnostics), join(root, LAYOUT.bank), join(root, LAYOUT.bankRaw)]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   }
 }

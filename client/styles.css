@@ -2360,3 +2360,16 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-dm-standard-row { display: flex; align-items: flex-start; gap: 8px; }
 .md-dm-standard-row p { flex: 1; margin: 0; color: var(--ink2); font-size: 12.5px; line-height: 19px; }
 .md-dm-standard-row button { flex: none; }
+
+.md-diag-bank { margin-bottom: 12px; padding: 14px 16px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-bank-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 10px; color: var(--ink3); font-size: 12px; }
+.md-bank-stats em { color: var(--accent); font-style: normal; }
+.md-bank-papers { display: grid; gap: 6px; margin-bottom: 10px; }
+.md-bank-papers li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 8px; background: var(--hover); font-size: 12px; }
+.md-bank-papers b { font-weight: 500; }
+.md-bank-questions { border-top: .5px solid var(--hairline); padding-top: 8px; }
+.md-bank-q { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 5px 0; border-bottom: .5px dashed var(--hairline); font-size: 12px; }
+.md-bank-stem { flex: 1 1 260px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-bank-q em { color: var(--ink3); font-style: normal; }
+.md-bank-status { padding: 0 5px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-size: 10px; }
+.md-bank-status.is-ok { color: var(--accent); }

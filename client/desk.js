@@ -664,3 +664,35 @@ export function archiveDiagnostic(id, archived = true) {
 export function revealDiagnostic(id) {
   return request('diagnostics/reveal', { id })
 }
+
+// ---- 题库 ----
+export function fetchPapers() {
+  return request('papers')
+}
+
+export async function uploadPaper(file) {
+  const res = await fetch(`${BASE}papers/upload`, {
+    method: 'POST',
+    headers: { 'content-type': file.type || 'application/octet-stream', 'x-filename': encodeURIComponent(file.name), 'x-media-desk-lang': lang() },
+    body: file,
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.error || t('上传失败'))
+  return data.paper
+}
+
+export function extractPaper(id) {
+  return request('papers/extract', { id })
+}
+
+export function updateBankQuestion(id, patch) {
+  return request('questions/update', { id, patch })
+}
+
+export function confirmBankQuestions(ids) {
+  return request('questions/confirm', { ids })
+}
+
+export function removeBankQuestion(id) {
+  return request('questions/remove', { id })
+}
