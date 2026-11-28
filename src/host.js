@@ -24,6 +24,7 @@ import { leadAnalyzePrompt, localAnalyzedLead, normalizeAnalyzedLeads } from './
 import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
 import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
 import { parseBrief } from './brief.js'
+import { hotspotQueries, searchBing, summarizeHotspots } from './hotspots.js'
 import { fixScript } from './redlines.js'
 import { LAYOUT, backupWorkspace, contentKey, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
@@ -283,6 +284,32 @@ async function extractZipChat(zipFile) {
   } finally { rm(dir, { recursive: true, force: true }).catch(() => {}) }
 }
 
+const hotCacheFile = root => join(root, LAYOUT.data, '热点.json')
+
+async function readHotCache(root) {
+  try { return JSON.parse(await readFile(hotCacheFile(root), 'utf8')) } catch { return null }
+}
+
+async function ensureHotspots(root, state, settings, force = false) {
+  const p = state?.positioning ?? {}
+  const key = JSON.stringify({ city: p.city ?? '', grade: p.grade ?? '', subject: p.subject ?? '', district: settings.district ?? '', timeNode: settings.timeNode ?? '', date: dayStamp() })
+  const cached = await readHotCache(root)
+  if (!force && cached?.key === key && Array.isArray(cached.items) && Date.now() - Date.parse(cached.fetchedAt) < 12 * 3600 * 1000) return cached
+  const queries = hotspotQueries(settings, p)
+  const settled = await Promise.allSettled(queries.map(query => searchBing(query)))
+  const raw = settled.flatMap(row => row.status === 'fulfilled' ? row.value : [])
+  const items = summarizeHotspots(raw, { city: p.city ?? '', grade: p.grade ?? '' })
+  const manual = (cached?.manual ?? []).slice(0, 10)
+  const next = { key, fetchedAt: new Date().toISOString(), items: [...manual, ...items].slice(0, 8), manual, hidden: cached?.hidden ?? [] }
+  await writeFile(hotCacheFile(root), JSON.stringify(next, null, 2)).catch(() => {})
+  return next
+}
+
+async function activeHotspot(root, state, settings) {
+  const cache = await ensureHotspots(root, state, settings)
+  return (cache.items ?? []).find(row => !(cache.hidden ?? []).includes(row.id)) ?? null
+}
+
 function engineLabel(ctx) {
   const info = modelInfo(ctx)
   return info ? info.label : null
@@ -505,6 +532,10 @@ async function route(ctx, store, desk, req, res) {
       suggestCache = { key, at: Date.now(), list }
       return json(res, 200, { prompts: list, source })
     }
+    if (path === 'hotspots') {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      return json(res, 200, { cache: await readHotCache(root) })
+    }
     if (path === 'papers') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       return json(res, 200, { papers: listPapers(root), questions: listQuestions(root) })
@@ -640,6 +671,32 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       removeQuestion(root, String(body.id ?? ''))
       return json(res, 200, { questions: listQuestions(root) })
+    }
+    case 'hotspots/refresh': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const settings = await desk.settings.read()
+      const state = await store.read()
+      const cache = await ensureHotspots(root, state, settings, true)
+      return json(res, 200, { cache })
+    }
+    case 'hotspots/manual': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const cache = await readHotCache(root) ?? { items: [], manual: [], hidden: [] }
+      const title = String(body.title ?? '').trim().slice(0, 120)
+      if (!title) return json(res, 400, { error: tr('先写一句今天学校/家长圈在传什么') })
+      const item = { id: `manual-${Date.now().toString(36)}`, title, summary: String(body.summary ?? '').slice(0, 300), kind: '学校安排', anxiety: '家长怕学校安排影响复习', region: '', grade: '', source: '老师提供', url: '', publishedAt: dayStamp(), manual: true }
+      const next = { ...cache, items: [item, ...(cache.items ?? [])].slice(0, 12), manual: [item, ...(cache.manual ?? [])].slice(0, 12) }
+      await writeFile(hotCacheFile(root), JSON.stringify(next, null, 2)).catch(() => {})
+      return json(res, 200, { cache: next })
+    }
+    case 'hotspots/hide': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const cache = await readHotCache(root) ?? { items: [], hidden: [] }
+      const id = String(body.id ?? '').trim()
+      const hidden = id ? [...new Set([...(cache.hidden ?? []), id])] : []
+      const next = { ...cache, hidden }
+      await writeFile(hotCacheFile(root), JSON.stringify(next, null, 2)).catch(() => {})
+      return json(res, 200, { cache: next })
     }
     case 'diagnostics/from-brief': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
@@ -1013,6 +1070,9 @@ ${analysis.riskNote}
     case 'topics/today': {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const settings = await desk.settings.read()
+      const hotspot = await activeHotspot(root, state, settings)
+      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '', hotspot }
       const leads = readLeads(root)
       let topics = []
       let source = 'local'
@@ -1064,7 +1124,8 @@ ${analysis.riskNote}
       ensureLayout(root)
       const cacheFile = join(root, LAYOUT.data, '今日稿.json')
       const settings = await desk.settings.read()
-      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '' }
+      const hotspot = await activeHotspot(root, state, settings)
+      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '', hotspot }
       const cacheKey = JSON.stringify({ p: state.positioning ?? {}, pains: state.painPoints ?? [], extra, date: dayStamp() })
       try {
         const cached = JSON.parse(await readFile(cacheFile, 'utf8'))
@@ -1082,15 +1143,15 @@ ${analysis.riskNote}
       const scripts = await Promise.all(topics.slice(0, 3).map(async (item, index) => {
         let single = null
         try {
-          const { text: raw } = await callModel(ctx, { ...singleScriptPrompt(state, item.topic, lessons, voice), maxTokens: 2200, light: true })
+          const { text: raw } = await callModel(ctx, { ...singleScriptPrompt(state, item.topic, lessons, voice, hotspot), maxTokens: 2200, light: true })
           const parsed = normalizeSingle(extractJson(raw))
           if (parsed.title && parsed.script) single = parsed
         } catch { /* 本地 */ }
         if (!single) single = normalizeSingle(localSingle(state, item.topic))
         single = fixScript(single)
-        return { id: `today-${Date.now()}-${index}`, topic: item.topic, source: item.source || '', ...single }
+        return { id: `today-${Date.now()}-${index}`, topic: item.topic, source: item.source || '', hotspot, ...single }
       }))
-      const payload = { key: cacheKey, date: dayStamp(), scripts, source: 'today' }
+      const payload = { key: cacheKey, date: dayStamp(), scripts, hotspot, source: 'today' }
       writeFile(cacheFile, JSON.stringify(payload)).catch(() => {})
       return json(res, 200, payload)
     }
@@ -1099,18 +1160,20 @@ ${analysis.riskNote}
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const lessons = buildLessonBlock(root)
       const voice = readVoiceSamples(root)
+      const settings = await desk.settings.read()
+      const hotspot = await activeHotspot(root, state, settings)
       const topic = String(body.topic ?? body.brief ?? '').trim()
       if (!topic) return json(res, 400, { error: tr('先给一个选题') })
       let single = null
       let source = 'local'
       try {
-        const { text: raw } = await callModel(ctx, { ...singleScriptPrompt(state, topic, lessons, voice), maxTokens: 2200, light: true })
+        const { text: raw } = await callModel(ctx, { ...singleScriptPrompt(state, topic, lessons, voice, hotspot), maxTokens: 2200, light: true })
         const parsed = normalizeSingle(extractJson(raw))
         if (parsed.title && parsed.script) { single = parsed; source = 'model' }
       } catch { /* 本地兜底 */ }
       if (!single) single = normalizeSingle(localSingle(state, topic))
       single = fixScript(single)
-      return json(res, 200, { single, source })
+      return json(res, 200, { single, hotspot, source })
     }
     case 'scripts': {
       // 只生成、不落盘：用户点「采用这条」时才保存

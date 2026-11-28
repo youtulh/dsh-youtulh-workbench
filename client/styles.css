@@ -2457,3 +2457,6 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-today2-error { color: #9c3333; font-size: 12.5px; margin-bottom: 10px; }
 
 .md-intake-card-head { margin-bottom: 6px; }
+
+.md-today2-hot { margin-top: 8px; color: var(--ink3); font-size: 11.5px; }
+.md-today2-hot .md-inline-link { margin-left: 8px; }

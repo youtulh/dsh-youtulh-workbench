@@ -693,3 +693,19 @@ export async function uploadZip(file) {
   if (!res.ok) throw new Error(data.error || t('上传失败'))
   return data.src
 }
+
+export function fetchHotspots() {
+  return request('hotspots')
+}
+
+export function refreshHotspots() {
+  return request('hotspots/refresh', {})
+}
+
+export function hideHotspot(id) {
+  return request('hotspots/hide', { id })
+}
+
+export function manualHotspot(payload) {
+  return request('hotspots/manual', payload)
+}

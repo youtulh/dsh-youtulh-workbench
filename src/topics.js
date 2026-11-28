@@ -439,7 +439,7 @@ export function todayTopicsPrompt(state, leads = [], count = 3, extra = {}) {
     grade: text(row.grade, 20),
   })).filter(row => row.pain)
   const pains = recent.map(row => row.pain).join('；') || (state?.painPoints ?? []).slice(0, 5).join('；')
-  const spark = [extra.inspiration && `老师今天想讲：${extra.inspiration}`, extra.timeNode && `当前节点：${extra.timeNode}`].filter(Boolean).join('\n')
+  const spark = [extra.inspiration && `老师今天想讲：${extra.inspiration}`, extra.timeNode && `当前节点：${extra.timeNode}`, extra.hotspot && `今天可用的真实背景（只在相关时用，不编）：${extra.hotspot.title}（${extra.hotspot.source}）。`].filter(Boolean).join('\n')
   const system = `你在帮补课老师决定「今天拍什么」。只出 ${count} 条选题，必须跟最近家长问的卡点对得上。
 ${settingBlock(state)}
 ${spark}
@@ -479,10 +479,11 @@ export function localTodayTopics(state, leads = [], count = 3, extra = {}) {
 }
 
 /** 一条稿 + 两行说明：开头为什么留人、结尾引导要不要说。 */
-export function singleScriptPrompt(state, topic, lessons = '', samples = []) {
+export function singleScriptPrompt(state, topic, lessons = '', samples = [], hotspot = null) {
   const base = scriptPrompt(state, topic, lessons, samples)
   return {
     system: `${base.system}
+${hotspot ? `今天可用的真实背景（只放在开头或接情绪处，不改六段结构；必须带来源，不编）：${hotspot.title}（${hotspot.source}）。` : ''}
 只要 1 条，不要 3 个版本。
 另外给两句给老师看的说明：
 - hookWhy：这条开头为什么能留住家长，1 句，具体说用了什么场景/分数/判断；

@@ -11,6 +11,9 @@ const DEFAULTS = {
   voice: '',
   inspiration: '',
   timeNode: '',
+  district: '',
+  school: '',
+  examAt: '',
   exportDir: '',
   // 工作区根目录：内容、私信、数据和「我的设定.md」都写在这里；空表示用默认的 ~/Documents/Youtulh 工作台
   saveRoot: '',
@@ -111,6 +114,9 @@ export class Settings {
     if (typeof patch.voice === 'string') next.voice = patch.voice.slice(0, 8000)
     if (typeof patch.inspiration === 'string') next.inspiration = patch.inspiration.slice(0, 500)
     if (typeof patch.timeNode === 'string') next.timeNode = patch.timeNode.slice(0, 200)
+    if (typeof patch.district === 'string') next.district = patch.district.slice(0, 60)
+    if (typeof patch.school === 'string') next.school = patch.school.slice(0, 80)
+    if (typeof patch.examAt === 'string') next.examAt = patch.examAt.slice(0, 40)
     if (typeof patch.exportDir === 'string') next.exportDir = patch.exportDir.trim().slice(0, 500)
     if (typeof patch.saveRoot === 'string') next.saveRoot = patch.saveRoot.trim().slice(0, 500)
     if (typeof patch.generateImages === 'boolean') next.generateImages = patch.generateImages
