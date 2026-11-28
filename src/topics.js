@@ -439,7 +439,7 @@ export function todayTopicsPrompt(state, leads = [], count = 3, extra = {}) {
     grade: text(row.grade, 20),
   })).filter(row => row.pain)
   const pains = recent.map(row => row.pain).join('；') || (state?.painPoints ?? []).slice(0, 5).join('；')
-  const spark = [extra.inspiration && `老师今天想讲：${extra.inspiration}`, extra.timeNode && `当前节点：${extra.timeNode}`, extra.hotspot && `今天可用的真实背景（只在相关时用，不编）：${extra.hotspot.title}（${extra.hotspot.source}）。`].filter(Boolean).join('\n')
+  const spark = [extra.inspiration && `老师今天想讲：${extra.inspiration}`, extra.timeNode && `当前节点：${extra.timeNode}`, extra.hotspot && `今天可用的真实背景（只在相关时用，不编）：${extra.hotspot.title}（${extra.hotspot.source}）。`, extra.exclude?.length && `上次已经出过这些选题，这次必须换角度、不要重复：${extra.exclude.join('；')}`].filter(Boolean).join('\n')
   const system = `你在帮补课老师决定「今天拍什么」。只出 ${count} 条选题，必须跟最近家长问的卡点对得上。
 ${settingBlock(state)}
 ${spark}
@@ -463,7 +463,8 @@ export function localTodayTopics(state, leads = [], count = 3, extra = {}) {
   const grade = text(p.grade, 10) || '孩子'
   const subject = text(p.subject, 10) || '这门课'
   const recent = (leads ?? []).slice(0, 5).map(row => text(row.painPoint || row.raw, 80)).filter(Boolean)
-  const seeds = [extra.inspiration, ...(recent.length ? recent : (state?.painPoints ?? []).slice(0, 5))].filter(Boolean)
+  const exclude = new Set((extra.exclude ?? []).map(row => text(row, 80)))
+  const seeds = [extra.inspiration, ...(recent.length ? recent : (state?.painPoints ?? []).slice(0, 5))].filter(row => row && !exclude.has(text(row, 80)))
   const fallback = [`${grade}${subject}卡在中间分，先补哪一章`, `孩子上课听懂了，一做题就不会`, `${grade}家长最容易忽略的一个断层`]
   const topics = []
   for (const seed of seeds) {
@@ -471,8 +472,9 @@ export function localTodayTopics(state, leads = [], count = 3, extra = {}) {
     if (short) topics.push({ topic: short, source: seed })
     if (topics.length >= count) break
   }
-  for (const text of fallback) {
+  for (const base of fallback) {
     if (topics.length >= count) break
+    const text = exclude.has(base) ? `${base}（换个角度说）` : base
     topics.push({ topic: text, source: '按你的设定' })
   }
   return topics.slice(0, count)

@@ -1073,7 +1073,7 @@ ${analysis.riskNote}
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       const settings = await desk.settings.read()
       const hotspot = await activeHotspot(root, state, settings)
-      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '', hotspot }
+      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '', hotspot, exclude: Array.isArray(body.exclude) ? body.exclude.map(row => String(row)).slice(0, 10) : [] }
       const leads = readLeads(root)
       let topics = []
       let source = 'local'
@@ -1126,7 +1126,7 @@ ${analysis.riskNote}
       const cacheFile = join(root, LAYOUT.data, '今日稿.json')
       const settings = await desk.settings.read()
       const hotspot = await activeHotspot(root, state, settings)
-      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '', hotspot }
+      const extra = { inspiration: settings.inspiration ?? '', timeNode: settings.timeNode ?? '', hotspot, exclude: Array.isArray(body.exclude) ? body.exclude.map(row => String(row)).slice(0, 10) : [] }
       const cacheKey = JSON.stringify({ p: state.positioning ?? {}, pains: state.painPoints ?? [], extra, date: dayStamp() })
       try {
         const cached = JSON.parse(await readFile(cacheFile, 'utf8'))

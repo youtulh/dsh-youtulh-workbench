@@ -675,8 +675,8 @@ export function diagnosticFromBrief(payload) {
   return request('diagnostics/from-brief', payload)
 }
 
-export function fetchTodayScripts(force = false) {
-  return request('scripts/today', { force })
+export function fetchTodayScripts(force = false, exclude = []) {
+  return request('scripts/today', { force, exclude })
 }
 
 export function adoptScript(payload) {
