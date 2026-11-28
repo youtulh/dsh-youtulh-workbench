@@ -1463,22 +1463,31 @@ ${analysis.riskNote}
     case 'leads/analyze-chat': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       let text = String(body.text ?? '').trim()
-      const src = String(body.src ?? '').trim()
-      if (src) {
-        const hit = /^(?:media-desk\/)?files\/([\w.-]+)$/.exec(src)
-        if (!hit) return json(res, 400, { error: tr('截图地址不对') })
-        text = await ocrChatImage(join(store.filesDir, hit[1]))
+      const srcs = (Array.isArray(body.srcs) ? body.srcs : [body.src]).map(value => String(value ?? '').trim()).filter(Boolean)
+      if (!text && srcs.length) {
+        const chunks = []
+        for (const src of srcs) {
+          const hit = /^(?:media-desk\/)?files\/([\w.-]+)$/.exec(src)
+          if (!hit) return json(res, 400, { error: tr('截图地址不对') })
+          chunks.push(await ocrChatImage(join(store.filesDir, hit[1])))
+        }
+        text = chunks.filter(Boolean).join('\n--- 下一张截图 ---\n')
       }
       if (!text) return json(res, 400, { error: tr('没有读到聊天内容') })
       let leads = []
       let source = 'local'
       try {
-        const { text: raw } = await callModel(ctx, { ...leadAnalyzePrompt(await store.read(), text), maxTokens: 1600, light: true })
+        const { text: raw } = await callModel(ctx, { ...leadAnalyzePrompt(await store.read(), text), maxTokens: 2200, light: true })
         leads = normalizeAnalyzedLeads(extractJson(raw))
         if (leads.length) source = 'model'
       } catch { /* 本地兜底 */ }
       if (!leads.length) leads = localAnalyzedLead(text)
-      return json(res, 200, { text, leads, source })
+      const existing = readLeads(root)
+      const matched = leads.map(row => {
+        const hit = row.name ? existing.find(old => old.name === row.name && (!row.grade || !old.grade || old.grade === row.grade)) : null
+        return { ...row, action: hit ? 'update' : 'new', rowIndex: hit?.rowIndex ?? null }
+      })
+      return json(res, 200, { text, leads: matched, source })
     }
     case 'leads/import': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)

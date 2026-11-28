@@ -2455,3 +2455,5 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-today2-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
 .md-today2-feel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: var(--r-md); background: var(--hover); font-size: 12.5px; }
 .md-today2-error { color: #9c3333; font-size: 12.5px; margin-bottom: 10px; }
+
+.md-intake-card-head { margin-bottom: 6px; }

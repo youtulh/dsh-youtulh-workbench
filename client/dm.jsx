@@ -1,6 +1,6 @@
 // 线索表只做一件事：上传聊天截图或粘贴聊天记录 → AI 整理成线索 → 记进表。
 import React from 'react'
-import { analyzeChat, appendLeadRow, fetchLeadsWithLessons, setDesk, toast, uploadFile, useDesk } from './desk.js'
+import { analyzeChat, appendLeadRow, fetchLeadsWithLessons, setDesk, toast, updateLead, uploadFile, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon } from './ui.jsx'
 import { LEAD_STAGES } from './util.js'
@@ -11,7 +11,7 @@ export function DmView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const [text, setText] = React.useState('')
-  const [src, setSrc] = React.useState('')
+  const [srcs, setSrcs] = React.useState([])
   const [leads, setLeads] = React.useState([])
   const [rows, setRows] = React.useState([])
   const [busy, setBusy] = React.useState('')
@@ -41,13 +41,17 @@ export function DmView() {
     setBusy('')
   }
 
-  const pickImage = async (file) => {
-    if (!file) return
+  const pickImages = async (files) => {
+    if (!files?.length) return
     setBusy('upload')
     try {
-      const data = await uploadFile(file)
-      setSrc(data.src)
-      await analyze({ src: data.src })
+      const uploaded = []
+      for (const file of files) {
+        const data = await uploadFile(file)
+        uploaded.push(data.src)
+      }
+      setSrcs(uploaded)
+      await analyze({ srcs: uploaded })
     } catch (err) {
       setError(err.message)
       toast(err.message, { error: true })
@@ -63,13 +67,15 @@ export function DmView() {
     setBusy('save')
     try {
       for (const row of items) {
-        await appendLeadRow({ raw: text.trim() || row.painPoint, ...row, type: '家长', category: '' })
+        const patch = { raw: text.trim() || row.painPoint, ...row, type: '家长', category: '' }
+        if (row.action === 'update' && Number.isInteger(row.rowIndex)) await updateLead(row.rowIndex, patch)
+        else await appendLeadRow(patch)
       }
       toast(t('记进线索表了'))
       setSaved(true)
       setLeads([])
       setText('')
-      setSrc('')
+      setSrcs([])
       load()
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
@@ -97,17 +103,17 @@ export function DmView() {
         <div className="md-intake-actions">
           <label className={`md-pill is-primary ${busy === 'upload' ? 'is-disabled' : ''}`}>
             <Icon name="plus" size={14} />
-            {busy === 'upload' ? t('正在读图…') : t('上传聊天截图')}
-            <input type="file" accept="image/*" hidden onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) pickImage(file) }} />
+            {busy === 'upload' ? t('正在读图…') : t('上传聊天截图（可多张）')}
+            <input type="file" accept="image/*" multiple hidden onChange={event => { const files = [...(event.target.files ?? [])]; event.target.value = ''; if (files.length) pickImages(files) }} />
           </label>
-          <span className="md-muted">{t('支持微信/小红书/抖音聊天截图；也可以直接粘贴文字')}</span>
+          <span className="md-muted">{t('支持微信/小红书/抖音聊天截图；一次可以选多张')}</span>
         </div>
         <label className="md-field">
           <span>{t('聊天记录（可粘贴，也可以只上传截图）')}</span>
           <textarea rows={6} value={text} onChange={event => setText(event.target.value)} placeholder={t('把家长和你的聊天粘在这里，我来抽姓名、年级、卡点、阶段、下一步。')} />
         </label>
         <div className="md-intake-foot">
-          <span className="md-muted">{src ? t('已上传截图，正在用识别出的文字整理') : t('截图会先在本机识别文字，再整理成线索')}</span>
+          <span className="md-muted">{srcs.length ? t('已上传 {n} 张截图，按顺序识别', { n: srcs.length }) : t('截图会先在本机识别文字，再整理成线索')}</span>
           <span className="md-grow" />
           <button type="button" className="md-pill" onClick={() => analyze({ text })} disabled={!text.trim() || busy === 'analyze'}>
             {busy === 'analyze' ? t('正在整理…') : t('整理成线索')}
@@ -121,12 +127,14 @@ export function DmView() {
         <section className="md-intake-result">
           <header>
             <b>{t('整理出 {n} 条线索', { n: leads.length })}</b>
+            <span className="md-muted">{t('新增 {n} 个，更新 {m} 个', { n: leads.filter(row => row.action !== 'update').length, m: leads.filter(row => row.action === 'update').length })}</span>
             <span className="md-muted">{source === 'local' ? t('本地兜底，请核对') : t('AI 整理，记之前看一眼')}</span>
             <span className="md-grow" />
             <button type="button" className="md-pill is-primary" onClick={save} disabled={busy === 'save'}>{busy === 'save' ? t('保存中…') : t('全部记进线索表')}</button>
           </header>
           {leads.map((row, index) => (
             <div className="md-intake-card" key={index}>
+              <div className="md-intake-card-head"><span className={`md-bank-status ${row.action === 'update' ? 'is-ok' : ''}`}>{row.action === 'update' ? t('更新已有') : t('新增')}</span></div>
               <div className="md-intake-grid">
                 {[['name', '家长/学生'], ['grade', '年级'], ['school', '学校'], ['painPoint', '卡点'], ['source', '来源'], ['next', '下一步'], ['nextAt', '跟进日期']].map(([key, label]) => (
                   <label className="md-field" key={key}>
