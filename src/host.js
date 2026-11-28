@@ -588,7 +588,9 @@ async function route(ctx, store, desk, req, res) {
       try {
         const meta = { ...paper, ...(body.meta ?? {}) }
         let text = String(body.text ?? '').trim()
-        if (!text) text = await extractPaperText(join(root, paper.file), extname(paper.file).toLowerCase())
+        const file = join(root, paper.file)
+        const ext = extname(paper.file).toLowerCase()
+        if (!text) text = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? await ocrChatImage(file) : await extractPaperText(file, ext)
         if (!text) return json(res, 400, { error: tr('这份卷子没读到文字，可能是扫描件') })
         savePaper(root, { ...paper, text: savePaperText(root, meta.name || paper.name, text), status: '拆题中' })
         const { text: raw } = await callModel(ctx, { ...paperExtractPrompt(text, meta), maxTokens: 5000 })
