@@ -18,7 +18,8 @@ export function inferTimeNode(date = new Date()) {
 }
 
 export function hotspotQueries(settings = {}, positioning = {}) {
-  const city = clean(positioning.city, 12)
+  const cityRaw = clean(positioning.city, 30)
+  const city = cityRaw.split(/线上|网课|全国/)[0].trim() || cityRaw
   const district = clean(settings.district, 20)
   const school = clean(settings.school, 30)
   const grade = clean(positioning.grade, 10)
@@ -27,10 +28,10 @@ export function hotspotQueries(settings = {}, positioning = {}) {
   const year = new Date().getFullYear()
   const place = [city, district].filter(Boolean).join(' ')
   const list = [
-    `${place} ${grade} ${node || '期中 期末'} 考试 时间 ${year}`,
+    `${place} ${grade} ${subject} ${node || '期中 期末'} 试卷 难度 分析 ${year}`,
+    `${place} ${grade} 期中 成绩 排名 家长 ${year}`,
     `${place} ${year} 高考 政策 变化`,
-    `${place} ${grade} ${subject} 考情 命题`,
-    school ? `${school} 月考 期中 安排` : '',
+    school ? `${school} 期中 月考 安排` : '',
   ].filter(Boolean)
   return [...new Set(list)].slice(0, 4)
 }
@@ -60,13 +61,14 @@ const KIND = [
 ]
 
 export function summarizeHotspots(items = [], { city = '', grade = '' } = {}) {
+  const localCity = String(city).split(/线上|网课|全国/)[0].trim()
   const out = []
   const seen = new Set()
   for (const item of items) {
     const title = clean(item.title, 100)
     if (!title || seen.has(title)) continue
     const hay = `${title} ${item.summary}`
-    if (city && !/线上|全国/.test(city) && !hay.includes(city) && !/高考|中考|教育部|北京|上海/.test(hay)) continue
+    if (localCity && !hay.includes(localCity) && !/高考|中考|教育部|北京|上海|期中|期末|月考/.test(hay)) continue
     if (grade && !hay.includes(grade) && !/高考|中考|期中|期末|月考/.test(hay)) continue
     const kind = KIND.find(([, re]) => re.test(hay))?.[0] ?? '考情'
     const anxiety = kind === '考试安排'

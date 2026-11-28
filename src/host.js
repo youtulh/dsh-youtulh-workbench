@@ -294,7 +294,7 @@ async function ensureHotspots(root, state, settings, force = false) {
   const p = state?.positioning ?? {}
   const key = JSON.stringify({ city: p.city ?? '', grade: p.grade ?? '', subject: p.subject ?? '', district: settings.district ?? '', timeNode: settings.timeNode || inferTimeNode(), date: dayStamp() })
   const cached = await readHotCache(root)
-  if (!force && cached?.key === key && Array.isArray(cached.items) && Date.now() - Date.parse(cached.fetchedAt) < 12 * 3600 * 1000) return cached
+  if (!force && cached?.key === key && Array.isArray(cached.items) && cached.items.length && Date.now() - Date.parse(cached.fetchedAt) < 12 * 3600 * 1000) return cached
   const effective = { ...settings, timeNode: settings.timeNode || inferTimeNode() }
   const queries = hotspotQueries(effective, p)
   const settled = await Promise.allSettled(queries.map(query => searchBing(query)))
