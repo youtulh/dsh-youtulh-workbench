@@ -143,6 +143,7 @@ export function DmView() {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
   }
 
+  const dueLeads = leads.filter(isDue)
   const filtered = leads.filter(lead => {
     const pass = (FILTERS.find(row => row.id === filter) ?? FILTERS[0]).test(lead)
     const q = query.trim()
