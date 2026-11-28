@@ -1,7 +1,7 @@
 // 回私信：粘一条私信 → 页内判断 + 两条话术 → 挑一条改成自己的 → 连同台账写进线索表。
 // 不出页面；想深聊再去对话。线索表就在下面，能筛、能搜、能改下一步。
 import React from 'react'
-import { appendLeadRow, convertLead, fetchChatRecords, fetchContent, fetchLeadsWithLessons, profileSummary, removeChatLog, removeLead, setDesk, toast, updateChatLog, updateLead, useDesk } from './desk.js'
+import { appendLeadRow, convertLead, fetchContent, fetchLeadsWithLessons, profileSummary, removeLead, setDesk, toast, updateLead, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { Icon, Pager } from './ui.jsx'
 import { CHANNELS, LEAD_CATEGORIES, LEAD_STAGES, LEAD_TYPES, REACTIONS, RESULTS, dayKey } from './util.js'
@@ -34,8 +34,7 @@ const SCENARIOS = [
 const DM_DRAFT_KEY = 'youtulh:dm:v1'
 const DM_DRAFT_DEFAULT = {
   raw: '', channel: '平台私信', fields: { ...EMPTY_FIELDS }, stage: '私信',
-  type: '家长', category: 'C 怎么补',
-  chatFilter: 'all', chatPerson: '', chatResult: 'all', chatView: 'turns', peopleSort: 'recent', filter: 'all', query: '', leadSort: 'recent',
+  type: '家长', category: 'C 怎么补', filter: 'all', query: '', leadSort: 'recent',
 }
 const DM_DRAFT = (() => {
   try {
@@ -68,30 +67,16 @@ export function DmView() {
   const [leadPage, setLeadPage] = React.useState(1)
   const [leadPageSize, setLeadPageSize] = React.useState(20)
   const [composerOpen, setComposerOpen] = React.useState(false)
-  const [chats, setChats] = React.useState([])
   const [contentRows, setContentRows] = React.useState([])
   const contentTitles = React.useMemo(() => contentRows.map(row => row['标题']).filter(Boolean).slice(0, 60), [contentRows])
   const contentSources = React.useMemo(() => [...new Set(contentRows.flatMap(row => [row['标题'], row['选题']]).filter(Boolean))].slice(0, 80), [contentRows])
-  const [chatTotal, setChatTotal] = React.useState(0)
-  const [chatsReady, setChatsReady] = React.useState(false)
-  const [chatsError, setChatsError] = React.useState('')
   const [refreshing, setRefreshing] = React.useState(false)
-  const [peopleSort, setPeopleSort] = React.useState(DM_DRAFT.peopleSort)
-  const [chatFilter, setChatFilter] = React.useState(DM_DRAFT.chatFilter)
-  const [chatPerson, setChatPerson] = React.useState(DM_DRAFT.chatPerson)
-  const [chatResult, setChatResult] = React.useState(DM_DRAFT.chatResult)
-  const [chatView, setChatView] = React.useState(DM_DRAFT.chatView)
-  const dmPerson = useDesk(s => s.dmPerson)
   const dmFilter = useDesk(s => s.dmFilter)
-  const prefilledPerson = React.useRef('')
-  const [openChat, setOpenChat] = React.useState(-1)
-  const [chatPage, setChatPage] = React.useState(1)
-  const [chatPageSize, setChatPageSize] = React.useState(20)
 
   React.useEffect(() => {
-    Object.assign(DM_DRAFT, { raw, channel, fields, stage, type, category, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort })
+    Object.assign(DM_DRAFT, { raw, channel, fields, stage, type, category, filter, query, leadSort })
     try { sessionStorage.setItem(DM_DRAFT_KEY, JSON.stringify(DM_DRAFT)) } catch { /* 隐私模式就算了 */ }
-  }, [raw, channel, fields, stage, type, category, chatFilter, chatPerson, chatResult, chatView, peopleSort, filter, query, leadSort])
+  }, [raw, channel, fields, stage, type, category, filter, query, leadSort])
 
   React.useEffect(() => {
     fetchContent()
@@ -108,14 +93,6 @@ export function DmView() {
   }, [])
   React.useEffect(() => { reload() }, [reload])
 
-  const reloadChats = React.useCallback(() => {
-    setChatsError('')
-    return fetchChatRecords()
-      .then(data => { setChats(data.rows ?? []); setChatTotal(data.total ?? (data.rows ?? []).length) })
-      .catch(err => setChatsError(err.message))
-      .finally(() => setChatsReady(true))
-  }, [])
-  React.useEffect(() => { reloadChats() }, [reloadChats])
 
   React.useEffect(() => {
     if (!dmFilter) return
@@ -124,19 +101,6 @@ export function DmView() {
     requestAnimationFrame(() => document.getElementById('dm-leads')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }, [dmFilter])
 
-  React.useEffect(() => {
-    if (!dmPerson) return
-    setChatPerson(dmPerson)
-    setChatView('turns')
-    // 从线索/漏斗过来时，顺手把名字填进台账；换了人就覆盖，别把记录挂到上一个人名下
-    setFields(prev => ({ ...prev, name: dmPerson }))
-    if (prefilledPerson.current !== dmPerson) {
-      prefilledPerson.current = dmPerson
-      setRaw('')
-    }
-    setDesk({ dmPerson: '' })
-    requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-  }, [dmPerson])
 
   const openComposer = () => {
     setComposerOpen(true)
@@ -178,51 +142,6 @@ export function DmView() {
   const copy = (text) => {
     navigator.clipboard.writeText(text).then(() => toast(t('已复制')), () => toast(t('复制失败，手动选中吧'), { error: true }))
   }
-
-  const chatStats = ['成交', '约试听', '加微', '流失']
-    .map(result => ({ result, n: chats.filter(row => row.result === result).length }))
-    .filter(item => item.n > 0)
-  const leadOf = name => (name ? leads.find(row => row.name === name) : null)
-  const dueLeads = leads.filter(isDue)
-  const leadChatCounts = (() => {
-    const counts = {}
-    for (const row of chats) if (row.name) counts[row.name] = (counts[row.name] ?? 0) + 1
-    return counts
-  })()
-  const people = (() => {
-    const map = new Map()
-    for (const row of chats) {
-      if (chatFilter !== 'all' && row.channel !== chatFilter) continue
-      const key = row.name || ''
-      const name = row.name || t('没写名字')
-      const stamp = row.updatedAt || row.date || ''
-      const item = map.get(key) ?? { key, name, turns: 0, lastDate: '', lastAt: '', lastResult: '', channel: row.channel, lastIncoming: '' }
-      item.turns += 1
-      if (stamp >= item.lastAt) {
-        item.lastAt = stamp
-        item.lastDate = row.date
-        item.lastResult = row.result || '未定'
-        item.lastIncoming = row.incoming || row.outgoing || ''
-      }
-      map.set(name, item)
-    }
-    const won = { 成交: 0, 约试听: 1, 加微: 2, 未定: 3, 流失: 4 }
-    return [...map.values()].sort((a, b) => {
-      if (peopleSort === 'turns') return b.turns - a.turns || String(b.lastAt).localeCompare(String(a.lastAt))
-      if (peopleSort === 'result') return (won[a.lastResult] ?? 9) - (won[b.lastResult] ?? 9) || String(b.lastAt).localeCompare(String(a.lastAt))
-      return String(b.lastAt).localeCompare(String(a.lastAt))
-    })
-  })()
-  const chatRows = chats.slice().reverse()
-    .filter(row => (chatFilter === 'all' || row.channel === chatFilter)
-      && (chatResult === 'all' || (row.result || '未定') === chatResult)
-      && (!chatPerson || row.name === chatPerson))
-  // 只看一个人时按时间正序，读起来像一条时间线
-  if (chatPerson) chatRows.reverse()
-  React.useEffect(() => { setChatPage(1) }, [chatFilter, chatResult, chatPerson, chatPageSize])
-  const chatPages = Math.max(1, Math.ceil(chatRows.length / chatPageSize))
-  const chatPageSafe = Math.min(chatPage, chatPages)
-  const pageChats = chatRows.slice((chatPageSafe - 1) * chatPageSize, chatPageSafe * chatPageSize)
 
   const filtered = leads.filter(lead => {
     const pass = (FILTERS.find(row => row.id === filter) ?? FILTERS[0]).test(lead)
@@ -355,7 +274,7 @@ export function DmView() {
           <button type="button" className="md-inline-link" onClick={() => setDesk({ view: 'students', focusId: null })}>{t('看漏斗 →')}</button>
           <button type="button" className="md-inline-link" disabled={refreshing} onClick={async () => {
             setRefreshing(true)
-            try { await Promise.all([reload(), reloadChats()]); toast(t('刷新好了')) }
+            try { await reload(); toast(t('刷新好了')) }
             finally { setRefreshing(false) }
           }}>{refreshing ? t('刷新中…') : t('刷新')}</button>
         </header>
@@ -405,13 +324,6 @@ export function DmView() {
               <li className="md-lead" key={`${lead.rowIndex}-${lead.date}-${lead.raw.slice(0, 8)}`}>
                 <div className="md-lead-head">
                   <b>{lead.name || lead.grade || t('未填')}</b>
-                  {lead.name && leadChatCounts[lead.name] ? (
-                    <button type="button" className="md-lead-chat" onClick={() => {
-                      setChatView('turns')
-                      setChatPerson(lead.name)
-                      requestAnimationFrame(() => document.getElementById('dm-chat-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-                    }}>{t('聊过 {n} 轮', { n: leadChatCounts[lead.name] })}</button>
-                  ) : null}
                   <span className="md-lead-date">{lead.date}</span>
                   {lead.type || lead.category ? <span className="md-lead-kind">{[lead.type, lead.category].filter(Boolean).join(' · ')}</span> : null}
                   {lead.source ? (

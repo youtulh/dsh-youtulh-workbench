@@ -1,7 +1,7 @@
 // 试听诊断的文件落盘：一份 manifest、若干 HTML、结果 JSON 和话术 Markdown。
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { LAYOUT, ensureLayout, folderName, nowStamp, readTable, writeTable } from './workspace.js'
+import { LAYOUT, ensureLayout, nowStamp, readTable, writeTable } from './workspace.js'
 
 export const DIAG_COLUMNS = [
   '编号', '创建时间', '状态', '学生', '年级', '科目', '课程', '上课时间', '课次编码',
@@ -94,7 +94,6 @@ export function ensureDiagnosticDir(root, id) {
   return dir
 }
 
-const pathOf = (root, dir, file) => join(dir || diagnosticDir(root, ''), file)
 
 export function readManifest(root, row) {
   const dir = row?.dir ? join(root, row.dir) : diagnosticDir(root, row?.id ?? '')
@@ -136,9 +135,6 @@ export function writeDiagnosticResult(root, id, kind, payload) {
   return writeDiagnosticFile(root, id, kind === 'post' ? '课后结果.json' : '课前结果.json', JSON.stringify(payload, null, 2))
 }
 
-export function diagnosticFolderName(title, id) {
-  return `${folderName(title, 40)}-${id.replace(/^DIAG-/, '')}`
-}
 
 export function readPostSpec(root, row) {
   const raw = readDiagnosticFile(root, row, '课后卷.json')
