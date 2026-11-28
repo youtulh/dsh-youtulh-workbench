@@ -10,7 +10,7 @@ import { createTools } from './tools.js'
 import { LEGACY_SAMPLES, STYLE_VERSION, styleMarkdown } from './style-guide.js'
 import { buildLessonBlock, rescore, writeLessonMarkdown } from './lessons.js'
 import { localSuggestions, normalizeSuggestions, suggestPrompts } from './suggest.js'
-import { fillTopicAngles, guessTopicAngle, improvePrompt, leadPack, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeTopicEntries, normalizeVariants, topicsPrompt, variantsPrompt } from './topics.js'
+import { fillTopicAngles, guessTopicAngle, improvePrompt, leadPack, localSingle, localTodayTopics, localTopics, localVariants, normalizeBrief, normalizeImprove, normalizeSingle, normalizeTodayTopics, normalizeTopicEntries, normalizeVariants, singleScriptPrompt, todayTopicsPrompt, topicsPrompt, variantsPrompt } from './topics.js'
 import { CHANNELS, appendCase, appendChat, chatLessons, chatPrompt, chatRevisePrompt, localChat, normalizeChat, readCases, readChats, readPlatformWords, removeCase, removeChat, updateCase, updateChatRow, writePlatformWords } from './chat.js'
 import { appendFeedback, feedbackPrompt, localFeedback, readFeedback, removeFeedback } from './feedback.js'
 import { decodeResult, localDiagnostic, normalizeDiagnostic, scoreDiagnostic, compareScores, encodeResult } from './diagnostics.js'
@@ -938,6 +938,20 @@ ${analysis.riskNote}
       const label = await store.undoLast()
       return json(res, 200, { label, state: await store.read(), canUndo: store.undo.length > 0 })
     }
+    case 'topics/today': {
+      const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const leads = readLeads(root)
+      let topics = []
+      let source = 'local'
+      try {
+        const { text: raw } = await callModel(ctx, { ...todayTopicsPrompt(state, leads, 3), maxTokens: 900, light: true })
+        topics = normalizeTodayTopics(extractJson(raw), 3)
+        if (topics.length) source = 'model'
+      } catch { /* 没模型就本地拼 */ }
+      if (!topics.length) topics = localTodayTopics(state, leads, 3)
+      return json(res, 200, { topics, source })
+    }
     case 'topics': {
       // 一次给 30 个选题草稿，页面里直接勾选，不跳对话
       const count = Math.min(40, Math.max(5, Number(body.count) || 30))
@@ -971,6 +985,23 @@ ${analysis.riskNote}
       archiveTopics(root, 20)
       writeLessonMarkdown(root)
       return json(res, 200, { topics: rows })
+    }
+    case 'scripts/single': {
+      const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const lessons = buildLessonBlock(root)
+      const voice = readVoiceSamples(root)
+      const topic = String(body.topic ?? body.brief ?? '').trim()
+      if (!topic) return json(res, 400, { error: tr('先给一个选题') })
+      let single = null
+      let source = 'local'
+      try {
+        const { text: raw } = await callModel(ctx, { ...singleScriptPrompt(state, topic, lessons, voice), maxTokens: 2200, light: true })
+        const parsed = normalizeSingle(extractJson(raw))
+        if (parsed.title && parsed.script) { single = parsed; source = 'model' }
+      } catch { /* 本地兜底 */ }
+      if (!single) single = normalizeSingle(localSingle(state, topic))
+      return json(res, 200, { single, source })
     }
     case 'scripts': {
       // 只生成、不落盘：用户点「采用这条」时才保存
@@ -1038,8 +1069,8 @@ ${analysis.riskNote}
         '选题': String(body.topic ?? ''), '角度': angle, '标题': title,
         '标签': (Array.isArray(body.tags) ? body.tags : []).map(tag => `#${tag}`).join(' '),
         '评论区': comment, '私信引导': dm,
-        '采用': '采用', '状态': '未发布', '平台': '', '发布日': '', '播放': '', '涨粉': '', '私信': '', '加微': '',
-        '爆款': '', '分数': '', '目录': saved.dir, '备注': '采用的版本',
+        '采用': '采用', '状态': String(body.status ?? '未发布'), '平台': '', '发布日': String(body.publishedAt ?? ''), '播放': '', '涨粉': '', '私信': '', '加微': '',
+        '爆款': '', '分数': '', '目录': saved.dir, '备注': '采用的版本', '手感': String(body.feel ?? ''),
       })
       rescore(root)
       writeLessonMarkdown(root)

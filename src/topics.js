@@ -431,3 +431,77 @@ ${styleBlock(samples)}
 ${drafts}`,
   }
 }
+
+/** 首页「今天拍什么」：从最近家长卡点出 3 条。 */
+export function todayTopicsPrompt(state, leads = [], count = 3) {
+  const recent = (leads ?? []).slice(0, 5).map(row => ({
+    pain: text(row.painPoint || row.raw, 120),
+    grade: text(row.grade, 20),
+  })).filter(row => row.pain)
+  const pains = recent.map(row => row.pain).join('；') || (state?.painPoints ?? []).slice(0, 5).join('；')
+  const system = `你在帮补课老师决定「今天拍什么」。只出 ${count} 条选题，必须跟最近家长问的卡点对得上。
+${settingBlock(state)}
+最近家长问的：${pains || '还没记录，按设定里的目标家长出'}
+选题规则：
+- 每条一句话，12-24 字，像家长会说的话；
+- 必须带一个具体场景：分数、章节、哪类孩子；
+- 不要「如何提高成绩」「学好化学的五个方法」这种通用题；
+- 3 条分别从：具体卡点 / 家长误区 / 考试或本地场景 切入；
+- 只输出 JSON：{"topics":[{"topic":"选题","source":"来自哪条家长原话"}]}`
+  return { system, user: `请出 ${count} 条今天的选题。` }
+}
+
+export function normalizeTodayTopics(json, count = 3) {
+  const list = Array.isArray(json?.topics) ? json.topics : []
+  return list.map(row => ({ topic: text(row?.topic, 40), source: text(row?.source, 120) })).filter(row => row.topic).slice(0, count)
+}
+
+export function localTodayTopics(state, leads = [], count = 3) {
+  const p = state?.positioning ?? {}
+  const grade = text(p.grade, 10) || '孩子'
+  const subject = text(p.subject, 10) || '这门课'
+  const recent = (leads ?? []).slice(0, 5).map(row => text(row.painPoint || row.raw, 80)).filter(Boolean)
+  const seeds = recent.length ? recent : (state?.painPoints ?? []).slice(0, 5)
+  const fallback = [`${grade}${subject}卡在中间分，先补哪一章`, `孩子上课听懂了，一做题就不会`, `${grade}家长最容易忽略的一个断层`]
+  const topics = []
+  for (const seed of seeds) {
+    const short = text(seed, 24)
+    if (short) topics.push({ topic: short, source: seed })
+    if (topics.length >= count) break
+  }
+  for (const text of fallback) {
+    if (topics.length >= count) break
+    topics.push({ topic: text, source: '按你的设定' })
+  }
+  return topics.slice(0, count)
+}
+
+/** 一条稿 + 两行说明：开头为什么留人、结尾引导要不要说。 */
+export function singleScriptPrompt(state, topic, lessons = '', samples = []) {
+  const base = scriptPrompt(state, topic, lessons, samples)
+  return {
+    system: `${base.system}
+只要 1 条，不要 3 个版本。
+另外给两句给老师看的说明：
+- hookWhy：这条开头为什么能留住家长，1 句，具体说用了什么场景/分数/判断；
+- ctaAdvice：结尾现在这个引导要不要说，1 句；如果不说，说明理由。
+只输出 JSON：{"title":"…","script":"…","tags":["…"],"comment":"…","dm":"…","hookWhy":"…","ctaAdvice":"…"}`,
+    user: `选题：${topic}`,
+  }
+}
+
+export function normalizeSingle(json) {
+  const row = normalizeScript(json)
+  return { ...row, hookWhy: text(json?.hookWhy, 160), ctaAdvice: text(json?.ctaAdvice, 160) }
+}
+
+export function localSingle(state, topic) {
+  const base = localScript(state, topic)
+  const pack = leadPack(state, topic)
+  return {
+    ...base,
+    ...pack,
+    hookWhy: `开头用「${topic}」这个具体场景，先把家长圈进来，再给结论。`,
+    ctaAdvice: '结尾可以留「私信诊断」这个轻动作；不要报价、不要承诺提分。',
+  }
+}

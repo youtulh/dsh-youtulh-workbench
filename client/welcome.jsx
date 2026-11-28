@@ -1,223 +1,69 @@
-// 首页 = 一条工作流：先把一类家长定下来（问卷），保存后给第一批可拍的视频，再进入日常的回私信 / 看数据。
+// 首页只做一件事：今天拍什么。
+// 3 条来自最近家长卡点的选题，点一条直接出稿；其余功能都在左侧二级页。
 import React from 'react'
-import { dispatchOps, fetchContent, fetchLeads, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
+import { fetchTodayTopics, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
-import { diagnosePositioning, positioningSentence, suggestTargets } from '../src/targets.js'
-import { dayKey } from './util.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
-
-function Feature({ icon, title, hint, done, children }) {
-  return (
-    <section className="md-feature">
-      <div className="md-feature-head">
-        <span className="md-feature-icon"><Icon name={icon} size={17} /></span>
-        {done ? <em className="md-feature-chip">{t('已完成')}</em> : null}
-      </div>
-      <b>{title}</b>
-      <small>{hint}</small>
-      <div className="md-feature-actions">{children}</div>
-    </section>
-  )
-}
 
 export function WelcomeView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
   const pains = useDesk(s => s.state?.painPoints) ?? []
-  const [saved, setSaved] = React.useState(false)
-  const [leads, setLeads] = React.useState([])
-  const [content, setContent] = React.useState([])
   const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
-  const go = view => setDesk({ view, focusId: null })
+  const [topics, setTopics] = React.useState([])
+  const [source, setSource] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+  const [saved, setSaved] = React.useState(false)
   const summary = profileSummary({ positioning, painPoints: pains })
-  const advice = diagnosePositioning({ ...positioning, pains })
+  const go = view => setDesk({ view, focusId: null })
 
-  React.useEffect(() => {
+  const load = React.useCallback(() => {
     if (!configured) return
-    fetchLeads().then(setLeads).catch(() => {})
-    fetchContent().then(data => setContent(data.rows ?? data.content ?? [])).catch(() => {})
+    setBusy(true)
+    fetchTodayTopics()
+      .then(data => { setTopics(data.topics ?? []); setSource(data.source ?? '') })
+      .catch(err => toast(err.message, { error: true }))
+      .finally(() => setBusy(false))
   }, [configured])
 
-  const proofIdeas = ['带过 3 届毕业班', '本地重点校在职', '只做这一科 8 年', '自己孩子刚考完']
-  const applyProof = (value) => {
-    dispatchOps([{ op: 'update_positioning', proof: value }], { label: t('补上凭什么信你'), silent: true }).then(data => {
-      if (data) toast(t('人设补好了：{proof}', { proof: value }))
-    })
-  }
+  React.useEffect(() => { load() }, [load])
 
-  const applyTarget = (card) => {
-    dispatchOps([
-      { op: 'update_positioning', target: card.value, entry: card.entry, fear: card.fear },
-    ], { label: t('先抓这一类'), silent: true }).then(data => {
-      if (data) toast(t('定位填好了：{title}', { title: card.title }))
-    })
-  }
-
-  // 保存后先停在这一屏：给他定位一句话和第一批可拍的视频
-  if (saved) {
+  if (!configured && !saved) {
     return (
       <div className="md-page md-welcome">
-        <div className="md-onb md-onb-done">
-          <p className="md-eyebrow">{t('设定已保存')}</p>
-          <h1 className="md-display">{t('好，往后就按你说的来')}</h1>
-          <p className="md-lede">{positioningSentence(positioning) || t('按你的设定：{summary}', { summary })}</p>
-          {positioning.target
-            ? <p className="md-profile-line"><Icon name="user" size={13} />{t('你抓的是：{target}', { target: positioning.target })}</p>
-            : <p className="md-note">{t('目标客户还没定，首页和「我的设定」里都能补。')}</p>}
-
-          <div className="md-first-videos">
-            <b>{t('先拍这几条（科目 / 家庭 / 考情 / 本地）')}</b>
-            <ul>
-              {advice.firstVideos.map(row => (
-                <li key={row.angle + row.text}>
-                  <button type="button" className="md-first-video" onClick={() => startFromTopic(row.text)}>
-                    <em>{t(row.angle)}</em>
-                    <span>{row.text}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <small>{t('点一条就去做内容，选题已经勾好；每个选题会出 3 版。')}</small>
-          </div>
-
-          <p className="md-note">{t('发出去有人私信，就用「回私信」接住：判断、话术、加微信、记台账。')}</p>
-          <div className="md-onb-actions">
-            <button type="button" className="md-pill" onClick={() => setSaved(false)}>{t('留在首页')}</button>
-            <button type="button" className="md-pill is-primary" onClick={() => go('content')}><Icon name="pen" size={14} />{t('去做第一条口播')}</button>
-          </div>
-        </div>
+        <OnboardingWizard onDone={() => { setSaved(true); load() }} onSwitch={() => go('setup')} />
       </div>
     )
   }
-
-  // 没填设定：首页就是问卷
-  if (!configured) {
-    return (
-      <div className="md-page md-welcome">
-        <OnboardingWizard onDone={() => setSaved(true)} onSwitch={() => go('setup')} />
-      </div>
-    )
-  }
-
-  const total = leads.length
-  const todo = leads.filter(row => row.stage === '私信').length
-  const added = leads.filter(row => ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
-  const trials = leads.filter(row => row.stage === '约试听').length
-  const due = leads.filter(row => row.nextAt && row.nextAt <= dayKey(new Date()) && !['已报课', '流失'].includes(row.stage)).length
-  const weekStart = dayKey(new Date(Date.now() - 6 * 86400000))
-  const newThisWeek = leads.filter(row => row.date && row.date >= weekStart).length
-  const addedThisWeek = leads.filter(row => row.date && row.date >= weekStart && ['已加微信', '已进群', '约试听', '已报课'].includes(row.stage)).length
-  const publishedAll = content.filter(row => row['状态'] === '已发布')
-  const published = publishedAll.filter(row => row['发布日'])
-  const missingMetrics = publishedAll.filter(row => !String(row['播放'] ?? '').trim() || !String(row['发布日'] ?? '').trim())
-  const publishDates = [...new Set(published.map(row => String(row['发布日'])).filter(Boolean))].sort()
-  const latestPublish = publishDates.at(-1) ?? ''
-  const daysSincePublish = latestPublish ? Math.floor((Date.now() - new Date(`${latestPublish}T00:00:00`).getTime()) / 86400000) : null
-  const gaps = publishDates.slice(1).map((date, index) => Math.round((new Date(`${date}T00:00:00`) - new Date(`${publishDates[index]}T00:00:00`)) / 86400000)).filter(gap => gap > 0)
-  const medianGap = gaps.length >= 3 ? [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : null
-  const staleAfter = medianGap ? Math.max(3, Math.min(14, Math.round(medianGap * 1.5))) : 7
-  const stale = daysSincePublish !== null && daysSincePublish >= staleAfter
-  const focus = due
-    ? { title: t('先跟进 {n} 个家长', { n: due }), hint: t('约好的时间到了，别让问过的人凉了'), action: t('处理跟进'), run: () => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' }) }
-    : todo
-      ? { title: t('还有 {n} 条线索没标结果', { n: todo }), hint: t('标一下阶段或结果，后面才知道该跟谁'), action: t('去看线索表'), run: () => go('dm') }
-      : content.length === 0
-        ? { title: t('拍第一条口播'), hint: t('不用完美，先拍一条能发出去的'), action: t('开始创作'), run: () => go('content') }
-        : !published.length
-          ? { title: t('把做好的口播发出去'), hint: t('内容库还没有已发布；发一条，才有数据可看'), action: t('开始创作'), run: () => go('content') }
-          : missingMetrics.length
-            ? { title: t('补 {n} 条已发布内容的数据', { n: missingMetrics.length }), hint: t('播放、私信、加微填上，定位复盘才有依据'), action: t('补齐数据'), run: () => setDesk({ view: 'data', focusId: null, dataFilter: 'missing' }) }
-            : stale
-            ? { title: t('已经 {n} 天没发了', { n: daysSincePublish }), hint: medianGap ? t('你通常每 {n} 天发一条；稳定更新比偶尔爆一条更有用', { n: medianGap }) : t('稳定更新比偶尔爆一条更有用；拍下一条'), action: t('开始创作'), run: () => go('content') }
-            : { title: t('把已发内容的结果填上'), hint: t('播放、私信、加微，填一次就知道下一条怎么拍'), action: t('内容数据'), run: () => go('data') }
 
   return (
-    <div className="md-page md-welcome md-workflow">
-      <header className="md-hero">
+    <div className="md-page md-welcome md-today">
+      <header className="md-today-head">
         <p className="md-eyebrow">{t('Youtulh 工作台')}</p>
-        <h1 className="md-display">{t('把对的人，带进课堂')}</h1>
-        <p className="md-lede">{t('先定只带哪类家长，再做内容把家长带来；在线索表里记下私信，报课后进学生档案。每个动作都留痕，越用越顺。')}</p>
+        <h1 className="md-display">{t('今天拍什么')}</h1>
         {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
-        {positioning.target ? <p className="md-note">{t('你现在抓的是：{target}', { target: positioning.target })}</p> : null}
       </header>
 
-      {positioning.target && !positioning.proof ? (
-        <section className="md-nudge md-proof-nudge">
-          <div className="md-nudge-head">
-            <p className="md-eyebrow">{t('人设还差一句')}</p>
-            <b>{t('家长凭什么信你？')}</b>
-            <small>{t('不用写「认真负责」，写一条能被验证的经历；哪条是真的点哪条。')}</small>
-          </div>
-          <div className="md-proof-chips">
-            {proofIdeas.map(row => (
-              <button type="button" key={row} className="md-chip" onClick={() => applyProof(row)}>{row}</button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {!positioning.target ? (
-        <section className="md-nudge">
-          <div className="md-nudge-head">
-            <p className="md-eyebrow">{t('还差一步')}</p>
-            <b>{t('先定一类家长，选题和话术才不会写给所有人')}</b>
-            <small>{t('点一个方向就帮你填好人群、切入点和顾虑；之后在「我的设定」里还能改。')}</small>
-          </div>
-          <div className="md-nudge-cards">
-            {suggestTargets({ ...positioning, pains }).slice(0, 2).map(card => (
-              <button type="button" key={card.key} className="md-nudge-card" onClick={() => applyTarget(card)}>
-                <b>{card.title}</b>
-                <small>{card.why}</small>
-              </button>
-            ))}
-          </div>
-          <button type="button" className="md-pill is-small" onClick={() => go('setup')}>{t('自己写')}</button>
-        </section>
-      ) : null}
-
-      {positioning.target ? (
-        <section className="md-focus">
-          <div className="md-focus-copy">
-            <p className="md-eyebrow">{t('今天先做这件事')}</p>
-            <b>{focus.title}</b>
-            <small>{focus.hint}</small>
-          </div>
-          <button type="button" className="md-pill is-primary" onClick={focus.run}>{focus.action}</button>
-        </section>
-      ) : null}
-
-      <div className="md-features">
-        <Feature icon="user" title={t('个人定位')} hint={t('科目、年级、城市、目标家长；随时回看定位复盘')} done={configured && Boolean(positioning.target)}>
-          <button type="button" className="md-pill is-small" onClick={() => go('setup')}>{t('调整定位')}</button>
-        </Feature>
-        <Feature icon="pen" title={t('内容创作')} hint={content.length ? t('已有 {n} 条内容，接着做下一条', { n: content.length }) : t('选题、三版口播、评论区与私信话术')}>
-          <button type="button" className="md-pill is-small is-primary" onClick={() => go('content')}>{content.length ? t('继续创作') : t('开始创作')}</button>
-          <button type="button" className="md-pill is-small" onClick={() => go('data')}>{t('内容数据')}</button>
-        </Feature>
-        <Feature icon="chat" title={t('线索表')} hint={t('聊天记录、卡点、跟进和成交状态')}>
-          <button type="button" className="md-pill is-small" onClick={() => go('dm')}>{t('打开线索表')}</button>
-        </Feature>
-        <Feature icon="target" title={t('学生管理')} hint={t('学生档案、班课、课次与家长反馈')}>
-          <button type="button" className="md-pill is-small" onClick={() => go('students')}>{t('进入学生管理')}</button>
-        </Feature>
-      </div>
-
-      <div className="md-funnel">
-        <div className="md-funnel-head">
-          <span className="md-eyebrow">{t('线索')}</span>
-          <button type="button" className="md-inline-link" onClick={() => go('dm')}>{t('查看线索表')}</button>
-        </div>
-        <dl>
-          <div><dt>{t('已记录')}</dt><dd>{total || '—'}</dd>{newThisWeek ? <small>{t('本周 +{n}', { n: newThisWeek })}</small> : null}</div>
-          <div><dt>{t('待跟进')}</dt><dd>{todo || '—'}</dd></div>
-          <button type="button" className={`md-funnel-stat ${due ? 'is-due' : ''}`} disabled={!due} onClick={() => setDesk({ view: 'dm', focusId: null, dmFilter: 'due' })}>
-            <dt>{t('该跟进')}</dt><dd>{due || '—'}</dd>
+      <section className="md-today-list">
+        {busy && !topics.length ? <p className="md-muted">{t('正在看最近家长问什么…')}</p> : null}
+        {topics.map((row, index) => (
+          <button type="button" key={`${row.topic}-${index}`} className="md-today-card" onClick={() => startFromTopic(row.topic, '', true)}>
+            <span className="md-today-no">{String(index + 1).padStart(2, '0')}</span>
+            <span className="md-today-main">
+              <b>{row.topic}</b>
+              <small>{row.source ? t('来自：{source}', { source: row.source }) : t('按最近家长卡点生成')}</small>
+            </span>
+            <Icon name="arrow" size={15} />
           </button>
-          <div><dt>{t('已加微')}</dt><dd>{added || '—'}</dd>{addedThisWeek ? <small>{t('本周 +{n}', { n: addedThisWeek })}</small> : null}</div>
-          <div><dt>{t('约试听')}</dt><dd>{trials || '—'}</dd></div>
-        </dl>
-      </div>
+        ))}
+        {!busy && !topics.length ? <p className="md-muted">{t('还没有选题，点「更多」自己写一个。')}</p> : null}
+      </section>
+
+      <footer className="md-today-foot">
+        <button type="button" className="md-inline-link" onClick={() => go('content')}>{t('更多选题 / 自己写')}</button>
+        <span className="md-muted">{source === 'local' ? t('没连模型，按最近卡点拼的') : t('点一条直接出稿，拍完再回来')}</span>
+      </footer>
     </div>
   )
 }

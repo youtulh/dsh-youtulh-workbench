@@ -2,7 +2,6 @@
 import React from 'react'
 import { CreateView } from './create.jsx'
 import { dispatchOps, loadDesk, setDesk, undo, useDesk } from './desk.js'
-import { DataView } from './data.jsx'
 import { DiagnosticsView } from './diagnostics.jsx'
 import { DmView } from './dm.jsx'
 import { setAppCtx } from './launch.js'
@@ -22,13 +21,12 @@ const NAV = [
   { id: 'home', label: '首页', icon: 'wall' },
   { id: 'content', label: '做内容', icon: 'pen' },
   { id: 'diagnose', label: '出题', icon: 'spark' },
-  { id: 'data', label: '看数据', icon: 'list' },
   { id: 'dm', label: '线索表', icon: 'chat' },
   { id: 'students', label: '学生管理', icon: 'target' },
   { id: 'setup', label: '我的设定', icon: 'user' },
 ]
 
-const VIEWS = { home: WelcomeView, dm: DmView, diagnose: DiagnosticsView, students: StudentsView, content: CreateView, data: DataView, setup: SetupView }
+const VIEWS = { home: WelcomeView, dm: DmView, diagnose: DiagnosticsView, students: StudentsView, content: CreateView, setup: SetupView }
 
 function UpdateBadge() {
   const info = useVersionInfo()

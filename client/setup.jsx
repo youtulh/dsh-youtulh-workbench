@@ -198,7 +198,7 @@ export function SetupView() {
       <header className="md-page-head">
         <div>
           <h1>{t('我的设定')}</h1>
-          <p className="md-page-sub">{t('先定一类家长，再谈内容。回私信、做内容、看数据都按这个来，以后随时能改。')}</p>
+          <p className="md-page-sub">{t('先定一类家长，再谈内容。做内容、记线索、学生管理都按这个来，以后随时能改。')}</p>
         </div>
         <span className="md-setup-saved">{savedAt ? t('已保存 {time}', { time: savedAt }) : t('改完自动保存')}</span>
       </header>
@@ -460,7 +460,7 @@ export function SetupView() {
             <button type="button" className="md-inline-link" onClick={loadReview} disabled={reviewBusy}>{reviewBusy ? t('刷新中…') : t('刷新复盘')}</button>
           </div>
           <div className="md-review-stats">
-            <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'data', focusId: null })}><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></button>
+            <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'content', focusId: null })}><b>{review.contentTotal ? `${review.contentMatched}/${review.contentTotal}` : '—'}</b><span>{t('内容贴定位')}</span></button>
             <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{review.gradedLeads ? `${review.gradeMatched}/${review.gradedLeads}` : '—'}</b><span>{t('线索年级对得上')}</span></button>
             <button type="button" className="md-review-stat" onClick={() => setDesk({ view: 'dm', focusId: null })}><b>{review.wonCount}</b><span>{t('加微/报课')}</span></button>
           </div>
@@ -471,7 +471,7 @@ export function SetupView() {
             <div className="md-review-mix">
               <span>{t('内容配比')}：</span>
               {['知识点', '家庭', '考情', '本地'].map(name => (
-                <button type="button" key={name} className="md-inline-link" onClick={() => setDesk({ view: 'data', focusId: null, dataAngle: name })}>{t(name)} {review.angleCounts[name]}</button>
+                <button type="button" key={name} className="md-inline-link" onClick={() => setDesk({ view: 'content', focusId: null })}>{t(name)} {review.angleCounts[name]}</button>
               ))}
             </div>
           ) : null}
@@ -482,7 +482,7 @@ export function SetupView() {
             </button>
           ) : null}
           {reviewJump ? (
-            <button type="button" className="md-inline-link md-review-jump" onClick={() => setDesk({ view: 'data', focusId: null, dataQuery: reviewJump.title })}>
+            <button type="button" className="md-inline-link md-review-jump" onClick={() => setDesk({ view: 'content', focusId: null })}>
               {t('看这条内容：{title}', { title: reviewJump.title })}
             </button>
           ) : null}

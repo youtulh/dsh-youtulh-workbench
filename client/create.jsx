@@ -1,7 +1,7 @@
 // 做内容：出 10 个选题 → 勾选 → 每个选题出 3 个口播版本 → 挑一条。
 // 中间结果放在全局 store（并写一份 sessionStorage）：切页、刷新都不会丢。
 import React from 'react'
-import { fetchSuggestions, fetchTopicsHistory, patchCreate, pickTopics, profileSummary, resetCreate, restoreCreateDraft, setDesk, toast, useDesk } from './desk.js'
+import { fetchSuggestions, fetchTopicsHistory, patchCreate, pickTopics, profileSummary, resetCreate, restoreCreateDraft, setDesk, singleScript, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { launchFailedToast, startChat } from './launch.js'
 import { Icon } from './ui.jsx'
@@ -39,6 +39,9 @@ export function CreateView() {
   const [busy, setBusy] = React.useState('')
   const [editKey, setEditKey] = React.useState('')
   const [editText, setEditText] = React.useState('')
+  const [single, setSingle] = React.useState(null)
+  const [singleDir, setSingleDir] = React.useState('')
+  const [feelPending, setFeelPending] = React.useState(false)
 
   // 刷新页面后把上一次的选题和口播捡回来
   React.useEffect(() => { restoreCreateDraft() }, [])
@@ -76,6 +79,58 @@ export function CreateView() {
       toast(t('按你的提示写了 3 版，挑一条'))
     } catch (err) { toast(err.message, { error: true }) }
     setBusy('')
+  }
+
+  const makeSingle = async (topic = create.topics[0]) => {
+    if (!topic) return
+    setBusy('single')
+    try {
+      const data = await singleScript(topic)
+      setSingle({ ...data.single, topic })
+      setSingleDir('')
+      setFeelPending(false)
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  React.useEffect(() => {
+    if (!create.autoSingle || !create.topics.length || groups.length) return
+    patchCreate({ autoSingle: false })
+    makeSingle(create.topics[0])
+  }, [create.autoSingle, create.topics.length, groups.length])
+
+  const finishSingle = async (status) => {
+    if (!single) return
+    setBusy('finish')
+    try {
+      let dir = singleDir
+      if (!dir) {
+        const data = await post('content/adopt', { topic: single.topic, title: single.title, script: single.script, tags: single.tags ?? [], comment: single.comment ?? '', dm: single.dm ?? '', status, publishedAt: status === '已发布' ? new Date().toISOString().slice(0, 10) : '' })
+        dir = data.dir
+        setSingleDir(dir)
+      } else {
+        await updateContentRow(dir, { 状态: status, ...(status === '已发布' ? { 发布日: new Date().toISOString().slice(0, 10) } : {}) })
+      }
+      if (status === '已发布') {
+        setFeelPending(true)
+        toast(t('已发布。点一下手感，就完成。'))
+      } else {
+        toast(t('记成已拍了，下次打开首页推下一条'))
+        setDesk({ view: 'home', focusId: null })
+      }
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const setFeel = async (feel) => {
+    if (!singleDir) return
+    try {
+      await updateContentRow(singleDir, { 手感: feel })
+      toast(t('记下了：{feel}', { feel: t(feel) }))
+      setFeelPending(false)
+      setSingle(null)
+      setDesk({ view: 'home', focusId: null })
+    } catch (err) { toast(err.message, { error: true }) }
   }
 
   const openHistory = async () => {
@@ -241,7 +296,7 @@ export function CreateView() {
       <header className="md-page-head">
         <div>
           <h1>{t('做内容')}</h1>
-          <p className="md-page-sub">{t('想好了就写一句，直接出 3 版草稿；没想好就先出 10 个选题，勾中的每个给 3 个版本。切到别的页面也不会丢。')}</p>
+          <p className="md-page-sub">{t('从首页点一个选题会直接出一条；想自己写或出多版，在下面写一句，或点「更多」。')}</p>
           {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
         </div>
       </header>
@@ -276,6 +331,32 @@ export function CreateView() {
             <button type="button" key={example} className="md-chip" onClick={() => patchCreate({ topics: [example], angles: {}, picked: { [example]: true }, groups: [], adopted: {}, dirs: {}, brief: '' })}>{example}</button>
           ))}
         </div>
+      ) : null}
+
+      {single ? (
+        <section className="md-single">
+          <header>
+            <div>
+              <p className="md-eyebrow">{t('这一条直接拍')}</p>
+              <h2>{single.title}</h2>
+            </div>
+            <span className="md-grow" />
+            <button type="button" className="md-inline-link" onClick={() => makeSingle(single.topic)} disabled={busy === 'single'}>{busy === 'single' ? t('换一条…') : t('换一条')}</button>
+          </header>
+          <div className="md-single-script">{String(single.script || '').split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
+          {single.hookWhy ? <p className="md-single-note"><b>{t('开头为什么留人')}</b>{single.hookWhy}</p> : null}
+          {single.ctaAdvice ? <p className="md-single-note"><b>{t('结尾引导')}</b>{single.ctaAdvice}</p> : null}
+          <div className="md-single-actions">
+            <button type="button" className="md-pill is-primary" onClick={() => finishSingle('已拍')} disabled={busy === 'finish'}>{t('拍好了')}</button>
+            <button type="button" className="md-pill" onClick={() => finishSingle('已发布')} disabled={busy === 'finish'}>{t('已发布')}</button>
+          </div>
+          {feelPending ? (
+            <div className="md-feel">
+              <span>{t('发出去感觉怎么样？')}</span>
+              {['爆了', '正常', '扑了'].map(feel => <button type="button" key={feel} className="md-chip" onClick={() => setFeel(feel)}>{t(feel)}</button>)}
+            </div>
+          ) : null}
+        </section>
       ) : null}
 
       <section className="md-create-input">
@@ -409,6 +490,8 @@ export function CreateView() {
                     ) : (
                       <div className="md-script-lines">{variant.script.split('\n').map((line, index) => <p key={index}>{line || '\u00a0'}</p>)}</div>
                     )}
+                    <p className="md-single-note md-script-why"><b>{t('开头为什么留人')}</b>{variant.hookWhy || t('开头用具体场景或分数，让家长觉得说的是自己家。')}</p>
+                    <p className="md-single-note md-script-why"><b>{t('结尾引导')}</b>{variant.ctaAdvice || t('可以留一个轻动作（私信诊断 / 看主页），不报价。')}</p>
                     <div className="md-script-tags">{(variant.tags ?? []).map(tag => <span key={tag}>#{tag}</span>)}</div>
                     {variant.comment ? (
                       <div className="md-lead-pack">

@@ -2373,3 +2373,26 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-bank-q em { color: var(--ink3); font-style: normal; }
 .md-bank-status { padding: 0 5px; border-radius: 999px; background: var(--hover); color: var(--ink3); font-size: 10px; }
 .md-bank-status.is-ok { color: var(--accent); }
+
+/* 首页：今天拍什么 */
+.md-today { max-width: 780px; margin: 0 auto; padding-top: 96px; }
+.md-today-head { margin-bottom: 26px; }
+.md-today-head .md-display { margin: 6px 0 12px; }
+.md-today-list { display: grid; gap: 10px; }
+.md-today-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 18px 18px; border: .5px solid var(--hairline); border-radius: var(--r-xl); background: var(--card); color: var(--ink); text-align: left; box-shadow: var(--dsw-elevation-soft); transition: transform .15s, box-shadow .15s; }
+.md-today-card:hover { transform: translateY(-1px); box-shadow: var(--dsw-elevation-prominent); }
+.md-today-no { flex: none; color: var(--ink3); font-size: 11px; letter-spacing: .08em; }
+.md-today-main { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.md-today-main b { font-size: 16px; font-weight: 500; line-height: 1.45; }
+.md-today-main small { color: var(--ink3); font-size: 11.5px; }
+.md-today-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 22px; }
+
+/* 一条稿直接拍 */
+.md-single { margin: 18px 0; padding: 20px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-single > header { display: flex; align-items: flex-start; gap: 10px; }
+.md-single h2 { font-size: 20px; line-height: 28px; font-weight: 500; margin-top: 3px; }
+.md-single-script { margin-top: 14px; display: grid; gap: 5px; color: var(--ink); font-size: 14px; line-height: 24px; }
+.md-single-note { margin-top: 12px; padding-top: 10px; border-top: .5px dashed var(--hairline); color: var(--ink2); font-size: 12.5px; line-height: 20px; }
+.md-single-note b { display: block; color: var(--ink3); font-size: 11px; font-weight: 500; margin-bottom: 2px; }
+.md-single-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.md-feel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: var(--r-md); background: var(--hover); font-size: 12.5px; }

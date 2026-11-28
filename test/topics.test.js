@@ -263,3 +263,19 @@ test('每条口播都带引流包：评论区不写加微信，私信先看卷�
   assert.equal(normalized.comment, 'c')
   assert.equal(normalized.dm, 'd')
 })
+
+test('今天拍什么：优先最近家长卡点，补足 3 条', async () => {
+  const { localTodayTopics } = await import('../src/topics.js')
+  const state = { positioning: { grade: '高一', subject: '化学' }, painPoints: ['氧化还原听不懂'] }
+  const topics = localTodayTopics(state, [{ painPoint: '期中 58 分，配平不会' }, { painPoint: '上课听懂一做题就错' }], 3)
+  assert.equal(topics.length, 3)
+  assert.match(topics[0].topic, /58|配平/)
+})
+
+test('单条稿：本地兜底带开头/结尾说明', async () => {
+  const { localSingle } = await import('../src/topics.js')
+  const single = localSingle({ positioning: { grade: '高一', subject: '化学' } }, '期中 58 分先补哪一章')
+  assert.ok(single.title && single.script)
+  assert.ok(single.hookWhy)
+  assert.ok(single.ctaAdvice)
+})

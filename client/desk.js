@@ -6,7 +6,7 @@ const BASE = 'media-desk/'
 
 // 做内容页面的中间结果：选题、勾选、口播几组、采用标记。
 // 放在全局快照里，切到别的页面再回来不会丢；再存一份 sessionStorage，刷新也能捡回来。
-export const EMPTY_CREATE = { topics: [], angles: {}, picked: {}, groups: [], adopted: {}, dirs: {}, batch: '', lessons: '', source: '', examples: [], brief: '', notes: {} }
+export const EMPTY_CREATE = { topics: [], angles: {}, picked: {}, groups: [], adopted: {}, dirs: {}, batch: '', lessons: '', source: '', examples: [], brief: '', notes: {}, autoSingle: false }
 const CREATE_DRAFT_KEY = 'youtulh:create:v1'
 
 let snapshot = {
@@ -41,7 +41,7 @@ export function resetCreate() {
 }
 
 /** 把一条选题带到「做内容」：只保留这一条并勾好，直接生成 3 版口播。 */
-export function startFromTopic(topic, angle = '') {
+export function startFromTopic(topic, angle = '', autoSingle = false) {
   const value = String(topic ?? '').trim()
   if (!value) return
   patchCreate(state => ({
@@ -57,6 +57,7 @@ export function startFromTopic(topic, angle = '') {
     examples: state.examples,
     brief: '',
     notes: {},
+    autoSingle,
   }))
   setDesk({ view: 'content', focusId: null })
 }
@@ -654,4 +655,13 @@ export function confirmBankQuestions(ids) {
 
 export function removeBankQuestion(id) {
   return request('questions/remove', { id })
+}
+
+// ---- 今天拍什么 ----
+export function fetchTodayTopics() {
+  return request('topics/today', {})
+}
+
+export function singleScript(topic) {
+  return request('scripts/single', { topic })
 }
