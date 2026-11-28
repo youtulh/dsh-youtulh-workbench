@@ -252,12 +252,12 @@ export async function importLeads(raw) {
 }
 
 /** 用学生最近几次课，写一条给家长的反馈。 */
-export async function fetchStudentFeedback({ name, grade = '', className = '', limit = 4 }) {
-  return request('student/feedback', { name, grade, className, limit })
+export async function fetchStudentFeedback({ id = '', name, grade = '', className = '', limit = 4 }) {
+  return request('student/feedback', { id, name, grade, className, limit })
 }
 
-export async function fetchFeedbackList(name = '') {
-  return request(`feedback/list?name=${encodeURIComponent(name)}`)
+export async function fetchFeedbackList(name = '', id = '') {
+  return request(`feedback/list?name=${encodeURIComponent(name)}&id=${encodeURIComponent(id)}`)
 }
 
 export async function saveStudentFeedback(payload) {
@@ -296,8 +296,8 @@ export async function importStudents(raw) {
   return request('students/import', { raw })
 }
 
-export async function removeStudentRow(name, grade) {
-  return request('students/remove', { name, grade })
+export async function removeStudentRow(name, grade, id = '') {
+  return request('students/remove', { name, grade, id })
 }
 
 export async function saveClassRow(klass, original = null) {

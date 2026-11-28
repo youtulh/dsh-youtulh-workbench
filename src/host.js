@@ -401,7 +401,7 @@ async function route(ctx, store, desk, req, res) {
     }
     if (path === 'feedback/list') {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      return json(res, 200, { rows: readFeedback(root, url.searchParams.get('name') ?? '') })
+      return json(res, 200, { rows: readFeedback(root, url.searchParams.get('name') ?? '', url.searchParams.get('id') ?? '') })
     }
     if (path === 'workspace/leads') {
       const settings = await desk.settings.read()
@@ -1416,7 +1416,7 @@ ${analysis.riskNote}
     }
     case 'students/remove': {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      removeStudent(root, { name: body.name, grade: body.grade })
+      removeStudent(root, { id: body.id, name: body.name, grade: body.grade })
       return json(res, 200, { students: readStudents(root), classes: readClasses(root) })
     }
     case 'classes/save': {
@@ -1450,12 +1450,14 @@ ${analysis.riskNote}
     }
     case 'student/feedback': {
       const name = String(body.name ?? '').trim()
-      if (!name) return json(res, 400, { error: tr('先选一个学生') })
+      const id = String(body.id ?? '').trim()
+      if (!name && !id) return json(res, 400, { error: tr('先选一个学生') })
       const root = resolveRoot((await desk.settings.read()).saveRoot)
-      const student = readStudents(root).find(row => row.name === name && (!body.grade || row.grade === body.grade))
+      const student = readStudents(root).find(row => (id ? row.id === id : row.name === name && (!body.grade || row.grade === body.grade)))
       if (!student) return json(res, 404, { error: tr('没找到这个学生') })
-      let rows = readLessons(root, body.className ?? '').filter(row => row.name === name)
-      if (!rows.length) rows = readLessons(root).filter(row => row.name === name)
+      const byStudent = row => (id && row.studentId ? row.studentId === id : row.name === name)
+      let rows = readLessons(root, body.className ?? '').filter(byStudent)
+      if (!rows.length) rows = readLessons(root).filter(byStudent)
       rows.sort((a, b) => b.no - a.no || String(b.date).localeCompare(String(a.date)))
       const limit = Number(body.limit) === 2 ? 2 : 4
       const recent = rows.slice(0, limit)

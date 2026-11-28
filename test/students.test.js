@@ -348,3 +348,27 @@ test('学生档案局部更新：只补来源，不清空已有学校', async ()
     await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
   }
 })
+
+test('同名不同班：改名/删除只影响自己的课次', async () => {
+  const root = await temp()
+  try {
+    saveClass(root, { name: 'A 班', total: 8 })
+    saveClass(root, { name: 'B 班', total: 8 })
+    saveStudent(root, { name: '张伟', grade: '高一', className: 'A 班' })
+    saveStudent(root, { name: '张伟', grade: '高一', className: 'B 班' })
+    saveLessonRows(root, { className: 'A 班', no: 1, date: '2026-11-08', rows: [{ name: '张伟', attend: '到' }] })
+    saveLessonRows(root, { className: 'B 班', no: 1, date: '2026-11-08', rows: [{ name: '张伟', attend: '缺' }] })
+    const students = readStudents(root)
+    const a = students.find(row => row.className === 'A 班')
+    const b = students.find(row => row.className === 'B 班')
+    assert.ok(a.id && b.id && a.id !== b.id)
+    saveStudent(root, { name: '张伟A', grade: '高一', className: 'A 班' }, { id: a.id, name: a.name, grade: a.grade })
+    assert.equal(readLessons(root, 'A 班')[0].name, '张伟A')
+    assert.equal(readLessons(root, 'B 班')[0].name, '张伟')
+    removeStudent(root, { id: b.id })
+    assert.equal(readLessons(root, 'B 班').length, 0)
+    assert.equal(readLessons(root, 'A 班').length, 1)
+  } finally {
+    await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 })
+  }
+})

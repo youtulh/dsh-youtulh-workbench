@@ -61,19 +61,20 @@ export function localFeedback(student, lessons = [], subject = '') {
 }
 
 
-export const FEEDBACK_COLUMNS = ['日期', '姓名', '年级', '课次', '内容', '来源', '创建时间']
+export const FEEDBACK_COLUMNS = ['日期', '学生ID', '姓名', '年级', '课次', '内容', '来源', '创建时间']
 
 const toFeedback = (row, rowIndex = -1) => ({
-  rowIndex, date: row['日期'] ?? '', name: row['姓名'] ?? '', grade: row['年级'] ?? '',
+  rowIndex, date: row['日期'] ?? '', studentId: row['学生ID'] ?? '', name: row['姓名'] ?? '', grade: row['年级'] ?? '',
   lessons: row['课次'] ?? '', text: row['内容'] ?? '', source: row['来源'] ?? '',
   createdAt: row['创建时间'] ?? '',
 })
 
 /** 读家长反馈记录；按姓名筛选时只返回这个人。 */
-export function readFeedback(root, name = '') {
+export function readFeedback(root, name = '', studentId = '') {
   const target = clean(name, 40)
+  const targetId = clean(studentId, 60)
   return readTable(root, LAYOUT.feedback).rows.map((row, index) => toFeedback(row, index))
-    .filter(row => row.name && (!target || row.name === target))
+    .filter(row => row.name && (targetId && row.studentId ? row.studentId === targetId : !target || row.name === target))
 }
 
 /** 存一条写好的家长反馈，以后能查。 */
@@ -84,7 +85,7 @@ export function appendFeedback(root, input = {}) {
   if (!text) throw new Error('反馈还是空的')
   const rows = readTable(root, LAYOUT.feedback).rows
   rows.push({
-    '日期': dayStamp(), '姓名': name, '年级': clean(input.grade, 20),
+    '日期': dayStamp(), '学生ID': clean(input.studentId, 60), '姓名': name, '年级': clean(input.grade, 20),
     '课次': String(input.lessons ?? ''), '内容': text,
     '来源': clean(input.source, 20) || 'local', '创建时间': nowStamp(),
   })

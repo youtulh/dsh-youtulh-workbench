@@ -156,7 +156,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
           { name: 'note', label: t('备注'), type: 'textarea', rows: 2, placeholder: t('家长的顾虑、上课习惯都可以记在这里') },
         ],
         onSubmit: values => {
-          saveStudentRow(values, editing ? { name: student.name, grade: student.grade } : null)
+          saveStudentRow(values, editing ? { id: student.id, name: student.name, grade: student.grade } : null)
             .then(data => { onChanged?.(data); toast(t('学生档案存好了')) })
             .catch(err => toast(err.message, { error: true }))
         },
@@ -193,8 +193,8 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
   const writeFeedback = (student, limit = 4) => {
     setFeedback({ student, name: student.name, text: '', busy: true, lessons: 0, limit, source: '', history: [] })
     Promise.all([
-      fetchStudentFeedback({ name: student.name, grade: student.grade, className: student.className, limit }),
-      fetchFeedbackList(student.name).catch(() => ({ rows: [] })),
+      fetchStudentFeedback({ id: student.id, name: student.name, grade: student.grade, className: student.className, limit }),
+      fetchFeedbackList(student.name, student.id).catch(() => ({ rows: [] })),
     ]).then(([data, history]) => {
       setFeedback({
         student, name: student.name, text: data.text || '', busy: false, lessons: data.lessons ?? 0,
@@ -206,7 +206,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
 
   const remove = (student) => {
     if (!window.confirm(t('删掉 {name} 的档案？这个班的课次记录也会删。', { name: student.name }))) return
-    removeStudentRow(student.name, student.grade)
+    removeStudentRow(student.name, student.grade, student.id)
       .then(data => { onChanged?.(data); toast(t('删掉了')) })
       .catch(err => toast(err.message, { error: true }))
   }
@@ -289,7 +289,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 </button>
                 <button type="button" className="md-inline-link" onClick={() => {
                   const next = (student.status || '在读') === '在读' ? '结课' : '在读'
-                  saveStudentRow({ ...student, status: next }, { name: student.name, grade: student.grade })
+                  saveStudentRow({ ...student, status: next }, { id: student.id, name: student.name, grade: student.grade })
                     .then(data => { onChanged?.(data); toast(next === '结课' ? t('标成结课了') : t('改回在读了')) })
                     .catch(err => toast(err.message, { error: true }))
                 }}>{(student.status || '在读') === '在读' ? t('结课') : t('复课')}</button>
@@ -357,7 +357,7 @@ function RosterPanel({ students, classes, lessons = [], onChanged, focusName = '
                 <button type="button" className="md-inline-link" disabled={feedback.busy} onClick={() => writeFeedback(feedback.student, feedback.limit)}>{t('换一版')}</button>
                 <button type="button" className="md-inline-link" onClick={() => {
                   saveStudentFeedback({
-                    name: feedback.name, grade: feedback.student.grade, lessons: feedback.lessons,
+                    studentId: feedback.student.id, name: feedback.name, grade: feedback.student.grade, lessons: feedback.lessons,
                     text: feedback.text, source: feedback.source,
                   }).then(data => {
                     setFeedback(prev => ({ ...prev, history: data.rows ?? prev.history }))

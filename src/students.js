@@ -1,5 +1,6 @@
 // 学生管理：学生档案 / 班课 / 课次记录三张表，和线索表一样是工作区里的 CSV。
 // 页面只是壳；Excel 能直接改这三张表，改完页面刷新就跟着变。
+import { createHash, randomUUID } from 'node:crypto'
 import { LAYOUT, dayStamp, ensureLeadColumns, nowStamp, readTable, writeTable } from './workspace.js'
 
 export const ATTEND_OPTIONS = ['到', '缺']
@@ -8,16 +9,16 @@ export const HOMEWORK_OPTIONS = ['交', '未交']
 export const DEFAULT_TOTAL = 8
 export const MAX_TOTAL = 30
 
-export const STUDENT_COLUMNS = ['姓名', '年级', '学校', '微信', '卡点层', '班', '状态', '来源', '报课日期', '备注', '创建时间', '更新时间']
+export const STUDENT_COLUMNS = ['ID', '姓名', '年级', '学校', '微信', '卡点层', '班', '状态', '来源', '报课日期', '备注', '创建时间', '更新时间']
 export const CLASS_COLUMNS = ['班名', '上课时间', '总次数', '状态', '分层', '备注', '创建时间', '更新时间']
-export const LESSON_COLUMNS = ['班', '课次', '日期', '姓名', '出勤', '掌握', '作业', '备注', '更新时间']
+export const LESSON_COLUMNS = ['班', '课次', '日期', '学生ID', '姓名', '出勤', '掌握', '作业', '备注', '更新时间']
 
 const STUDENT_FIELDS = {
-  name: '姓名', grade: '年级', school: '学校', contact: '微信', layer: '卡点层', className: '班',
+  id: 'ID', name: '姓名', grade: '年级', school: '学校', contact: '微信', layer: '卡点层', className: '班',
   status: '状态', source: '来源', enrolledAt: '报课日期', note: '备注', createdAt: '创建时间', updatedAt: '更新时间',
 }
 const CLASS_FIELDS = { name: '班名', time: '上课时间', total: '总次数', status: '状态', layers: '分层', note: '备注', createdAt: '创建时间', updatedAt: '更新时间' }
-const LESSON_FIELDS = { className: '班', no: '课次', date: '日期', name: '姓名', attend: '出勤', mastery: '掌握', homework: '作业', note: '备注', updatedAt: '更新时间' }
+const LESSON_FIELDS = { className: '班', no: '课次', date: '日期', studentId: '学生ID', name: '姓名', attend: '出勤', mastery: '掌握', homework: '作业', note: '备注', updatedAt: '更新时间' }
 
 const text = (value, max = 80) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 // 空值表示「还没记」：不归一成第一个选项，保存时按「清掉这条记录」处理
@@ -37,8 +38,9 @@ export function layersText(value) {
 }
 
 const toStudent = (row) => ({
+  id: row['ID'] || `STU-${createHash('sha1').update(`${row['姓名'] ?? ''}|${row['年级'] ?? ''}|${row['班'] ?? ''}|${row['创建时间'] ?? ''}`).digest('hex').slice(0, 12)}`,
   name: row['姓名'] ?? '', grade: row['年级'] ?? '', school: row['学校'] ?? '', contact: row['微信'] ?? '', layer: row['卡点层'] ?? '',
-  className: row['班'] ?? '', status: ['结课', '流失'].includes(row['状态']) ? row['状态'] : '在读', source: row['来源'] ?? '', enrolledAt: row['报课日期'] ?? '',
+  studentId: row['学生ID'] ?? '', className: row['班'] ?? '', status: ['结课', '流失'].includes(row['状态']) ? row['状态'] : '在读', source: row['来源'] ?? '', enrolledAt: row['报课日期'] ?? '',
   note: row['备注'] ?? '', createdAt: row['创建时间'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
 const toStudentRow = (student) => Object.fromEntries(Object.entries(STUDENT_FIELDS).map(([key, col]) => [col, student[key] ?? '']))
@@ -56,7 +58,7 @@ const toClassRow = (klass) => ({
 })
 
 const toLesson = (row) => ({
-  className: row['班'] ?? '', no: Number(row['课次'] ?? row['第几次'] ?? row['次数']) || 0, date: row['日期'] ?? '', name: row['姓名'] ?? '',
+  studentId: row['学生ID'] ?? '', className: row['班'] ?? '', no: Number(row['课次'] ?? row['第几次'] ?? row['次数']) || 0, date: row['日期'] ?? '', name: row['姓名'] ?? '',
   attend: row['出勤'] ?? '', mastery: row['掌握'] ?? '', homework: row['作业'] ?? '', note: row['备注'] ?? '', updatedAt: row['更新时间'] ?? '',
 })
 const toLessonRow = (lesson) => Object.fromEntries(Object.entries(LESSON_FIELDS).map(([key, col]) => [col, lesson[key] ?? '']))
@@ -81,19 +83,21 @@ export function saveStudent(root, input = {}, original = null) {
   const name = text(input.name, 40)
   if (!name) throw new Error('学生姓名不能为空')
   patch.name = name
+  const wantedId = text(input.id ?? original?.id, 60)
   const from = original ? { name: text(original.name, 40), grade: text(original.grade, 20) } : null
   const grade = patch.grade !== undefined ? patch.grade : (from?.grade ?? '')
-  const at = students.findIndex(row => (from
+  const at = students.findIndex(row => (wantedId ? row.id === wantedId : from
     ? sameStudent(row, from)
-    : text(row.name, 40) === name && (patch.grade === undefined || text(row.grade, 20) === grade)))
+    : text(row.name, 40) === name && (patch.grade === undefined || text(row.grade, 20) === grade) && (patch.className === undefined || text(row.className, 60) === patch.className)))
   if (at >= 0) {
     const old = students[at]
-    const next = { ...old, ...patch, createdAt: old.createdAt || nowStamp(), updatedAt: nowStamp() }
+    const next = { ...old, ...patch, id: old.id || wantedId || `STU-${randomUUID().slice(0, 12)}`, createdAt: old.createdAt || nowStamp(), updatedAt: nowStamp() }
     if (!next.enrolledAt) next.enrolledAt = dayStamp()
     students[at] = next
-    if (from && (from.name !== name || from.grade !== (patch.grade ?? from.grade))) renameLessonRows(root, from, name)
+    if (from && (from.name !== name || from.grade !== (patch.grade ?? from.grade))) renameLessonRows(root, from, name, next.id)
   } else {
     const next = {
+      id: wantedId || `STU-${randomUUID().slice(0, 12)}`,
       name, grade, school: '', contact: '', layer: '', className: '', status: '在读', source: '', enrolledAt: dayStamp(), note: '',
       ...patch, createdAt: nowStamp(), updatedAt: nowStamp(),
     }
@@ -105,21 +109,22 @@ export function saveStudent(root, input = {}, original = null) {
 }
 
 /** 改名：同班的课次记录跟着换姓名，历史不丢。 */
-function renameLessonRows(root, from, nextName) {
+function renameLessonRows(root, from, nextName, studentId = '') {
   if (!from.name || !nextName || from.name === nextName) return
   const rows = readLessonRows(root)
-  if (!rows.some(row => row.name === from.name)) return
-  writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, rows.map(row => toLessonRow(row.name === from.name ? { ...row, name: nextName } : row)))
+  const hit = row => (studentId && row.studentId ? row.studentId === studentId : row.name === from.name)
+  if (!rows.some(hit)) return
+  writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, rows.map(row => (hit(row) ? toLessonRow({ ...row, name: nextName, studentId: studentId || row.studentId }) : toLessonRow(row))))
 }
 
-export function removeStudent(root, { name, grade } = {}) {
+export function removeStudent(root, { id, name, grade } = {}) {
   const students = readStudents(root)
-  const target = students.find(row => text(row.name, 40) === text(name, 40) && (!grade || row.grade === text(grade, 20)))
+  const target = students.find(row => (id ? row.id === text(id, 60) : text(row.name, 40) === text(name, 40) && (!grade || row.grade === text(grade, 20))))
   if (!target) return students
   const left = students.filter(row => row !== target)
   writeTable(root, LAYOUT.students, STUDENT_COLUMNS, left.map(toStudentRow))
   const lessons = readTable(root, LAYOUT.lessons).rows.map(toLesson)
-  const kept = lessons.filter(row => row.name !== target.name)
+  const kept = lessons.filter(row => !((row.studentId && row.studentId === target.id) || (!row.studentId && row.name === target.name)))
   if (kept.length !== lessons.length) writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, kept.map(toLessonRow))
   return readStudents(root)
 }
@@ -218,7 +223,9 @@ export function saveLessonRows(root, { className, no, date, rows = [] } = {}) {
   if (!klass) throw new Error('先建班，再记课次')
   const at = Number(no)
   if (!Number.isInteger(at) || at < 1 || at > klass.total) throw new Error(`课次要在 1 到 ${klass.total} 之间`)
-  const roster = new Set(rosterOf(readStudents(root), target).map(row => row.name))
+  const rosterStudents = rosterOf(readStudents(root), target)
+  const roster = new Set(rosterStudents.map(row => row.name))
+  const studentIdOf = name => rosterStudents.find(row => row.name === name)?.id ?? ''
   const all = readLessonRows(root)
   const stamp = nowStamp()
   const day = text(date, 20) || dayStamp()
@@ -228,14 +235,15 @@ export function saveLessonRows(root, { className, no, date, rows = [] } = {}) {
     const attend = pick(row.attend, ATTEND_OPTIONS)
     const mastery = pick(row.mastery, MASTERY_OPTIONS)
     const homework = pick(row.homework, HOMEWORK_OPTIONS)
-    const found = all.findIndex(item => item.className === target && item.no === at && item.name === name)
+    const studentId = studentIdOf(name)
+    const found = all.findIndex(item => item.className === target && item.no === at && (studentId ? (item.studentId === studentId || (!item.studentId && item.name === name)) : item.name === name))
     const note = text(row.note, 100)
     // 三态和备注都没写 = 还没记：已存在的记录清掉，不落一条假数据
     if (!attend && !mastery && !homework && !note) {
       if (found >= 0) all.splice(found, 1)
       continue
     }
-    const next = { className: target, no: at, date: day, name, attend, mastery, homework, note, updatedAt: stamp }
+    const next = { className: target, no: at, date: day, studentId, name, attend, mastery, homework, note, updatedAt: stamp }
     if (found >= 0) all[found] = next
     else all.push(next)
   }
@@ -247,7 +255,7 @@ export function saveLessonRows(root, { className, no, date, rows = [] } = {}) {
 
 /** 一个学生在这个班的大致进度：上到第几节、缺了几次、几次作业没交。 */
 export function progressOf(student, klass, rows = []) {
-  const mine = rows.filter(row => row.className === student.className && row.name === student.name)
+  const mine = rows.filter(row => row.className === student.className && (student.id && row.studentId ? row.studentId === student.id : row.name === student.name))
   const done = [...new Set(mine.map(row => row.no))].length
   return {
     total: klass?.total ?? DEFAULT_TOTAL,
@@ -268,9 +276,9 @@ export function groupByLayer(roster, layers = []) {
 }
 
 /** 一个学生的课次记录，按课次排好。 */
-export function studentRecords(name, className, rows = []) {
+export function studentRecords(name, className, rows = [], studentId = '') {
   return rows
-    .filter(row => row.name === text(name, 40) && (!className || row.className === className))
+    .filter(row => (studentId && row.studentId ? row.studentId === studentId : row.name === text(name, 40)) && (!className || row.className === className))
     .slice()
     .sort((a, b) => a.no - b.no)
 }
@@ -283,8 +291,8 @@ export function legacyTables(root) {
   const header = file => readTable(root, file).header
   const list = []
   if (header(LAYOUT.classes).length && !has(LAYOUT.classes, '班名') && has(LAYOUT.classes, '期次')) list.push('班课')
-  if (header(LAYOUT.students).length && (!has(LAYOUT.students, '微信') || !has(LAYOUT.students, '状态'))) list.push('学生档案')
-  if (header(LAYOUT.lessons).length && !has(LAYOUT.lessons, '课次')) list.push('课次记录')
+  if (header(LAYOUT.students).length && (!has(LAYOUT.students, 'ID') || !has(LAYOUT.students, '微信') || !has(LAYOUT.students, '状态'))) list.push('学生档案')
+  if (header(LAYOUT.lessons).length && (!has(LAYOUT.lessons, '课次') || !has(LAYOUT.lessons, '学生ID'))) list.push('课次记录')
   if (header(LAYOUT.leads).length && !has(LAYOUT.leads, '阶段')) list.push('线索表')
   return list
 }
@@ -299,13 +307,14 @@ export function upgradeTables(root) {
     upgraded.push('班课')
   }
   const studentsHeader = headerOf(LAYOUT.students)
-  if (studentsHeader.length && (!studentsHeader.includes('微信') || !studentsHeader.includes('状态'))) {
+  if (studentsHeader.length && (!studentsHeader.includes('ID') || !studentsHeader.includes('微信') || !studentsHeader.includes('状态'))) {
     writeTable(root, LAYOUT.students, STUDENT_COLUMNS, readStudents(root).map(toStudentRow))
     upgraded.push('学生档案')
   }
   const lessonsHeader = headerOf(LAYOUT.lessons)
-  if (lessonsHeader.length && !lessonsHeader.includes('课次')) {
-    writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, readLessonRows(root).map(toLessonRow))
+  if (lessonsHeader.length && (!lessonsHeader.includes('课次') || !lessonsHeader.includes('学生ID'))) {
+    const ids = new Map(readStudents(root).map(row => [row.name, row.id]))
+    writeTable(root, LAYOUT.lessons, LESSON_COLUMNS, readLessonRows(root).map(row => toLessonRow({ ...row, studentId: row.studentId || ids.get(row.name) || '' })))
     upgraded.push('课次记录')
   }
   if (ensureLeadColumns(root)) upgraded.push('线索表')
