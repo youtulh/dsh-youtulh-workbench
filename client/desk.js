@@ -674,3 +674,11 @@ export function analyzeChat(payload) {
 export function diagnosticFromBrief(payload) {
   return request('diagnostics/from-brief', payload)
 }
+
+export function fetchTodayScripts(force = false) {
+  return request('scripts/today', { force })
+}
+
+export function adoptScript(payload) {
+  return request('content/adopt', payload)
+}

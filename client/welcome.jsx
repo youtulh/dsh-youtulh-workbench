@@ -1,69 +1,120 @@
-// 首页只做一件事：今天拍什么。
-// 3 条来自最近家长卡点的选题，点一条直接出稿；其余功能都在左侧二级页。
+// 前台只做一件事：今天拍这条。念稿、复制标题标签、点「我拍好了」。
 import React from 'react'
-import { fetchTodayTopics, profileSummary, setDesk, startFromTopic, toast, useDesk } from './desk.js'
+import { adoptScript, fetchTodayScripts, setDesk, toast, updateContentRow, useDesk } from './desk.js'
 import { t, useLang } from './i18n.js'
 import { OnboardingWizard } from './onboarding.jsx'
 import { Icon } from './ui.jsx'
 
+const MORE = [
+  ['content', '做内容', '更多选题、自己写、完整三版'],
+  ['dm', '线索表', '上传聊天截图，整理线索'],
+  ['diagnose', '出题', '题库、诊断卷'],
+  ['students', '学生管理', '学生、班课、课次'],
+  ['setup', '我的设定', '定位、说话方式、时间节点'],
+]
+
 export function WelcomeView() {
   useLang()
   const positioning = useDesk(s => s.state?.positioning) ?? {}
-  const pains = useDesk(s => s.state?.painPoints) ?? []
   const configured = Boolean(positioning.subject || positioning.grade || positioning.city)
-  const [topics, setTopics] = React.useState([])
-  const [source, setSource] = React.useState('')
-  const [busy, setBusy] = React.useState(false)
+  const [scripts, setScripts] = React.useState([])
+  const [index, setIndex] = React.useState(0)
+  const [busy, setBusy] = React.useState('')
+  const [dir, setDir] = React.useState('')
+  const [feel, setFeel] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
-  const summary = profileSummary({ positioning, painPoints: pains })
+  const [error, setError] = React.useState('')
+  const current = scripts[index] ?? null
   const go = view => setDesk({ view, focusId: null })
 
-  const load = React.useCallback(() => {
+  const load = React.useCallback((force = false) => {
     if (!configured) return
-    setBusy(true)
-    fetchTodayTopics()
-      .then(data => { setTopics(data.topics ?? []); setSource(data.source ?? '') })
-      .catch(err => toast(err.message, { error: true }))
-      .finally(() => setBusy(false))
+    setBusy('load')
+    setError('')
+    fetchTodayScripts(force)
+      .then(data => { setScripts(data.scripts ?? []); setIndex(0); setDir(''); setFeel(false) })
+      .catch(err => { setError(err.message); toast(err.message, { error: true }) })
+      .finally(() => setBusy(''))
   }, [configured])
-
   React.useEffect(() => { load() }, [load])
 
+  const copy = (value) => {
+    navigator.clipboard.writeText(value).then(() => toast(t('已复制')), () => toast(t('复制失败'), { error: true }))
+  }
+  const copyPack = () => current && copy(`${current.title}\n${(current.tags ?? []).map(tag => `#${tag}`).join(' ')}`)
+
+  const finish = async () => {
+    if (!current) return
+    setBusy('save')
+    try {
+      if (!dir) {
+        const data = await adoptScript({ topic: current.topic, title: current.title, script: current.script, tags: current.tags ?? [], comment: current.comment ?? '', dm: current.dm ?? '', status: '已拍' })
+        setDir(data.dir)
+      }
+      setFeel(true)
+      toast(t('记成已拍了。标题和标签复制给助理去发。'))
+    } catch (err) { toast(err.message, { error: true }) }
+    setBusy('')
+  }
+
+  const markFeel = async (value) => {
+    try {
+      if (dir) await updateContentRow(dir, { 手感: value })
+      toast(t('记下了'))
+      setFeel(false)
+      const next = index + 1
+      if (next < scripts.length) { setIndex(next); setDir(''); setFeel(false) }
+      else { toast(t('今天这条完成了')); setFeel(false) }
+    } catch (err) { toast(err.message, { error: true }) }
+  }
+
   if (!configured && !saved) {
-    return (
-      <div className="md-page md-welcome">
-        <OnboardingWizard onDone={() => { setSaved(true); load() }} onSwitch={() => go('setup')} />
-      </div>
-    )
+    return <div className="md-page md-welcome"><OnboardingWizard onDone={() => { setSaved(true); load() }} onSwitch={() => go('setup')} /></div>
   }
 
   return (
-    <div className="md-page md-welcome md-today">
-      <header className="md-today-head">
-        <p className="md-eyebrow">{t('Youtulh 工作台')}</p>
-        <h1 className="md-display">{t('今天拍什么')}</h1>
-        {summary ? <p className="md-profile-line"><Icon name="user" size={13} />{t('按你的设定：{summary}', { summary })}</p> : null}
+    <div className="md-page md-today2">
+      <header className="md-today2-head">
+        <p className="md-eyebrow">{t('今天拍这条')}</p>
+        <h1 className="md-today2-title">{current?.topic || (busy ? t('正在准备…') : t('今天还没有稿'))}</h1>
+        <details className="md-today2-more">
+          <summary>{t('更多')}</summary>
+          <div className="md-today2-menu">
+            {MORE.map(([view, label, hint]) => <button type="button" key={view} onClick={() => go(view)}><b>{t(label)}</b><small>{t(hint)}</small></button>)}
+          </div>
+        </details>
       </header>
 
-      <section className="md-today-list">
-        {busy && !topics.length ? <p className="md-muted">{t('正在看最近家长问什么…')}</p> : null}
-        {topics.map((row, index) => (
-          <button type="button" key={`${row.topic}-${index}`} className="md-today-card" onClick={() => startFromTopic(row.topic, '', true)}>
-            <span className="md-today-no">{String(index + 1).padStart(2, '0')}</span>
-            <span className="md-today-main">
-              <b>{row.topic}</b>
-              <small>{row.source ? t('来自：{source}', { source: row.source }) : t('按最近家长卡点生成')}</small>
-            </span>
-            <Icon name="arrow" size={15} />
-          </button>
-        ))}
-        {!busy && !topics.length ? <p className="md-muted">{t('还没有选题，点「更多」自己写一个。')}</p> : null}
-      </section>
+      {error ? <p className="md-today2-error">{error}</p> : null}
 
-      <footer className="md-today-foot">
-        <button type="button" className="md-inline-link" onClick={() => go('content')}>{t('更多选题 / 自己写')}</button>
-        <span className="md-muted">{source === 'local' ? t('没连模型，按最近卡点拼的') : t('点一条直接出稿，拍完再回来')}</span>
-      </footer>
+      {current ? (
+        <>
+          <article className="md-today2-script">
+            {String(current.script || '').split('\n').map((line, i) => <p key={i}>{line || '\u00a0'}</p>)}
+          </article>
+          <div className="md-today2-meta">
+            <div><b>{t('标题')}</b><span>{current.title}</span></div>
+            <div><b>{t('话题标签')}</b><span>{(current.tags ?? []).map(tag => `#${tag}`).join(' ')}</span></div>
+            <button type="button" className="md-pill is-small" onClick={copyPack}>{t('复制标题和标签')}</button>
+          </div>
+          <div className="md-today2-note">
+            <p><b>{t('开头为什么留人')}</b>{current.hookWhy || t('具体场景，让家长觉得说的是自己家。')}</p>
+            <p><b>{t('结尾引导')}</b>{current.ctaAdvice || t('留一个轻动作，不报价。')}</p>
+          </div>
+          <footer className="md-today2-actions">
+            <button type="button" className="md-pill is-primary" onClick={finish} disabled={busy === 'save'}>{busy === 'save' ? t('保存中…') : t('我拍好了')}</button>
+            <button type="button" className="md-pill" onClick={() => { setIndex((index + 1) % Math.max(1, scripts.length)); setDir(''); setFeel(false) }}>{t('换一条')}</button>
+            <button type="button" className="md-inline-link" onClick={() => load(true)} disabled={busy === 'load'}>{t('换一批')}</button>
+          </footer>
+          {feel ? (
+            <div className="md-today2-feel">
+              <span>{t('发出去感觉怎么样？（可关掉）')}</span>
+              {['爆了', '正常', '扑了'].map(value => <button type="button" key={value} className="md-chip" onClick={() => markFeel(value)}>{t(value)}</button>)}
+              <button type="button" className="md-inline-link" onClick={() => setFeel(false)}>{t('关掉')}</button>
+            </div>
+          ) : null}
+        </>
+      ) : null}
     </div>
   )
 }

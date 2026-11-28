@@ -135,7 +135,7 @@ function Desk() {
   const showDock = dockOpen && !focused
   const Active = VIEWS[view] ?? WelcomeView
   return (
-    <div className={`md-root ${narrow ? 'is-narrow' : ''} ${width < 780 ? 'is-compact' : ''} ${showDock ? 'has-dock' : ''}`} ref={rootRef}>
+    <div className={`md-root ${narrow ? 'is-narrow' : ''} ${width < 780 ? 'is-compact' : ''} ${showDock ? 'has-dock' : ''} ${view === 'home' ? 'is-today' : ''}`} ref={rootRef}>
       <style>{css}</style>
       <div className="md-ambient" aria-hidden="true"><i /><i /><i /></div>
       <aside className="md-rail">

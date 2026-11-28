@@ -2429,3 +2429,29 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-exam-papers li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: .5px dashed var(--hairline); font-size: 12px; }
 .md-exam-papers em { color: var(--ink3); font-style: normal; }
 .md-exam-error { margin-top: 10px; color: #9c3333; font-size: 12.5px; }
+
+/* 前台：今天拍这条 */
+.md-root.is-today .md-rail, .md-root.is-today .md-topbar { display: none; }
+.md-today2 { max-width: 820px; margin: 0 auto; padding-top: 48px; }
+.md-today2-head { position: relative; margin-bottom: 18px; }
+.md-today2-title { margin: 6px 0 0; font-size: 30px; line-height: 1.35; font-weight: 500; letter-spacing: -.01em; }
+.md-today2-more { position: absolute; right: 0; top: 0; }
+.md-today2-more summary { list-style: none; cursor: pointer; color: var(--ink3); font-size: 12px; }
+.md-today2-more summary::-webkit-details-marker { display: none; }
+.md-today2-menu { position: absolute; right: 0; top: 24px; z-index: 8; width: 220px; display: grid; gap: 2px; padding: 8px; border-radius: var(--r-md); background: var(--card); box-shadow: var(--dsw-elevation-prominent); }
+.md-today2-menu button { display: grid; gap: 1px; text-align: left; padding: 7px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font: inherit; }
+.md-today2-menu button:hover { background: var(--hover); }
+.md-today2-menu b { font-size: 12.5px; font-weight: 500; }
+.md-today2-menu small { color: var(--ink3); font-size: 10.5px; }
+.md-today2-script { padding: 22px 24px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); font-size: 18px; line-height: 2; color: var(--ink); }
+.md-today2-script p { margin: 0; }
+.md-today2-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: var(--r-md); background: var(--hover); }
+.md-today2-meta div { display: grid; gap: 1px; min-width: 140px; flex: 1; }
+.md-today2-meta b { color: var(--ink3); font-size: 10.5px; font-weight: 500; }
+.md-today2-meta span { font-size: 12px; color: var(--ink2); }
+.md-today2-note { margin-top: 10px; color: var(--ink2); font-size: 12px; line-height: 19px; }
+.md-today2-note p { margin: 3px 0; }
+.md-today2-note b { color: var(--ink3); font-weight: 500; margin-right: 6px; }
+.md-today2-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }
+.md-today2-feel { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: var(--r-md); background: var(--hover); font-size: 12.5px; }
+.md-today2-error { color: #9c3333; font-size: 12.5px; margin-bottom: 10px; }

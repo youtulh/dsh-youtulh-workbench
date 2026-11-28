@@ -1038,6 +1038,39 @@ ${analysis.riskNote}
       writeLessonMarkdown(root)
       return json(res, 200, { topics: rows })
     }
+    case 'scripts/today': {
+      const state = await store.read()
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      ensureLayout(root)
+      const cacheFile = join(root, LAYOUT.data, '今日稿.json')
+      const cacheKey = JSON.stringify({ p: state.positioning ?? {}, pains: state.painPoints ?? [], date: dayStamp() })
+      try {
+        const cached = JSON.parse(await readFile(cacheFile, 'utf8'))
+        if (!body.force && cached?.key === cacheKey && Array.isArray(cached.scripts) && cached.scripts.length) return json(res, 200, { ...cached, cached: true })
+      } catch { /* 没缓存就生成 */ }
+      const leads = readLeads(root)
+      const lessons = buildLessonBlock(root)
+      const voice = readVoiceSamples(root)
+      let topics = []
+      try {
+        const { text: raw } = await callModel(ctx, { ...todayTopicsPrompt(state, leads, 3), maxTokens: 900, light: true })
+        topics = normalizeTodayTopics(extractJson(raw), 3)
+      } catch { /* 本地 */ }
+      if (!topics.length) topics = localTodayTopics(state, leads, 3)
+      const scripts = await Promise.all(topics.slice(0, 3).map(async (item, index) => {
+        let single = null
+        try {
+          const { text: raw } = await callModel(ctx, { ...singleScriptPrompt(state, item.topic, lessons, voice), maxTokens: 2200, light: true })
+          const parsed = normalizeSingle(extractJson(raw))
+          if (parsed.title && parsed.script) single = parsed
+        } catch { /* 本地 */ }
+        if (!single) single = normalizeSingle(localSingle(state, item.topic))
+        return { id: `today-${Date.now()}-${index}`, topic: item.topic, source: item.source || '', ...single }
+      }))
+      const payload = { key: cacheKey, date: dayStamp(), scripts, source: 'today' }
+      writeFile(cacheFile, JSON.stringify(payload)).catch(() => {})
+      return json(res, 200, payload)
+    }
     case 'scripts/single': {
       const state = await store.read()
       const root = resolveRoot((await desk.settings.read()).saveRoot)
