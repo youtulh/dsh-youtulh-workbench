@@ -670,3 +670,7 @@ export function singleScript(topic) {
 export function analyzeChat(payload) {
   return request('leads/analyze-chat', payload)
 }
+
+export function diagnosticFromBrief(payload) {
+  return request('diagnostics/from-brief', payload)
+}

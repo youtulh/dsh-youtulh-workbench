@@ -2413,3 +2413,19 @@ button:active:not(:disabled) { transform: translateY(.5px); }
 .md-intake-recent li span { flex: 1; min-width: 160px; color: var(--ink2); }
 .md-intake-recent li em { font-style: normal; color: var(--ink3); }
 @media (max-width: 640px) { .md-intake-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* 出题：题库 → 一句话 → 一张卷 */
+.md-exam { max-width: 900px; margin: 0 auto; }
+.md-exam-step { margin-top: 16px; padding: 18px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-exam-step-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.md-exam-step-head b { display: block; font-size: 15px; font-weight: 500; }
+.md-exam-step-head small { display: block; color: var(--ink3); font-size: 11.5px; }
+.md-exam-no { width: 24px; height: 24px; border-radius: 50%; background: var(--hover); color: var(--ink2); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.md-exam-step textarea { width: 100%; margin-top: 12px; padding: 11px 12px; border: .5px solid var(--line-strong); border-radius: var(--r-md); background: var(--card); color: var(--ink); font: inherit; font-size: 13.5px; line-height: 22px; resize: vertical; }
+.md-exam-foot, .md-exam-result { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.md-exam-result { margin-top: 16px; padding: 18px; border-radius: var(--r-xl); background: var(--card); box-shadow: var(--dsw-elevation-soft); }
+.md-exam-result h2 { font-size: 19px; font-weight: 500; margin: 2px 0; }
+.md-exam-papers { display: grid; gap: 5px; margin-top: 10px; }
+.md-exam-papers li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: .5px dashed var(--hairline); font-size: 12px; }
+.md-exam-papers em { color: var(--ink3); font-style: normal; }
+.md-exam-error { margin-top: 10px; color: #9c3333; font-size: 12.5px; }

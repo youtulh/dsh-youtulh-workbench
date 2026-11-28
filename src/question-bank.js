@@ -159,8 +159,8 @@ export function selectBankQuestions(questions, {
     groups.get(row.knowledge).push(row)
   }
   const names = [...groups.keys()].sort((a, b) => groups.get(b).length - groups.get(a).length)
-  if (names.length < 3) {
-    throw Object.assign(new Error(`题库不够：至少需要 3 个知识点，现在只有 ${names.length} 个`), { shortage: [{ knowledge: '全部', difficulty: '任意', need: 3, have: names.length }] })
+  if (!names.length) {
+    throw Object.assign(new Error('题库不够：没有符合条件的已确认题'), { shortage: [{ knowledge: '全部', difficulty: '任意', need: 1, have: 0 }] })
   }
   const layers = names.slice(0, 5).map((name, index) => ({ id: `L${index + 1}`, name, desc: '', promise: '' }))
   const used = new Set()

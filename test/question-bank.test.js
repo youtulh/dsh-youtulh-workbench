@@ -76,3 +76,14 @@ test('CSV 行读成题目', () => {
   assert.equal(question.difficulty, '期中')
   assert.equal(question.status, '已确认')
 })
+
+test('一句话出卷：解析年级/科目/题量/难度/知识点', async () => {
+  const { parseBrief } = await import('../src/brief.js')
+  const qs = [{ knowledge: '氧化还原—化合价' }, { knowledge: '氧化还原—配平' }]
+  const parsed = parseBrief('高一化学，氧化还原和配平最弱，10 题，比期中稍难', qs, { positioning: { grade: '高一', subject: '化学' } })
+  assert.equal(parsed.grade, '高一')
+  assert.equal(parsed.subject, '化学')
+  assert.equal(parsed.count, 10)
+  assert.equal(parsed.difficulty, '稍难')
+  assert.ok(parsed.knowledgePoints.includes('氧化还原—配平'))
+})

@@ -23,6 +23,7 @@ import { PAPER_EXTS, extractPaperText, paperExtractPrompt } from './papers.js'
 import { leadAnalyzePrompt, localAnalyzedLead, normalizeAnalyzedLeads } from './lead-analyze.js'
 import { listPapers, listQuestions, removeQuestion, savePaper, savePaperFile, savePaperText, saveQuestions, updateQuestion } from './bank-store.js'
 import { normalizeExtractedQuestions, selectBankQuestions, specFromBank } from './question-bank.js'
+import { parseBrief } from './brief.js'
 import { LAYOUT, backupWorkspace, contentKey, appendLead, archiveTopics, batchId, dayStamp, ensureLayout, folderName, leadLessons, listBackups, listTree, parseVoiceSamples, readAccounts, readContent, readLeads, readSettingsMarkdown, readTable, readVoiceSamples, recordContent, removeContent, removeLeadRow, resolveRoot, restoreWorkspace, updateContent, updateLeadRow, writeAccounts, writeSettingsMarkdown } from './workspace.js'
 import { applyOps, newId } from './ops.js'
 import { legacyTables, readClasses, readLessons, readStudents, removeClass, removeStudent, saveClass, saveLessonRows, saveStudent, upgradeTables } from './students.js'
@@ -617,6 +618,40 @@ async function route(ctx, store, desk, req, res) {
       const root = resolveRoot((await desk.settings.read()).saveRoot)
       removeQuestion(root, String(body.id ?? ''))
       return json(res, 200, { questions: listQuestions(root) })
+    }
+    case 'diagnostics/from-brief': {
+      const root = resolveRoot((await desk.settings.read()).saveRoot)
+      const questions = listQuestions(root).filter(row => row.status === '已确认')
+      if (!questions.length) return json(res, 400, { error: tr('题库还是空的：先上传卷子并确认入库'), code: 'EMPTY_BANK' })
+      const state = await store.read()
+      const parsed = parseBrief(String(body.brief ?? ''), questions, state)
+      let selected
+      try {
+        selected = selectBankQuestions(questions, {
+          subject: parsed.subject, grade: parsed.grade, knowledgePoints: parsed.knowledgePoints,
+          count: Number(body.count) === 10 ? 10 : parsed.count, mix: parsed.mix,
+        })
+      } catch (err) {
+        return json(res, 400, { error: err.message, shortage: err.shortage ?? [], code: 'SHORTAGE' })
+      }
+      const settings = await desk.settings.read()
+      const brand = await withBrandLogo(store, settings.brand ?? {})
+      const lesson = {
+        title: [parsed.grade, parsed.subject, parsed.knowledgePoints[0] ? parsed.knowledgePoints[0].split(/[—\-－]/)[0] : '诊断'].filter(Boolean).join(' · '),
+        subject: parsed.subject, grade: parsed.grade, at: '', code: '',
+      }
+      const student = { name: '', grade: parsed.grade }
+      const id = newId('DIAG')
+      const spec = specFromBank(selected, { title: `${lesson.title} 诊断卷`, brand, lesson, student })
+      spec.id = id
+      writeManifest(root, id, spec)
+      writeDiagnosticHtml(root, id, '课前诊断.html', renderDiagnosticHtml(spec, { kind: 'pre' }))
+      const row = saveDiagnosticRow(root, {
+        id, createdAt: spec.createdAt, status: '待作答', student: '', grade: parsed.grade,
+        subject: parsed.subject, lesson: lesson.title, at: '', code: '', brand: brand.name,
+        dir: join(LAYOUT.diagnostics, id), note: `一句话出卷：${parsed.brief}`,
+      })
+      return json(res, 200, { row, spec, dir: join(LAYOUT.diagnostics, id), parsed })
     }
     case 'diagnostics/create': {
       const settings = await desk.settings.read()
